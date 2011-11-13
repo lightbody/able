@@ -15,9 +15,10 @@
         <profile>
             <id>release</id>
             <activation>
-                <file>
-                    <exists>.maven/bin/mvn</exists>
-                </file>
+                <property>
+                    <name>maven.repo.local</name>
+                    <value>/app/tmp/repo.git/.cache/.m2/repository</value>
+                </property>
             </activation>
             <build>
                 <plugins>
