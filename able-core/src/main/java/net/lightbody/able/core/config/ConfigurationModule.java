@@ -37,7 +37,16 @@ public class ConfigurationModule extends AbstractModule {
      * Copy of Named.bindProperties, but with support for primitives in addition to Strings
      */
     private void bindProperties(Properties properties) {
-        //binder().skipSources(Names.class);
+        // look in the system environment variables for [name].xxx and override the properties if they are there
+        // this is epecially handy for Heroku, where there is no ability to write to ~/.able and instead configuration
+        // is done via environment variables that are set with "heroku config:add foo=bar"
+        for (Map.Entry<String, String> entry : System.getenv().entrySet()) {
+            String key = entry.getKey();
+            if (key.startsWith(name + ".")) {
+                key = key.substring(name.length() + 1);
+                properties.setProperty(key, entry.getValue());
+            }
+        }
 
         // use enumeration to include the default properties
         for (Map.Entry<Object, Object> entry : properties.entrySet()) {
@@ -131,7 +140,7 @@ public class ConfigurationModule extends AbstractModule {
 
         // set up home directory
         File homeDir = new File(System.getProperty("user.home"));
-        File wmDir = new File(homeDir, ".webmetrics");
+        File wmDir = new File(homeDir, ".able");
         wmDir.mkdirs();
 
         // grab global.properties if it exists
@@ -141,8 +150,8 @@ public class ConfigurationModule extends AbstractModule {
             props.load(fis);
         }
 
-        // grab name.properties in the .webmetrics dir if it exists
-        File local = new File(wmDir, name + ".properties");
+        // grab name.properties in the .able dir if it exists
+        File local = new File(wmDir, name + ".able");
         if (local.exists()) {
             FileInputStream fis = new FileInputStream(local);
             props.load(fis);
