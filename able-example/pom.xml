@@ -14,7 +14,12 @@
     <profiles>
         <profile>
             <id>release</id>
-
+            <activation>
+                <property>
+                    <name>FOO</name>
+                    <value>bar</value>
+                </property>
+            </activation>
             <build>
                 <plugins>
                     <plugin>
