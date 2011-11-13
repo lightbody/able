@@ -67,7 +67,7 @@
 
         <dependency>
             <groupId>net.lightbody.able</groupId>
-            <artifactId>able</artifactId>
+            <artifactId>able-core</artifactId>
             <version>${project.version}</version>
         </dependency>
 
