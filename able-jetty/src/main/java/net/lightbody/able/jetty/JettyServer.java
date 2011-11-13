@@ -25,11 +25,11 @@ public class JettyServer {
                 return injector;
             }
         };
-        server.start();
 
         ServletContextHandler context = (ServletContextHandler) server.getHandler();
         gscl.contextInitialized(new ServletContextEvent(context.getServletContext()));
 
+        server.start();
         server.join();
     }
 }

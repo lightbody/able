@@ -1,6 +1,7 @@
 package net.lightbody.able.stripes;
 
 import com.google.inject.Binding;
+import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import net.sourceforge.stripes.action.ActionBean;
@@ -15,8 +16,15 @@ import java.util.Map;
 import java.util.Set;
 
 public class GuiceActionResolver extends NameBasedActionResolver {
+    private Injector injector;
+
+    @Inject
+    public GuiceActionResolver(Injector injector) {
+        this.injector = injector;
+    }
+
     protected ActionBean makeNewActionBean(Class<? extends ActionBean> type, ActionBeanContext context) throws Exception {
-        return GuiceServletContextListner.getInjector().getInstance(type);
+        return injector.getInstance(type);
     }
 
     @SuppressWarnings("unchecked")
@@ -68,7 +76,6 @@ public class GuiceActionResolver extends NameBasedActionResolver {
     protected Set<Class<? extends ActionBean>> findClasses() {
         HashSet<Class<? extends ActionBean>> classes = new HashSet<Class<? extends ActionBean>>();
 
-        Injector injector = GuiceServletContextListner.getInjector();
         Map<Key<?>,Binding<?>> bindings = injector.getBindings();
         for (Key<?> key : bindings.keySet()) {
             Type type = key.getTypeLiteral().getType();
@@ -77,7 +84,6 @@ public class GuiceActionResolver extends NameBasedActionResolver {
                 classes.add((Class) type);
             }
         }
-
 
         return classes;
     }
