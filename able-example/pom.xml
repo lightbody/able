@@ -15,10 +15,9 @@
         <profile>
             <id>release</id>
             <activation>
-                <property>
-                    <name>skipTests</name>
-                    <value>true</value>
-                </property>
+                <file>
+                    <exists>.maven/bin/mvn</exists>
+                </file>
             </activation>
             <build>
                 <plugins>
@@ -46,23 +45,23 @@
                             </execution>
                         </executions>
                     </plugin>
-                    <plugin>
-                        <artifactId>maven-assembly-plugin</artifactId>
-                        <configuration>
-                            <descriptors>
-                                <descriptor>src/main/assembly.xml</descriptor>
-                            </descriptors>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <id>make-assembly</id>
-                                <phase>install</phase>
-                                <goals>
-                                    <goal>single</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
+                    <!--<plugin>-->
+                        <!--<artifactId>maven-assembly-plugin</artifactId>-->
+                        <!--<configuration>-->
+                            <!--<descriptors>-->
+                                <!--<descriptor>src/main/assembly.xml</descriptor>-->
+                            <!--</descriptors>-->
+                        <!--</configuration>-->
+                        <!--<executions>-->
+                            <!--<execution>-->
+                                <!--<id>make-assembly</id>-->
+                                <!--<phase>install</phase>-->
+                                <!--<goals>-->
+                                    <!--<goal>single</goal>-->
+                                <!--</goals>-->
+                            <!--</execution>-->
+                        <!--</executions>-->
+                    <!--</plugin>-->
                 </plugins>
             </build>
         </profile>
