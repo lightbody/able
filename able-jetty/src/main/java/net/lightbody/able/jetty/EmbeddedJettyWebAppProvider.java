@@ -57,6 +57,14 @@ public class EmbeddedJettyWebAppProvider implements Provider<Server> {
 
             File path = new File(s);
             webappDir = new File(path.getParentFile().getParentFile(), "webapp");
+            if (!webappDir.exists()) {
+                // not there either? I bet we're running under Heroku, which has a hybrid between a packaged
+                // zip and a developer-friendly unpackaged environment (below), so let's try:
+                File herokuHack = new File(path.getParentFile().getParentFile().getParentFile().getParentFile(), "src/main/webapp");
+                if (herokuHack.exists()) {
+                    webappDir = herokuHack;
+                }
+            }
         } else if (s.startsWith("file:")) {
             // if the class is not in a jar, assume the the webapp dir is at ../src/main/webapp
             // relative to the directory holding the class
