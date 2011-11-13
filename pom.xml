@@ -96,6 +96,8 @@
         <module>able-core</module>
         <module>able-loggly</module>
         <module>able-jetty</module>
+        <module>able-mongo</module>
+        <module>able-stripes</module>
         <module>able-example</module>
     </modules>
 

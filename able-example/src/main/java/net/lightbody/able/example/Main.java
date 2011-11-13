@@ -9,6 +9,7 @@ import net.lightbody.able.example.bricks.TestBrick;
 import net.lightbody.able.jetty.JettyModule;
 import net.lightbody.able.jetty.JettyServer;
 import net.lightbody.able.loggly.LogglyModule;
+import net.lightbody.able.stripes.StripesModule;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -28,6 +29,7 @@ public class Main extends HttpServlet {
         Injector injector = Guice.createInjector(new ConfigurationModule("example"),
                 new LogglyModule(),
                 new JettyModule(Main.class),
+                new StripesModule(Main.class),
                 new SitebricksModule() {
                     @Override
                     protected void configureSitebricks() {

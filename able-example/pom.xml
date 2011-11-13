@@ -85,6 +85,16 @@
             <artifactId>able-jetty</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>net.lightbody.able</groupId>
+            <artifactId>able-mongo</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>net.lightbody.able</groupId>
+            <artifactId>able-stripes</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>com.google.sitebricks</groupId>
