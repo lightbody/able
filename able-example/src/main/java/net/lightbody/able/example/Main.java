@@ -5,6 +5,7 @@ import com.google.inject.Injector;
 import com.google.inject.servlet.ServletModule;
 import com.google.sitebricks.SitebricksModule;
 import com.google.sitebricks.SitebricksServletModule;
+import freemarker.ext.servlet.FreemarkerServlet;
 import net.lightbody.able.core.config.ConfigurationModule;
 import net.lightbody.able.example.bricks.TestBrick;
 import net.lightbody.able.jetty.JettyModule;
@@ -22,6 +23,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 
 public class Main extends HttpServlet {
@@ -36,13 +38,11 @@ public class Main extends HttpServlet {
                         scan(TestBrick.class.getPackage());
                     }
                 },
-                new SitebricksServletModule() {
+                new ServletModule() {
                     @Override
-                    protected void configureCustomServlets() {
+                    protected void configureServlets() {
                         serve("/test").with(TestServlet.class);
-                        HashMap<String, String> params = new HashMap<String, String>();
-                        params.put("Extension.Packages", GuiceRuntimeConfiguration.class.getPackage().getName());
-                        filter("/*").through(new GuiceStripesFilter(), params);
+                        serve("*.ftl").with(new FreemarkerServlet(), Collections.singletonMap("TemplatePath", "/"));
                     }
                 });
         JettyServer server = injector.getInstance(JettyServer.class);

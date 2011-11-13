@@ -26,6 +26,7 @@ public class FooActionBean implements ActionBean {
     }
 
     public Resolution display() {
-        return new StreamingResolution("text/plain", "stripes says hello: " + foo);
+//        return new StreamingResolution("text/plain", "stripes says hello: " + foo);
+        return new ForwardResolution("/foo.ftl");
     }
 }
