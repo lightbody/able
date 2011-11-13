@@ -75,6 +75,11 @@
             <artifactId>able-core</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>net.lightbody.able</groupId>
+            <artifactId>able-loggly</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
     </dependencies>
 
