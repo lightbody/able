@@ -3,7 +3,6 @@ package net.lightbody.able.core.config;
 import com.google.inject.AbstractModule;
 import com.google.inject.Key;
 import com.google.inject.name.Names;
-import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
 import java.lang.annotation.Annotation;
@@ -64,7 +63,7 @@ public class ConfigurationModule extends AbstractModule {
 
     }
 
-    protected void bindString(Properties props, Class<? extends Annotation> annotation, String property, @Nullable String defaultValue) {
+    protected void bindString(Properties props, Class<? extends Annotation> annotation, String property, String defaultValue) {
         String value = props.getProperty(property);
         if (value == null) {
             value = System.getProperty(property);
@@ -87,7 +86,7 @@ public class ConfigurationModule extends AbstractModule {
         bindString(props, annotation, property, null);
     }
 
-    protected void bindInteger(Properties props, Class<? extends Annotation> annotation, String property, @Nullable Integer defaultValue) {
+    protected void bindInteger(Properties props, Class<? extends Annotation> annotation, String property, Integer defaultValue) {
         String value = props.getProperty(property);
         if (value == null) {
             value = System.getProperty(property);

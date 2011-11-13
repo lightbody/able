@@ -19,36 +19,13 @@
         </dependency>
 
         <dependency>
-            <groupId>com.google.sitebricks</groupId>
-            <artifactId>sitebricks</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.codehaus.jackson</groupId>
-            <artifactId>jackson-mapper-asl</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-server</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-servlet</artifactId>
-        </dependency>
-
-        <dependency>
             <groupId>com.google.inject</groupId>
             <artifactId>guice</artifactId>
         </dependency>
-        <dependency>
-            <groupId>com.google.inject.extensions</groupId>
-            <artifactId>guice-servlet</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.google.inject.extensions</groupId>
-            <artifactId>guice-multibindings</artifactId>
-        </dependency>
+        <!--<dependency>-->
+            <!--<groupId>com.google.inject.extensions</groupId>-->
+            <!--<artifactId>guice-multibindings</artifactId>-->
+        <!--</dependency>-->
 
     </dependencies>
 

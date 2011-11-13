@@ -46,7 +46,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <guice.version>3.0</guice.version>
-        <jetty.version>7.3.0.v20110203</jetty.version>
+        <jetty.version>7.4.5.v20110725</jetty.version>
     </properties>
 
     <build>
@@ -95,6 +95,7 @@
     <modules>
         <module>able-core</module>
         <module>able-loggly</module>
+        <module>able-jetty</module>
         <module>able-example</module>
     </modules>
 
@@ -143,6 +144,11 @@
             <dependency>
                 <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-servlet</artifactId>
+                <version>${jetty.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-webapp</artifactId>
                 <version>${jetty.version}</version>
             </dependency>
 

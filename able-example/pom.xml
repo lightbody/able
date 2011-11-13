@@ -80,6 +80,16 @@
             <artifactId>able-loggly</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>net.lightbody.able</groupId>
+            <artifactId>able-jetty</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.google.sitebricks</groupId>
+            <artifactId>sitebricks</artifactId>
+        </dependency>
 
     </dependencies>
 
