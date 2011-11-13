@@ -16,8 +16,8 @@
             <id>release</id>
             <activation>
                 <property>
-                    <name>FOO</name>
-                    <value>bar</value>
+                    <name>skipTests</name>
+                    <value>true</value>
                 </property>
             </activation>
             <build>
