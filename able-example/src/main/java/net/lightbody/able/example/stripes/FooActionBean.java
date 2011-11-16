@@ -2,6 +2,7 @@ package net.lightbody.able.example.stripes;
 
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
+import net.lightbody.able.freemarker.FreemarkerResolution;
 import net.sourceforge.stripes.action.*;
 
 @UrlBinding("/foo")
@@ -19,6 +20,7 @@ public class FooActionBean implements ActionBean {
     }
 
     private String foo;
+    private int doodoo;
 
     @Inject
     public FooActionBean(@Named("foo") String foo) {
@@ -26,7 +28,12 @@ public class FooActionBean implements ActionBean {
     }
 
     public Resolution display() {
-//        return new StreamingResolution("text/plain", "stripes says hello: " + foo);
-        return new ForwardResolution("/foo.ftl");
+        doodoo = 123;
+
+        return new FreemarkerResolution("foo.ftl");
+    }
+
+    public int getDoodoo() {
+        return doodoo;
     }
 }

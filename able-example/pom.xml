@@ -95,17 +95,16 @@
             <artifactId>able-stripes</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>net.lightbody.able</groupId>
+            <artifactId>able-freemarker</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>com.google.sitebricks</groupId>
             <artifactId>sitebricks</artifactId>
         </dependency>
-
-<dependency>
-    <groupId>org.freemarker</groupId>
-    <artifactId>freemarker</artifactId>
-    <version>2.3.18</version>
-</dependency>
 
     </dependencies>
 
