@@ -1,4 +1,5 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>able-example</artifactId>
@@ -47,21 +48,21 @@
                         </executions>
                     </plugin>
                     <!--<plugin>-->
-                        <!--<artifactId>maven-assembly-plugin</artifactId>-->
-                        <!--<configuration>-->
-                            <!--<descriptors>-->
-                                <!--<descriptor>src/main/assembly.xml</descriptor>-->
-                            <!--</descriptors>-->
-                        <!--</configuration>-->
-                        <!--<executions>-->
-                            <!--<execution>-->
-                                <!--<id>make-assembly</id>-->
-                                <!--<phase>install</phase>-->
-                                <!--<goals>-->
-                                    <!--<goal>single</goal>-->
-                                <!--</goals>-->
-                            <!--</execution>-->
-                        <!--</executions>-->
+                    <!--<artifactId>maven-assembly-plugin</artifactId>-->
+                    <!--<configuration>-->
+                    <!--<descriptors>-->
+                    <!--<descriptor>src/main/assembly.xml</descriptor>-->
+                    <!--</descriptors>-->
+                    <!--</configuration>-->
+                    <!--<executions>-->
+                    <!--<execution>-->
+                    <!--<id>make-assembly</id>-->
+                    <!--<phase>install</phase>-->
+                    <!--<goals>-->
+                    <!--<goal>single</goal>-->
+                    <!--</goals>-->
+                    <!--</execution>-->
+                    <!--</executions>-->
                     <!--</plugin>-->
                 </plugins>
             </build>
@@ -92,6 +93,11 @@
         </dependency>
         <dependency>
             <groupId>net.lightbody.able</groupId>
+            <artifactId>able-hibernate</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>net.lightbody.able</groupId>
             <artifactId>able-stripes</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -106,6 +112,11 @@
             <artifactId>sitebricks</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <version>5.1.18</version>
+        </dependency>
     </dependencies>
 
 </project>

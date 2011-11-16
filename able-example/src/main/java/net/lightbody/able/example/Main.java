@@ -2,12 +2,15 @@ package net.lightbody.able.example;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.google.inject.persist.PersistFilter;
+import com.google.inject.persist.jpa.JpaPersistModule;
 import com.google.inject.servlet.ServletModule;
 import com.google.sitebricks.SitebricksModule;
 import net.lightbody.able.core.config.ConfigurationModule;
 import net.lightbody.able.core.util.Log;
 import net.lightbody.able.example.bricks.TestBrick;
 import net.lightbody.able.freemarker.FreemarkerModule;
+import net.lightbody.able.hibernate.HibernateModule;
 import net.lightbody.able.jetty.JettyModule;
 import net.lightbody.able.jetty.JettyServer;
 import net.lightbody.able.loggly.LogglyModule;
@@ -22,6 +25,7 @@ public class Main {
         Injector injector = Guice.createInjector(new ConfigurationModule("example"),
                 new LogglyModule(),
                 new JettyModule(Main.class),
+                new HibernateModule(),
                 new StripesModule(Main.class),
                 new FreemarkerModule(Main.class),
                 new SitebricksModule() {
