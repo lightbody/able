@@ -58,7 +58,6 @@
                 <artifactId>maven-release-plugin</artifactId>
                 <version>2.2.1</version>
                 <configuration>
-                    <arguments>-Prelease</arguments>
                     <autoVersionSubmodules>true</autoVersionSubmodules>
                     <localCheckout>true</localCheckout>
                 </configuration>
@@ -77,7 +76,7 @@
 
     <profiles>
         <profile>
-            <id>release</id>
+            <id>sonatype-oss-release</id>
             <build>
                 <plugins>
                     <plugin>
