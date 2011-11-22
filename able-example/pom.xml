@@ -14,7 +14,7 @@
 
     <profiles>
         <profile>
-            <id>release</id>
+            <id>heroku</id>
             <activation>
                 <property>
                     <name>maven.repo.local</name>
