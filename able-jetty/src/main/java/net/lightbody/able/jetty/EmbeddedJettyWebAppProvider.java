@@ -34,6 +34,7 @@ public class EmbeddedJettyWebAppProvider implements Provider<Server> {
         context.setContextPath("/");
         context.setInitParameter("org.eclipse.jetty.servlet.Default.dirAllowed", "false");
 
+        context.addFilter(DisableURLRewritingFilter.class, "/*", 0);
         context.addFilter(GuiceFilter.class, "/*", 0);
         context.addServlet(DefaultServlet.class, "/");
 
