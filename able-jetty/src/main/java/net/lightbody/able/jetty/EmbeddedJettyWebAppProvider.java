@@ -9,6 +9,7 @@ import net.lightbody.able.core.util.Log;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.WebAppContext;
 
@@ -32,11 +33,13 @@ public class EmbeddedJettyWebAppProvider implements Provider<Server> {
 
         ServletContextHandler context = new WebAppContext();
         context.setContextPath("/");
-        context.setInitParameter("org.eclipse.jetty.servlet.Default.dirAllowed", "false");
 
         context.addFilter(DisableURLRewritingFilter.class, "/*", 0);
         context.addFilter(GuiceFilter.class, "/*", 0);
-        context.addServlet(DefaultServlet.class, "/");
+        context.addServlet(NoDirectoryDefaultServlet.class, "/");
+        ServletHolder holder = new ServletHolder(new NoDirectoryDefaultServlet());
+        holder.setName("default");
+        context.addServlet(holder, "/");
 
         File webappDir = Able.findWebAppDir(anchorClass);
         LOG.info("Using webapp directory " + webappDir.getPath());
