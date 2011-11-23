@@ -34,7 +34,10 @@ public class EmbeddedJettyWebAppProvider implements Provider<Server> {
         ServletContextHandler context = new WebAppContext();
         context.setContextPath("/");
 
+        // diable URL rewriting, cuz it is annoying and stupid and nobody has cookieless browsers anymore!
+        context.getSessionHandler().getSessionManager().setSessionIdPathParameterName(null);
         context.addFilter(DisableURLRewritingFilter.class, "/*", 0);
+
         context.addFilter(GuiceFilter.class, "/*", 0);
         context.addServlet(NoDirectoryDefaultServlet.class, "/");
         ServletHolder holder = new ServletHolder(new NoDirectoryDefaultServlet());
