@@ -25,7 +25,7 @@ public class Main {
                 new JettyModule(),
                 new HibernateModule(),
                 new StripesModule(Main.class),
-                new FreemarkerModule(Main.class),
+                new FreemarkerModule(),
                 new SitebricksModule() {
                     @Override
                     protected void configureSitebricks() {

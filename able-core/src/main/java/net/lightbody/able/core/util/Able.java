@@ -7,14 +7,7 @@ public class Able {
     private static Class anchorClass;
     
     public static File findWebAppDir() {
-        if (anchorClass == null) {
-            try {
-                StackTraceElement[] trace = new Exception().getStackTrace();
-                anchorClass = Class.forName(trace[trace.length - 1].getClassName());
-            } catch (ClassNotFoundException e) {
-                throw new Error("Could not find root class, Able framework will not work");
-            }
-        }
+        findAnchorClass();
 
         String classPath = anchorClass.getName();
         classPath = classPath.replaceAll("\\.", "/") + ".class";
@@ -62,5 +55,18 @@ public class Able {
         }
 
         return webappDir;
+    }
+
+    public static Class findAnchorClass() {
+        if (anchorClass == null) {
+            try {
+                StackTraceElement[] trace = new Exception().getStackTrace();
+                anchorClass = Class.forName(trace[trace.length - 1].getClassName());
+            } catch (ClassNotFoundException e) {
+                throw new Error("Could not find root class, Able framework will not work");
+            }
+        }
+
+        return anchorClass;
     }
 }

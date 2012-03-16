@@ -8,12 +8,6 @@ import java.io.IOException;
 import java.util.Collections;
 
 public class FreemarkerModule extends ServletModule {
-    private Class anchorClass;
-
-    public FreemarkerModule(Class anchorClass) {
-        this.anchorClass = anchorClass;
-    }
-
     @Override
     protected void configureServlets() {
         final ConfigurationProvider provider;
