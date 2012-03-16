@@ -24,7 +24,7 @@ public class Main {
                 new LogglyModule(),
                 new JettyModule(),
                 new HibernateModule(),
-                new StripesModule(Main.class),
+                new StripesModule(),
                 new FreemarkerModule(),
                 new SitebricksModule() {
                     @Override
