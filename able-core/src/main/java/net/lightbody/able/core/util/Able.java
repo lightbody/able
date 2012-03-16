@@ -4,7 +4,18 @@ import java.io.File;
 import java.net.URL;
 
 public class Able {
-    public static File findWebAppDir(Class anchorClass) {
+    private static Class anchorClass;
+    
+    public static File findWebAppDir() {
+        if (anchorClass == null) {
+            try {
+                StackTraceElement[] trace = new Exception().getStackTrace();
+                anchorClass = Class.forName(trace[trace.length - 1].getClassName());
+            } catch (ClassNotFoundException e) {
+                throw new Error("Could not find root class, Able framework will not work");
+            }
+        }
+
         String classPath = anchorClass.getName();
         classPath = classPath.replaceAll("\\.", "/") + ".class";
         URL url = anchorClass.getResource("/" + classPath);
@@ -49,7 +60,7 @@ public class Able {
         if (!webappDir.exists()) {
             throw new IllegalStateException("Webapp directory " + webappDir.getPath() + " not found");
         }
+
         return webappDir;
     }
-
 }

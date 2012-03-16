@@ -12,10 +12,10 @@ import java.io.IOException;
 public class ConfigurationProvider implements Provider<Configuration> {
     private Configuration configuration;
 
-    public ConfigurationProvider(Class anchorClass) throws IOException {
+    public ConfigurationProvider() throws IOException {
         configuration = new Configuration();
         Configuration cfg = configuration;
-        File dir = Able.findWebAppDir(anchorClass);
+        File dir = Able.findWebAppDir();
         cfg.setDirectoryForTemplateLoading(dir);
         cfg.setObjectWrapper(new DefaultObjectWrapper());
         File tags = new File(dir, "tags");

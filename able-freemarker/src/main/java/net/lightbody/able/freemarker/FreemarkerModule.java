@@ -18,7 +18,7 @@ public class FreemarkerModule extends ServletModule {
     protected void configureServlets() {
         final ConfigurationProvider provider;
         try {
-            provider = new ConfigurationProvider(anchorClass);
+            provider = new ConfigurationProvider();
             bind(Configuration.class).toProvider(provider);
         } catch (IOException e) {
             addError(e);

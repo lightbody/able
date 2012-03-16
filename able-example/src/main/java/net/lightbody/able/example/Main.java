@@ -2,8 +2,6 @@ package net.lightbody.able.example;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.google.inject.persist.PersistFilter;
-import com.google.inject.persist.jpa.JpaPersistModule;
 import com.google.inject.servlet.ServletModule;
 import com.google.sitebricks.SitebricksModule;
 import net.lightbody.able.core.config.ConfigurationModule;
@@ -24,7 +22,7 @@ public class Main {
 
         Injector injector = Guice.createInjector(new ConfigurationModule("example"),
                 new LogglyModule(),
-                new JettyModule(Main.class),
+                new JettyModule(),
                 new HibernateModule(),
                 new StripesModule(Main.class),
                 new FreemarkerModule(Main.class),
