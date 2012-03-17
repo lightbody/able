@@ -12,6 +12,7 @@ import net.lightbody.able.hibernate.HibernateModule;
 import net.lightbody.able.jetty.JettyModule;
 import net.lightbody.able.jetty.JettyServer;
 import net.lightbody.able.loggly.LogglyModule;
+import net.lightbody.able.soy.SoyAbleModule;
 import net.lightbody.able.stripes.StripesModule;
 
 public class Main {
@@ -26,6 +27,7 @@ public class Main {
                 new HibernateModule(),
                 new StripesModule(),
                 new FreemarkerModule(),
+                new SoyAbleModule(),
                 new SitebricksModule() {
                     @Override
                     protected void configureSitebricks() {

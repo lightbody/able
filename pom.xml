@@ -120,6 +120,8 @@
         <module>able-hibernate</module>
         <module>able-stripes</module>
         <module>able-freemarker</module>
+        <module>able-soy</module>
+        <module>able-web</module>
         <module>able-example</module>
     </modules>
 
@@ -184,7 +186,7 @@
             <dependency>
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-jdk14</artifactId>
-                <version>1.5.6</version>
+                <version>1.6.1</version>
             </dependency>
 
             <dependency>

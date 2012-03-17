@@ -105,6 +105,11 @@
             <artifactId>able-freemarker</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>net.lightbody.able</groupId>
+            <artifactId>able-soy</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>com.google.sitebricks</groupId>
