@@ -16,7 +16,7 @@ public class MongoProvider implements Provider<Mongo> {
     private String mongoURI;
 
     @Inject
-    public MongoProvider(@Named("mongo.uri") String mongoURI) {
+    public MongoProvider(@Named("db.mongo.uri") String mongoURI) {
         String herokuMongoLabHack = System.getenv("MONGOLAB_URI");
         if (herokuMongoLabHack != null) {
             mongoURI = herokuMongoLabHack;

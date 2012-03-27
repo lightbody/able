@@ -6,6 +6,7 @@ import com.google.inject.persist.PersistFilter;
 import com.google.inject.persist.jpa.JpaPersistModule;
 import com.google.inject.servlet.ServletModule;
 import net.lightbody.able.core.config.Configuration;
+import net.lightbody.able.core.config.JsonProperties;
 
 import java.util.Properties;
 
@@ -21,16 +22,16 @@ public class HibernateModule extends ServletModule {
     }
 
     @Inject
-    public void initialize(@Configuration Properties props, Injector injector) {
+    public void initialize(@Configuration JsonProperties props, Injector injector) {
         HibernateModule.injector = injector;
 
-        for (String name : props.stringPropertyNames()) {
-            if (name.startsWith("hibernate.")) {
-                properties.put(name, props.getProperty(name));
+        for (String name : props.propertyNames()) {
+            if (name.startsWith("db.hibernate.")) {
+                properties.put(name.replace("db.", ""), props.getProperty(name));
             }
         }
 
-        // check if we're in a Heroku environement and honor that
+        // check if we're in a Heroku environment and honor that
         String herokuDbUrl = System.getenv("DATABASE_URL");
         if (herokuDbUrl != null) {
             properties.put("hibernate.connection.url", herokuDbUrl);

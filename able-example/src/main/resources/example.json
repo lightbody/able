@@ -1,0 +1,34 @@
+{
+    "port" : 8080,
+    "foo" : "bar",
+    "config" : {
+        "refresh" : 1
+    },
+    "db" : {
+        "hibernate" : {
+            "dialect" : "org.hibernate.dialect.MySQL5Dialect",
+            "hbm2ddl" : {
+                "auto" : "create-drop"
+            },
+            "connection" : {
+                "driver_class" : "com.mysql.jdbc.Driver",
+                "url" : "jdbc:mysql://localhost/able",
+                "username" : "root",
+                "password" : ""
+            }
+        },
+        "mongo" : {
+            "uri" : "mongodb://localhost/able_example"
+        }
+    }/*,
+    "log" : {
+        "loggly" : {
+            "url" : "https://logs.loggly.com/inputs/xxxxxxx",
+            "level" : "FINE",
+            "global" : {
+                "foo" : "bar"
+            }
+        }
+    }
+    */
+}

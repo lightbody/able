@@ -2,215 +2,148 @@ package net.lightbody.able.core.config;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Key;
+import com.google.inject.Singleton;
 import com.google.inject.name.Names;
+import net.lightbody.able.core.util.Log;
+import net.lightbody.able.core.util.UnstoppableRunnable;
+import org.codehaus.jackson.JsonParser;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.node.ObjectNode;
 
-import java.io.*;
-import java.lang.annotation.Annotation;
-import java.util.Map;
-import java.util.Properties;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.net.URL;
+import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+@Singleton
 public class ConfigurationModule extends AbstractModule {
+    private static Log log = new Log();
+    private static ObjectMapper objectMapper;
+
+    private static final Pattern VAR_REPLACE_PATTERN = Pattern.compile("\\$\\{([^}]*)\\}");
+    private static final int MAX_VAR_REPLACEMENT_DEPTH = 5;
+
+    private static final int DEFAULT_REFRESH_INTERVAL = 5;
+
+    private final JsonProperties properties = new JsonProperties();
+    private final Map<File, Long> lastModified = new Hashtable<File, Long>();
+
     protected String name;
+
+    protected File homeDir;
+    protected File wmDir;
 
     public ConfigurationModule(String name) {
         this.name = name;
+
+        // set up home directory
+        homeDir = new File(System.getProperty("user.home"));
+        wmDir = new File(homeDir, ".able");
+        //noinspection ResultOfMethodCallIgnored
+        wmDir.mkdirs();
     }
 
     @Override
     public void configure() {
-        Properties props;
+
         try {
-            props = getProperties();
-        } catch (Exception e) {
+            JsonProperties props = loadJsonProperties();
+            properties.load(props, true);
+        } catch (IOException e) {
             addError(e);
             return;
         }
 
-        bind(Properties.class).annotatedWith(Configuration.class).toInstance(props);
-        customize(props);
-        bindProperties(props);
-    }
+        //customize(properties);
 
-    /*
-     * Copy of Named.bindProperties, but with support for primitives in addition to Strings
-     */
-    private void bindProperties(Properties properties) {
-        // look in the system environment variables for [name].xxx and override the properties if they are there
-        // this is epecially handy for Heroku, where there is no ability to write to ~/.able and instead configuration
-        // is done via environment variables that are set with "heroku config:add foo=bar"
-        for (Map.Entry<String, String> entry : System.getenv().entrySet()) {
-            String key = entry.getKey();
-            if (key.startsWith(name + ".")) {
-                key = key.substring(name.length() + 1);
-                properties.setProperty(key, entry.getValue());
-            }
-        }
+        // Bind properties
+        bind(JsonProperties.class).annotatedWith(Configuration.class).toInstance(properties);
+        bindPropertyProviders();
 
-        // use enumeration to include the default properties
-        for (Map.Entry<Object, Object> entry : properties.entrySet()) {
-            String key = (String) entry.getKey();
-            Object value = entry.getValue();
-            if (value instanceof String) {
-                bind(Key.get(String.class, Names.named(key))).toInstance((String) value);
-            } else if (value instanceof Integer) {
-                bind(Key.get(Integer.class, Names.named(key))).toInstance((Integer) value);
-            } else if (value instanceof Long) {
-                bind(Key.get(Long.class, Names.named(key))).toInstance((Long) value);
-            } else if (value instanceof Float) {
-                bind(Key.get(Float.class, Names.named(key))).toInstance((Float) value);
-            } else if (value instanceof Boolean) {
-                bind(Key.get(Boolean.class, Names.named(key))).toInstance((Boolean) value);
-            } else {
-                bind(Key.get(String.class, Names.named(key))).toInstance(value.toString());
-            }
-        }
-    }
+        // Update json config periodically to ensure the latest values (no app restart necessary)
+        int refreshInterval = (Integer) properties.getProperty("config.refresh", DEFAULT_REFRESH_INTERVAL);
 
-    protected void customize(Properties props) {
+        if (refreshInterval > 0) {
+            ScheduledExecutorService updateExecutor = Executors.newSingleThreadScheduledExecutor(new ThreadFactory() {
+                @Override
+                public Thread newThread(Runnable r) {
+                    return new Thread(r, "JSON Configuration Updater");
+                }
+            });
 
-    }
+            updateExecutor.scheduleAtFixedRate(new UpdateConfigRunnable(), refreshInterval, refreshInterval, TimeUnit.MINUTES);
 
-    protected void bindString(Properties props, Class<? extends Annotation> annotation, String property, String defaultValue) {
-        String value = props.getProperty(property);
-        if (value == null) {
-            value = System.getProperty(property);
-        }
-
-        if (value == null) {
-            value = defaultValue;
-        }
-
-        if (value == null) {
-            return;
-        }
-
-        bindConstant()
-                .annotatedWith(annotation)
-                .to(value);
-    }
-
-    protected void bindString(Properties props, Class<? extends Annotation> annotation, String property) {
-        bindString(props, annotation, property, null);
-    }
-
-    protected void bindInteger(Properties props, Class<? extends Annotation> annotation, String property, Integer defaultValue) {
-        String value = props.getProperty(property);
-        if (value == null) {
-            value = System.getProperty(property);
-        }
-
-        Integer parsed;
-        if (value == null) {
-            parsed = defaultValue;
+            log.info("Using JSON config (with %d min refresh)", refreshInterval);
         } else {
-            parsed = Integer.parseInt(value);
+            log.info("Using JSON config (refresh disabled)", refreshInterval);
         }
-
-        if (parsed == null) {
-            return;
-        }
-
-        bindConstant()
-                .annotatedWith(annotation)
-                .to(parsed);
     }
 
-    protected void bindInteger(Properties props, Class<? extends Annotation> annotation, String property) {
-        bindInteger(props, annotation, property, null);
+    protected void customize(JsonProperties props) {
+        // Do nothing
     }
 
-    protected void bindBoolean(Properties props, Class<? extends Annotation> annotation, String property) {
-        bindConstant()
-                .annotatedWith(annotation)
-                .to(Boolean.parseBoolean(props.getProperty(property)));
-    }
+    public JsonProperties loadJsonProperties() throws IOException {
+        JsonProperties props = new JsonProperties();
 
-    public BaseProperties getProperties() throws IOException {
-        BaseProperties props = new BaseProperties();
-
-        // load the core properties
-        InputStream is = Configuration.class.getResourceAsStream("/" + name + ".properties");
-        if (null == is) {
-            throw new FileNotFoundException("The core configuration file \"" + name + ".properties\" could not be found.");
+        // Load the core app properties first (src/main/resources/<name>.json)
+        URL url = Configuration.class.getResource("/" + name + ".json");
+        if (null == url) {
+            throw new FileNotFoundException("The core configuration file \"" + name + ".json\" could not be found.");
         }
 
-        props.load(is);
-
-        // set up home directory
-        File homeDir = new File(System.getProperty("user.home"));
-        File wmDir = new File(homeDir, ".able");
-        wmDir.mkdirs();
-
-        // grab global.properties if it exists
-        File global = new File(wmDir, "global.properties");
-        if (global.exists()) {
-            FileInputStream fis = new FileInputStream(global);
-            props.load(fis);
+        ObjectNode json = loadJson(url.getPath());
+        if(null != json) {
+            props.load(json);
         }
 
-        // grab name.properties in the .able dir if it exists
-        File local = new File(wmDir, name + ".able");
-        if (local.exists()) {
-            FileInputStream fis = new FileInputStream(local);
-            props.load(fis);
+        // Load ~/.able/global.json if it exists
+        ObjectNode global = loadJson(new File(wmDir, "global.json").getPath());
+        if(null != global) {
+            props.load(global);
         }
 
-        // now do some variable replacements
-        int maxDepth = 5;
-        Pattern pattern = Pattern.compile("\\$\\{([^}]*)\\}");
-        for (Map.Entry<Object, Object> entry : props.entrySet()) {
-            String value = (String) entry.getValue();
-            entry.setValue(replace(maxDepth, pattern, props, value));
+        // Load ~/.able/<name>.json if it exists
+        ObjectNode local = loadJson(new File(wmDir, name + ".json").getPath());
+        if(null != local) {
+            props.load(local);
         }
 
-        /*
-        // finally, replace any string that looks like a primitive to be an actual primitive
-        for (Map.Entry<Object, Object> entry : props.entrySet()) {
-            String value = (String) entry.getValue();
-            value = value.trim();
-            if (value.equalsIgnoreCase("true")) {
-                entry.setValue(true);
-            } else if (value.equalsIgnoreCase("false")) {
-                entry.setValue(false);
-            } else {
-                // is it an integer?
-                try {
-                    int intVal = Integer.parseInt(value);
-                    entry.setValue(intVal);
-                    continue;
-                } catch (NumberFormatException e) {
-                    // nope!
-                }
+        if (!props.isEmpty()) {
+            // Make sure all properties are available for replacement
+            JsonProperties allProps = new JsonProperties();
+            if (!properties.isEmpty()) allProps.load(properties);
+            allProps.load(props);
 
-                // is it a long?
-                try {
-                    long longVal = Long.parseLong(value);
-                    entry.setValue(longVal);
-                    continue;
-                } catch (NumberFormatException e) {
-                    // nope!
-                }
+            // Now do the variable replacements
+            int maxDepth = MAX_VAR_REPLACEMENT_DEPTH;
+            Set<String> keys = props.propertyNames();
+            for (String key : keys) {
+                Object property = allProps.getProperty(key);
 
-                // is it a float?
-                try {
-                    float floatVal = Float.parseFloat(value);
-                    entry.setValue(floatVal);
-                    continue;
-                } catch (NumberFormatException e) {
-                    // nope!
+                if (null != property && property instanceof String && VAR_REPLACE_PATTERN.matcher((String) property).find()) {
+                    try {
+                        props.setProperty(key, replace(maxDepth, VAR_REPLACE_PATTERN, props, (String) property));
+                    } catch (Exception e) {
+                        log.warn("Unable to replace property [%s]", e, key);
+                    }
                 }
             }
         }
-        */
-
+        
         return props;
     }
 
-    protected String replace(int maxDepth, Pattern pattern, Properties props, String replace) {
+    protected String replace(int maxDepth, Pattern pattern, JsonProperties props, String replace) {
         if (maxDepth == 0) {
-            throw new RuntimeException("Looks like your configuration has a circular dependency associated with " + replace);
+            throw new RuntimeException("Looks like your configuration has a circular dependency associated with '" + replace + "'");
         }
 
         Matcher matcher = pattern.matcher(replace);
@@ -226,9 +159,9 @@ public class ConfigurationModule extends AbstractModule {
                 key = key.substring(7);
                 matcher.appendReplacement(sb, System.getProperty(key));
             } else {
-                String value = props.getProperty(key);
+                Object value = props.getProperty(key);
                 if (value != null) {
-                    matcher.appendReplacement(sb, replace(maxDepth - 1, pattern, props, value));
+                    matcher.appendReplacement(sb, replace(maxDepth - 1, pattern, props, value.toString()));
                 } else {
                     throw new RuntimeException("Could not find variable replacement for ${" + key + "}");
                 }
@@ -240,6 +173,103 @@ public class ConfigurationModule extends AbstractModule {
             return sb.toString();
         } else {
             return replace;
+        }
+    }
+
+    private void bindPropertyProviders() {
+        // TODO: These bound properties will only be fresh at the time of injection. Figure out a good way to make sure
+        // the properties are always up to date.
+
+        SortedSet<String> sortedPropertyKeys = new TreeSet<String>(properties.propertyNames());
+
+        //find the maximum length of a key so we can print them all out in a pretty way
+        int maxKeyNameWidth = 1;
+        for( String key : sortedPropertyKeys )
+            maxKeyNameWidth = Math.max(maxKeyNameWidth, key.length());
+
+        log.info("Binding the following configuration values to the Guice context");
+        log.info("***************************************************************");
+        for (String key : sortedPropertyKeys ) {
+
+            Object value = properties.getProperty(key);
+            log.info("%-" + maxKeyNameWidth + "s = %s", key, value);
+
+            if (value instanceof String) {
+                bind(Key.get(String.class, Names.named(key))).toProvider(new PropertyProvider<String>(properties, key));
+            } else if (value instanceof Integer) {
+                bind(Key.get(Integer.class, Names.named(key))).toProvider(new PropertyProvider<Integer>(properties, key));
+            } else if (value instanceof Long) {
+                bind(Key.get(Long.class, Names.named(key))).toProvider(new PropertyProvider<Long>(properties, key));
+            } else if (value instanceof Float) {
+                bind(Key.get(Float.class, Names.named(key))).toProvider(new PropertyProvider<Float>(properties, key));
+            } else if (value instanceof Boolean) {
+                bind(Key.get(Boolean.class, Names.named(key))).toProvider(new PropertyProvider<Boolean>(properties, key));
+            } else {
+                bind(Key.get(Object.class, Names.named(key))).toProvider(new PropertyProvider<Object>(properties, key));
+            }
+        }
+        log.info("***************************************************************");
+    }
+
+    private ObjectNode loadJson(String filepath) throws IOException {
+        if (null == objectMapper) {
+            objectMapper = new ObjectMapper();
+
+            // Allow comments in the properties files
+            // TODO: This is kinda not kosher, but do we care?
+            objectMapper.configure(JsonParser.Feature.ALLOW_COMMENTS, true);
+        }
+
+        File file = new File(filepath);
+        ObjectNode json = null;
+        
+        if (file.exists()) {
+            // Don't bother updating if the file hasn't been modified
+            if (!lastModified.containsKey(file) || file.lastModified() > lastModified.get(file)) {
+
+                lastModified.put(file, file.lastModified());
+                json = objectMapper.readValue(file, ObjectNode.class);
+            }
+
+            // If the file hasn't changed, null is returned
+        } else {
+            // Return an empty node if the file doesn't exist
+            json = objectMapper.createObjectNode();
+        }
+
+        return json;
+    }
+    
+    private class UpdateConfigRunnable extends UnstoppableRunnable {
+        @Override
+        protected void runSafely() throws Exception {
+
+            JsonProperties props = loadJsonProperties();
+            if (props.isEmpty()) return;
+
+            log.info("%s: Updating json properties", Thread.currentThread().getName());
+
+            properties.load(props);
+
+            print(props);
+        }
+        
+        private void print (JsonProperties props) {
+            SortedSet<String> sortedPropertyKeys = new TreeSet<String>(properties.propertyNames());
+
+            //find the maximum length of a key so we can print them all out in a pretty way
+            int maxKeyNameWidth = 1;
+            for( String key : sortedPropertyKeys )
+                maxKeyNameWidth = Math.max(maxKeyNameWidth, key.length());
+
+            log.info("Updated properties");
+            log.info("***************************************************************");
+            for (String key : sortedPropertyKeys ) {
+
+                Object value = properties.getProperty(key);
+                log.info("%-" + maxKeyNameWidth + "s = %s", key, value);
+            }
+            log.info("***************************************************************");
         }
     }
 }

@@ -1,3 +1,3 @@
 <#macro copyright date>
-  <p>Copyright (C) ${date} Julia Smith. All rights reserved.</p>
+  <p>Copyright (C) ${date} Jack Sparrow. All rights reserved.</p>
 </#macro>
