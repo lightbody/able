@@ -13,6 +13,7 @@ import org.codehaus.jackson.node.ObjectNode;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.*;
 import java.util.concurrent.Executors;
@@ -27,13 +28,13 @@ public class ConfigurationModule extends AbstractModule {
     private static Log log = new Log();
     private static ObjectMapper objectMapper;
 
-    private static final Pattern VAR_REPLACE_PATTERN = Pattern.compile("\\$\\{([^}]*)\\}");
+    private static final Pattern VAR_REPLACE_PATTERN = Pattern.compile("\\$\\{([^}]*)\\}"); // ${var.iab.les}
     private static final int MAX_VAR_REPLACEMENT_DEPTH = 5;
 
-    private static final int DEFAULT_REFRESH_INTERVAL = 5;
+    private static final int DEFAULT_REFRESH_INTERVAL_SECONDS = 60 * 5;                     // 5 minute default refresh
 
     private final JsonProperties properties = new JsonProperties();
-    private final Map<File, Long> lastModified = new Hashtable<File, Long>();
+    private final Map<String, Long> lastModified = new Hashtable<String, Long>();
 
     protected String name;
 
@@ -52,6 +53,12 @@ public class ConfigurationModule extends AbstractModule {
 
     @Override
     public void configure() {
+        if (null == objectMapper) {
+            objectMapper = new ObjectMapper();
+
+            // Allow comments in the properties files
+            objectMapper.configure(JsonParser.Feature.ALLOW_COMMENTS, true);
+        }
 
         try {
             JsonProperties props = loadJsonProperties();
@@ -59,38 +66,35 @@ public class ConfigurationModule extends AbstractModule {
         } catch (IOException e) {
             addError(e);
             return;
+        } catch (URISyntaxException e) {
+            addError(e);
+            return;
         }
-
-        //customize(properties);
 
         // Bind properties
         bind(JsonProperties.class).annotatedWith(Configuration.class).toInstance(properties);
         bindPropertyProviders();
 
         // Update json config periodically to ensure the latest values (no app restart necessary)
-        int refreshInterval = (Integer) properties.getProperty("config.refresh", DEFAULT_REFRESH_INTERVAL);
+        int refreshInterval = (Integer) properties.getProperty("config.refresh", DEFAULT_REFRESH_INTERVAL_SECONDS);
 
         if (refreshInterval > 0) {
             ScheduledExecutorService updateExecutor = Executors.newSingleThreadScheduledExecutor(new ThreadFactory() {
                 @Override
                 public Thread newThread(Runnable r) {
-                    return new Thread(r, "JSON Configuration Updater");
+                    return new Thread(r, "Configuration Updater");
                 }
             });
 
-            updateExecutor.scheduleAtFixedRate(new UpdateConfigRunnable(), refreshInterval, refreshInterval, TimeUnit.MINUTES);
+            updateExecutor.scheduleWithFixedDelay(new UpdateConfigRunnable(), refreshInterval, refreshInterval, TimeUnit.SECONDS);
 
-            log.info("Using JSON config (with %d min refresh)", refreshInterval);
+            log.info("Configuration set with %d second refresh", refreshInterval);
         } else {
-            log.info("Using JSON config (refresh disabled)", refreshInterval);
+            log.info("Configuration set with refresh disabled", refreshInterval);
         }
     }
 
-    protected void customize(JsonProperties props) {
-        // Do nothing
-    }
-
-    public JsonProperties loadJsonProperties() throws IOException {
+    public JsonProperties loadJsonProperties() throws IOException, URISyntaxException {
         JsonProperties props = new JsonProperties();
 
         // Load the core app properties first (src/main/resources/<name>.json)
@@ -99,19 +103,20 @@ public class ConfigurationModule extends AbstractModule {
             throw new FileNotFoundException("The core configuration file \"" + name + ".json\" could not be found.");
         }
 
-        ObjectNode json = loadJson(url.getPath());
+        File core = new File(url.toURI());
+        ObjectNode json = loadJson(core);
         if(null != json) {
             props.load(json);
         }
 
         // Load ~/.able/global.json if it exists
-        ObjectNode global = loadJson(new File(wmDir, "global.json").getPath());
+        ObjectNode global = loadJson(new File(wmDir, "global.json"));
         if(null != global) {
             props.load(global);
         }
 
         // Load ~/.able/<name>.json if it exists
-        ObjectNode local = loadJson(new File(wmDir, name + ".json").getPath());
+        ObjectNode local = loadJson(new File(wmDir, name + ".json"));
         if(null != local) {
             props.load(local);
         }
@@ -130,10 +135,19 @@ public class ConfigurationModule extends AbstractModule {
 
                 if (null != property && property instanceof String && VAR_REPLACE_PATTERN.matcher((String) property).find()) {
                     try {
-                        props.setProperty(key, replace(maxDepth, VAR_REPLACE_PATTERN, props, (String) property));
+                        // Only update the property if the value has changed
+                        String value = replace(maxDepth, VAR_REPLACE_PATTERN, props, (String) property);
+                        if (!value.equals(allProps.get(key))) {
+                            props.setProperty(key, value);
+                        }
                     } catch (Exception e) {
                         log.warn("Unable to replace property [%s]", e, key);
                     }
+                }
+
+                // If the value is the same, don't report it as updated
+                if (props.getProperty(key).equals(properties.getProperty(key))) {
+                    props.remove(key);
                 }
             }
         }
@@ -177,22 +191,9 @@ public class ConfigurationModule extends AbstractModule {
     }
 
     private void bindPropertyProviders() {
-        // TODO: These bound properties will only be fresh at the time of injection. Figure out a good way to make sure
-        // the properties are always up to date.
-
-        SortedSet<String> sortedPropertyKeys = new TreeSet<String>(properties.propertyNames());
-
-        //find the maximum length of a key so we can print them all out in a pretty way
-        int maxKeyNameWidth = 1;
-        for( String key : sortedPropertyKeys )
-            maxKeyNameWidth = Math.max(maxKeyNameWidth, key.length());
-
-        log.info("Binding the following configuration values to the Guice context");
-        log.info("***************************************************************");
-        for (String key : sortedPropertyKeys ) {
+        for (String key : properties.propertyNames() ) {
 
             Object value = properties.getProperty(key);
-            log.info("%-" + maxKeyNameWidth + "s = %s", key, value);
 
             if (value instanceof String) {
                 bind(Key.get(String.class, Names.named(key))).toProvider(new PropertyProvider<String>(properties, key));
@@ -208,30 +209,23 @@ public class ConfigurationModule extends AbstractModule {
                 bind(Key.get(Object.class, Names.named(key))).toProvider(new PropertyProvider<Object>(properties, key));
             }
         }
-        log.info("***************************************************************");
+
+        printProperties(properties, "Binding the following configuration keys to Guice @Named annotations");
     }
 
-    private ObjectNode loadJson(String filepath) throws IOException {
-        if (null == objectMapper) {
-            objectMapper = new ObjectMapper();
-
-            // Allow comments in the properties files
-            // TODO: This is kinda not kosher, but do we care?
-            objectMapper.configure(JsonParser.Feature.ALLOW_COMMENTS, true);
-        }
-
-        File file = new File(filepath);
+    private ObjectNode loadJson(File file) throws IOException {
+        String path = file.getPath();
         ObjectNode json = null;
-        
-        if (file.exists()) {
+
+        if (file.exists() && file.isFile()) {
             // Don't bother updating if the file hasn't been modified
-            if (!lastModified.containsKey(file) || file.lastModified() > lastModified.get(file)) {
+            if (!lastModified.containsKey(path) || file.lastModified() > lastModified.get(path)) {
 
-                lastModified.put(file, file.lastModified());
+                log.info("Reading file '%s'", file);
+
                 json = objectMapper.readValue(file, ObjectNode.class);
+                lastModified.put(path, file.lastModified());
             }
-
-            // If the file hasn't changed, null is returned
         } else {
             // Return an empty node if the file doesn't exist
             json = objectMapper.createObjectNode();
@@ -247,29 +241,31 @@ public class ConfigurationModule extends AbstractModule {
             JsonProperties props = loadJsonProperties();
             if (props.isEmpty()) return;
 
-            log.info("%s: Updating json properties", Thread.currentThread().getName());
-
             properties.load(props);
 
-            print(props);
+            printProperties(props, "Updating configuration");
         }
-        
-        private void print (JsonProperties props) {
-            SortedSet<String> sortedPropertyKeys = new TreeSet<String>(properties.propertyNames());
+    }
 
-            //find the maximum length of a key so we can print them all out in a pretty way
-            int maxKeyNameWidth = 1;
-            for( String key : sortedPropertyKeys )
-                maxKeyNameWidth = Math.max(maxKeyNameWidth, key.length());
+    private static void printProperties (JsonProperties props) {
+        printProperties(props, null);
+    }
 
-            log.info("Updated properties");
-            log.info("***************************************************************");
-            for (String key : sortedPropertyKeys ) {
+    private static void printProperties(JsonProperties props, String title) {
+        SortedSet<String> sortedPropertyKeys = new TreeSet<String>(props.propertyNames());
 
-                Object value = properties.getProperty(key);
-                log.info("%-" + maxKeyNameWidth + "s = %s", key, value);
-            }
-            log.info("***************************************************************");
+        //find the maximum length of a key so we can print them all out in a pretty way
+        int maxKeyNameWidth = 1;
+        for( String key : sortedPropertyKeys )
+            maxKeyNameWidth = Math.max(maxKeyNameWidth, key.length());
+
+        log.info( null != title ? title : "Configuration Properties" );
+        log.info("***************************************************************");
+        for (String key : sortedPropertyKeys ) {
+
+            Object value = props.getProperty(key);
+            log.info("%-" + maxKeyNameWidth + "s = %s", key, value);
         }
+        log.info("***************************************************************");
     }
 }

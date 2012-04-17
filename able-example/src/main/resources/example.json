@@ -2,7 +2,11 @@
     "port" : 8080,
     "foo" : "bar",
     "config" : {
-        "refresh" : 1
+        "refresh" : 5
+    },
+    "public" : {
+        "message" : "Hello World!",
+        "change" : "me"
     },
     "db" : {
         "hibernate" : {

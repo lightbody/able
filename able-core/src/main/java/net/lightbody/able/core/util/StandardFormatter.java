@@ -11,8 +11,10 @@ import java.util.logging.LogRecord;
 
 public class StandardFormatter extends Formatter {
     private static final int CLASS_LENGTH = 20;
+    private static final int THREAD_LENGTH = 10;
     private static final String LINEBREAK = Os.isWin ? "\r\n" : "\n";
 
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public String format(LogRecord record) {
         try {
             StringBuilder sb = new StringBuilder();
@@ -44,6 +46,21 @@ public class StandardFormatter extends Formatter {
             sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
             sb.append(sdf.format(new Date(record.getMillis()))).append(" ");
 
+//            String threadName = Thread.currentThread().getName();
+//            int threadNameLength = threadName.length();
+//            int before = sb.length();
+//            if (threadNameLength > THREAD_LENGTH) {
+//                sb.append(threadName.substring(0, THREAD_LENGTH - 1)).append('~');
+//            } else {
+//                sb.append(threadName);
+//            }
+//            int after = sb.length();
+//
+//            for (int i = (after - before); i <= THREAD_LENGTH - 1; i++) {
+//                sb.append(' ');
+//            }
+//
+//            sb.append(": ");
 
             String className = record.getLoggerName();
             int classNameLength = className.length();
@@ -81,6 +98,22 @@ public class StandardFormatter extends Formatter {
             }
 
             sb.append(" - ");
+
+            String threadName = Thread.currentThread().getName();
+
+            if (null != threadName) {
+                int threadNameLength = threadName.length();
+                if (threadNameLength > THREAD_LENGTH) {
+                    sb.append(threadName.substring(0, THREAD_LENGTH - 1)).append('~');
+                } else {
+                    sb.append(threadName);
+                }
+            } else {
+                sb.append("#").append(Thread.currentThread().getId());
+            }
+
+            sb.append(": ");
+
             if (record.getParameters() != null && record.getParameters().length > 0) {
                 java.util.Formatter formatter = new java.util.Formatter(sb);
                 formatter.format(record.getMessage(), record.getParameters());
@@ -89,9 +122,10 @@ public class StandardFormatter extends Formatter {
                 sb.append(record.getMessage()).append(LINEBREAK);
             }
 
-            if (record.getThrown() != null) {
+            Throwable thrown = record.getThrown();
+            if (null != thrown) {
                 StringWriter sw = new StringWriter();
-                record.getThrown().printStackTrace(new PrintWriter(sw));
+                thrown.printStackTrace(new PrintWriter(sw));
                 sb.append(sw.toString());
             }
 

@@ -47,6 +47,15 @@ public class JsonProperties extends Hashtable<String, Object> {
     public void load(ObjectNode json) {
         load(json, false);
     }
+
+    public void load(String path, ObjectNode json) throws Exception {
+        // Move the json to the new path
+        ObjectNode root = JsonNodeFactory.instance.objectNode();
+        buildPath(path, json, root);
+
+        // Then merge it with the existing json
+        load(root, false);
+    }
         
     public void load(ObjectNode json, boolean clear) {
         synchronized (LOCK) {
@@ -323,7 +332,7 @@ public class JsonProperties extends Hashtable<String, Object> {
         return root;
     }
     
-    private static ObjectNode buildPath(String key, Object value, ObjectNode root) throws Exception {
+    private static ObjectNode buildPath(String key, Object value, ObjectNode root) {
         ObjectNode node = root;
 
         String fullKey = key;
@@ -342,14 +351,14 @@ public class JsonProperties extends Hashtable<String, Object> {
                 if (!iterator.hasNext()) {
                     break;
                 } else if (null != node.get(key) && !node.get(key).isObject()) {
-                    throw new Exception("Could not create path for key '" + fullKey + "', '" + path + "' already has a value");
+                    throw new RuntimeException("Could not create path for key '" + fullKey + "', '" + path + "' already has a value");
                 } else if (null == node.get(key)) {
                     node.put(key, node.objectNode());
                 }
 
                 node = (ObjectNode) node.get(key);
             }
-            
+
             // Determine property value type
             if (value instanceof Boolean) {
                 node.put(key, (Boolean) value);
@@ -368,7 +377,7 @@ public class JsonProperties extends Hashtable<String, Object> {
             } else if (value instanceof JsonNode) {
                 node.put(key, (JsonNode) value);
             } else {
-                throw new Exception("Unknown property type '" + value.getClass() + "'");
+                throw new RuntimeException("Unknown property type '" + value.getClass() + "'");
             }
         }
 
