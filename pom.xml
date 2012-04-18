@@ -27,8 +27,19 @@
             <name>Patrick Lightbody</name>
             <email>patrick@lightbody.net</email>
             <url>http://lightbody.net</url>
-            <organization>Team Lightbodyb</organization>
+            <organization>Team Lightbody</organization>
             <organizationUrl>http://lightbody.net</organizationUrl>
+            <timezone>PST</timezone>
+            <roles>
+                <role>Administrator</role>
+            </roles>
+        </developer>
+        <developer>
+            <name>Ian White</name>
+            <email>ian@fuzzygroove.com</email>
+            <url>http://fuzzygroove.com</url>
+            <organization>Impressiver</organization>
+            <organizationUrl>http://impressiver.com</organizationUrl>
             <timezone>PST</timezone>
             <roles>
                 <role>Administrator</role>
