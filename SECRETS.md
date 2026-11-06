@@ -6,7 +6,7 @@ This app uses two kinds of API token for each of Neon, Fly and Cloudflare:
 |---|---|---|
 | Used by | GitHub Actions, on every deploy | Claude Code, when setting up or debugging an app |
 | Stored in | this repo's GitHub Actions secrets | the Claude Code cloud environment's **network secrets** |
-| Scope | as narrow as each service allows, for this one app | broad enough to set up *any* new app |
+| Scope | as narrow as each service allows, for this one app | Neon and Cloudflare: broad enough to set up *any* new app. Fly: the newest app's own org |
 | Lifetime | long-lived; rotate occasionally | optional; can expire or be revoked any time |
 | If removed | deploys stop | Claude can't create or debug infrastructure; deploys keep working |
 
@@ -42,7 +42,7 @@ network proxy adds it to Claude's requests to that host.
 | Host(s) | Token | Scope |
 |---|---|---|
 | `console.neon.tech` | Neon API key `able-setup` | an **organization** key, so Claude can create and manage each new app's project. A project-scoped key can't create projects. A personal key also works, but it reaches every Neon org you belong to. |
-| `api.fly.io` and `api.machines.dev` | Fly **personal access token** `able-setup`, saved without any `FlyV1 ` prefix | all your Fly orgs, so it works for every app's own org |
+| `api.fly.io` and `api.machines.dev` | Fly **org deploy token** `able-setup`, saved without any `FlyV1 ` prefix | the app's own Fly org only. Fly personal access tokens no longer work, so each new app replaces this with a token for its own org, and Claude then reaches only that org. |
 | `api.cloudflare.com` | Cloudflare token `able-setup` | `Cloudflare Pages` → `Edit` and `Account Settings` → `Read`. Add `Zone` → `DNS` → `Edit` plus `Zone` → `Zone` → `Read` only if Claude should set up custom domains. |
 
 These are shared by every session and every app that uses this
@@ -83,6 +83,7 @@ and copy only one thing at a time.
 ## Rotating a setup token
 
 1. Create the new token with the setup scope above, named `able-setup`.
+   For Fly that's an org deploy token from the org's **Tokens** page.
 2. In the environment's **Network secrets**, replace the value for that
    host. For Fly, update both hosts and delete `FlyV1 ` from the start.
    Alternatively, ask Claude to show the secure card for the host and paste

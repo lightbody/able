@@ -44,17 +44,19 @@ section and stays in the new app.
 | For | you, Claude: creating and debugging infrastructure | GitHub Actions: every deploy |
 | Saved via | the `request_credential` card, onto this cloud environment | GitHub Actions secrets, pasted by the user |
 | Neon | **organization** key (a personal key also works, but reaches every org the user belongs to) | **project-scoped** key for this app's project |
-| Fly | **personal access token** (acts as the user across all their orgs) | org token for **this app's own org** (previews create apps) |
+| Fly | **org deploy token** for **this app's own org** (personal access tokens no longer work) | a second org deploy token for the same org (previews create apps) |
 | Cloudflare | Pages Edit + Account Settings Read (+ Zone DNS Edit and Zone Read for custom domains) | Pages Edit only |
-| Reused across apps | yes | no, one set per app |
+| Reused across apps | Neon and Cloudflare: yes. Fly: no, each app's org needs its own | no, one set per app |
 
 Never put a CI token into a card or a setup token into GitHub. The point
 of the split is that each app's CI holds only what that app needs, while
 the broad setup tokens live only in the Claude environment. The user can
 expire or revoke them without affecting any deploy.
 
-On a second or later app, the setup tokens are usually already saved, so
-the user creates only the three CI tokens.
+On a second or later app, the Neon and Cloudflare setup tokens are usually
+already saved. Fly's isn't reusable: the user creates the new app's Fly org
+and a Fly setup token for it, which replaces the previous app's token in the
+card, and then the three CI tokens.
 
 ## How `request_credential` works
 
@@ -189,11 +191,13 @@ already have a saved credential (never the values). Check each service:
 | Service | Saved if these hosts are listed | Check it's a usable setup token |
 |---|---|---|
 | Neon | `console.neon.tech` | `GET https://console.neon.tech/api/v2/projects` succeeds. A project-scoped key fails with "not allowed outside the project". It can't create the new project, so it must be replaced with an organization key. |
-| Fly | `api.fly.io` **and** `api.machines.dev` | the GraphQL `{ organizations { nodes { slug type } } }` lists **all** the user's orgs. If it lists only one org while the user has more, it's an org token: ask for a personal access token instead. |
+| Fly | `api.fly.io` **and** `api.machines.dev` | the GraphQL `{ organizations { nodes { slug type } } }` lists **this app's own org**. A saved Fly token from an earlier app reaches only that app's org, so on every new app it must be replaced with one for the new org. |
 | Cloudflare | `api.cloudflare.com` | `GET /client/v4/user/tokens/verify` is `active`, **and** `GET /client/v4/accounts` lists the account |
 
 Tell the user which setup tokens are already in place, and walk them through
-creating only the missing or unusable ones. Each one goes **only** into a
+creating only the missing or unusable ones. The Fly one is always needed for a
+new app, and its org has to exist first, so the Fly part starts by creating
+the org. Each one goes **only** into a
 card, never into GitHub.
 
 Do one token at a time, in the two turns described in "How
@@ -247,30 +251,59 @@ If the user belongs to more than one Neon organization, ask which one the
 app's project belongs in before giving the steps, and have them create the
 key there. The key's organization is where you create the project.
 
-**Fly setup token**
+**Fly: the app's own org, then its setup token**
 
-This has to be a **personal access token**, not an org token, because
-each app gets its own Fly org and the setup token has to reach all of
-them. Tell the user that, because the dashboard also offers **Tokens**
-pages for each org and each app, and those make org or app tokens. Give
-the user these steps, in your own words:
+Fly personal access tokens no longer work for this, so the setup token is an
+**org deploy token**, and an org token can only be made for an org that
+already exists. So the user creates this app's own Fly org first, then its
+token. Give every app its own Fly org, so its CI token (also an org token,
+which previews need in order to create apps) can't reach the user's other
+apps. Creating an org needs billing, so the user does it in the dashboard,
+at **https://fly.io/organizations/new** (Fly's new organization page).
 
-1. Open **https://fly.io/dashboard** and sign in.
-2. Open the **account menu**: tap your avatar or email address. Don't use
-   the organization dropdown or an app's **Tokens** page; those make org
-   and app tokens.
-3. Choose **Access Tokens** and create a token. Name: type `able-setup`.
-   Leave the expiry at the default, or pick an end date if you prefer.
-4. The token is shown **only once**. Copy the **whole** value; it's long,
+First, offer the org options in this order and wait for the user's pick:
+
+1. **Linked organization**, billed to an existing org. This is the best of
+   both, but Fly reviews these requests manually, so it may be slow or
+   refused for hobby projects.
+2. **A new organization with its own billing.** The user adds a payment
+   method for it. This is the usual choice.
+3. **Reuse an existing org.** Zero setup, but this app's CI token can then
+   create, deploy and destroy the user's other apps in that org. Say so
+   plainly if they pick it, and skip to the token steps.
+
+Steps for the user to create the org (nothing to copy):
+
+1. Open **https://fly.io/organizations/new**.
+2. Name: type the slug, e.g. `chore-chart`.
+3. For a linked organization, choose the existing organization to bill
+   it to. Otherwise add a payment method for the new org when asked.
+4. Create it, then tell Claude it's done.
+
+Then, as a separate guide turn, the token. Tell the user it must be an
+**org** token for the new org: not a personal access token from the account
+menu, and not an app's **Tokens** page, which makes app deploy tokens that
+can't create apps.
+
+1. Open **https://fly.io/dashboard**.
+2. In the **organization dropdown**, choose the app's own org. Check it's
+   the right one before going on.
+3. Tap **Tokens** in that org's menu (not an app's **Tokens**, and not
+   the account menu's **Access Tokens**).
+4. Create an org deploy token. Name: type `able-setup`. Leave the expiry at
+   the default, or pick an end date if they prefer.
+5. The token is shown **only once**. Copy the **whole** value; it's long,
    so use the page's copy button if there is one rather than selecting it.
    It goes into **two** cards, so don't copy anything else until both
    are saved.
-5. Tell Claude it's copied.
+6. Tell Claude it's copied.
 
 **After the user confirms:** say there are two cards, and that if the
 token starts with `FlyV1 ` they delete that prefix (including the space)
 in **each** card before saving. Then call `request_credential` with host
-`api.fly.io`, and after it's saved, with host `api.machines.dev`.
+`api.fly.io`, and after it's saved, with host `api.machines.dev`. If a Fly
+token from an earlier app is already saved, these cards replace it; say
+that Claude then reaches only the new app's Fly org.
 
 **Cloudflare setup token**
 
@@ -366,34 +399,9 @@ Install flyctl once with
    (never print it), then `neon(url).query(sql)`. And a live query must read
    a table: `SELECT 1` is rejected ("upstream rejected").
 
-**Fly: the app's own org.** Give every app its own Fly org, so its CI token
-(an org token, which previews need in order to create apps) can't reach the
-user's other apps. Creating an org needs billing, so the user does it in
-the dashboard, at **https://fly.io/organizations/new** (Fly's new
-organization page). Offer the options in this order, then give the steps
-for the one they pick:
-
-1. **Linked organization**, billed to an existing org. This is the best of
-   both, but Fly reviews these requests manually, so it may be slow or
-   refused for hobby projects.
-2. **A new organization with its own billing.** The user adds a payment
-   method for it. This is the usual choice.
-3. **Reuse an existing org.** Zero setup, but this app's CI token can then
-   create, deploy and destroy the user's other apps in that org. Say so
-   plainly if they pick it.
-
-Steps for the user:
-
-1. Open **https://fly.io/organizations/new**.
-2. Name: type the slug, e.g. `chore-chart`.
-3. For a linked organization, choose the existing organization to bill
-   it to. Otherwise add a payment method for the new org when asked.
-4. Create it, then tell Claude it's done.
-
-The user doesn't need to copy anything here. Find the new org's slug
+**Fly: the app's org.** The user created it in step 4. Find its slug
 yourself in the GraphQL org list below. It may differ from the name, for
-example with a suffix. If it isn't listed yet, ask the user to check
-that it finished creating.
+example with a suffix.
 
 **Fly: reserve the app name.**
 
@@ -451,8 +459,9 @@ These tokens never go into a card.
    new**, choose **Project-scoped**, and select the new project. Name: type
    `<slug>-ci`. It's shown only once, so copy it straight away. Repeat
    the navigation steps from step 4; don't assume the user remembers them.
-2. **`FLY_API_TOKEN`**: an **organization** token for **the app's own
-   org**, not a personal token like the setup token.
+2. **`FLY_API_TOKEN`**: a second **org deploy token** for **the app's own
+   org**, made the same way as the setup token in step 4 but kept
+   separate, so either can be revoked without breaking the other.
    1. Open **https://fly.io/dashboard**.
    2. In the **organization dropdown**, choose the app's own org (step 5).
       Check that it's the right one before going on: a token for the
@@ -622,8 +631,9 @@ Tell the user, briefly:
 - the prod URL, the repo, and how previews work
 - that deploys use only the three `<slug>-ci` tokens in GitHub, and that
   `SECRETS.md` explains how to rotate them
-- that the `able-setup` tokens stay on this cloud environment for the next
-  app and for debugging. They can revoke them at any time without
+- that the `able-setup` tokens stay on this cloud environment for
+  debugging, and the Neon and Cloudflare ones for the next app too. The Fly
+  one reaches only this app's org; the next app replaces it. They can revoke them at any time without
   affecting deploys, by removing them under the environment name in the
   session title bar → **Edit** → **Network secrets**, and revoking them in
   each service's dashboard.

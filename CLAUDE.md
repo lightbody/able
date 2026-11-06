@@ -76,7 +76,8 @@ asserts the SQL and params, like the existing `POST /live/:view` test.
 - Cloud sessions on the owner's environment may have broader `able-setup`
   API keys for `console.neon.tech`, `api.fly.io`, `api.machines.dev` and
   `api.cloudflare.com`, injected by the network proxy (separate from the CI
-  tokens, and possibly revoked -- check with a read-only call first). To use the CLIs, set
+  tokens, and possibly revoked -- check with a read-only call first; the
+  Fly one is an org token and may be for another app's org). To use the CLIs, set
   the key variable to the placeholder `proxy-injected`, e.g.
   `NEON_API_KEY=proxy-injected npx neon@<NEON_CLI version> ...`,
   `FLY_API_TOKEN=proxy-injected flyctl ...`. Direct Postgres connections
