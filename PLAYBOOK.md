@@ -109,6 +109,9 @@ Track these as you go. Every one ends up in `.github/deploy.env`:
 | `PROD_FRONTEND_ORIGIN` | `https://<pages subdomain>`, returned when the Pages project is created |
 | `WORKOS_CLIENT_ID` | pasted by the user in chat |
 
+Also record the **custom domain** from step 1, if any. It isn't in
+`deploy.env` until step 11, when it replaces `PROD_FRONTEND_ORIGIN`.
+
 You also pick a **region pair** in step 1. The Neon region is the project's
 `region_id`. The Fly region goes into `primary_region` in
 `fly.backend.toml`, not `deploy.env`.
@@ -124,6 +127,13 @@ Ask the user:
    `CLAUDE.md`.
 3. **Roughly where are you and your users?** A continent or country is
    enough. This picks where the database and backend run.
+4. **Do you want a custom domain, and if so, which one?** For example
+   `chore-chart.example.com`. Ask now, not later: the answer decides which
+   permissions the Cloudflare setup token needs in step 4, and creating it
+   with the right ones the first time saves the user a second trip to
+   Cloudflare. If they want one, also ask whether the domain's DNS is on
+   Cloudflare, in the account they'll use for this app. Only then can
+   Claude set it up; otherwise the user attaches it by hand in step 11.
 
 Derive the **slug**: lowercase, hyphens only, e.g. `chore-chart`.
 
@@ -144,8 +154,8 @@ it has changed, pair any new region with the nearest Fly region.
 
 No Realtime region is in the western Americas yet. Users there still get
 `aws-us-east-1` + `iad`, so say that pages will be a little slower for
-them. Confirm the name, slug and region pair with the user in one line,
-then continue.
+them. Confirm the name, slug, region pair and custom domain (or "none")
+with the user in one line, then continue.
 
 ## Step 2: Accounts
 
@@ -331,10 +341,10 @@ that Claude then reaches only the new app's Fly org.
 This is a **user API token** made from a custom template. Warn about two
 traps on that page: the **Global API Key** further down is all-powerful
 and must not be used, and the ready-made templates (such as "Edit
-Cloudflare Workers") grant the wrong permissions. Ask first whether the
-user wants Claude to be able to set up custom domains later (step 11);
-that adds two optional permissions. Give the user these steps, in your
-own words:
+Cloudflare Workers") grant the wrong permissions. Use the custom-domain
+answer from step 1, and don't ask again: include the zone permissions
+only if the user wants a custom domain whose DNS is on Cloudflare. Give
+the user these steps, in your own words:
 
 1. Open **https://dash.cloudflare.com/profile/api-tokens** and sign in.
    This is **My Profile → API Tokens** (user tokens). Don't use
@@ -347,7 +357,7 @@ own words:
    to right, and tap **+ Add more** for the next row:
    - `Account` · `Cloudflare Pages` · `Edit`
    - `Account` · `Account Settings` · `Read`
-   - Only if they want custom domains:
+   - Only if they chose a custom domain on Cloudflare DNS in step 1:
      - `Zone` · `DNS` · `Edit`
      - `Zone` · `Zone` · `Read`
 5. **Account Resources:** `Include` · their account.
