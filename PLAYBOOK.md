@@ -637,7 +637,8 @@ In the cloned repo:
    `NEON_CLI` to `neon@$V`, the version you checked in step 5.
 3. **Docs:**
    - `README.md`: delete everything from `<!-- able:template-start` through
-     `<!-- able:template-end -->`. Under the title, put the user's
+     `<!-- able:template-end -->`, and the blank line after it, so the
+     file starts with `# <Name>`. Under the title, put the user's
      one-sentence description in place of the template text.
    - `CLAUDE.md`: replace "My App is a new web app." with the description.
    - **Keep `SECRETS.md`.** It's the app's guide to its tokens and to

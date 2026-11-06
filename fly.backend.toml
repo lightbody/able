@@ -1,6 +1,5 @@
-# Placeholder app name -- confirm this is actually available (or pick your
-# own) before your first `flyctl deploy`; see README's "One-time
-# infrastructure setup" for the full checklist.
+# Production backend. Each PR preview deploys from this same file as
+# <app>-pr-<n> (see .github/workflows/preview.yml), in the same region.
 app = "myapp-backend"
 primary_region = "iad"
 
