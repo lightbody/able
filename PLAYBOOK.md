@@ -43,8 +43,8 @@ section and stays in the new app.
 |---|---|---|
 | For | you, Claude: creating and debugging infrastructure | GitHub Actions: every deploy |
 | Saved via | the `request_credential` card, onto this cloud environment | GitHub Actions secrets, pasted by the user |
-| Neon | **organization-wide** key, so you can create the project | **project-scoped** key for this app's project |
-| Fly | org token | org token (previews create apps) |
+| Neon | **organization** key (a personal key also works, but reaches every org the user belongs to) | **project-scoped** key for this app's project |
+| Fly | **personal access token** (acts as the user across all their orgs) | org token for **this app's own org** (previews create apps) |
 | Cloudflare | Pages Edit + Account Settings Read (+ Zone DNS Edit and Zone Read for custom domains) | Pages Edit only |
 | Reused across apps | yes | no, one set per app |
 
@@ -86,7 +86,7 @@ Track these as you go. Every one ends up in `.github/deploy.env`:
 | `NEON_PROD_BRANCH` | the project's default branch (`main` for API-created projects; check it) |
 | `NEON_DB_NAME`, `NEON_DB_ROLE` | Neon API (`neondb` / `neondb_owner` by default) |
 | `NEON_CLI` | `neon@<npm view neon version>` |
-| `FLY_ORG` | Fly GraphQL (`personal` for most users) |
+| `FLY_ORG` | the slug of the app's own Fly org (step 5) |
 | `FLY_BACKEND_APP` | `<github-user>-<slug>-backend`, checked for availability |
 | `CLOUDFLARE_ACCOUNT_ID` | Cloudflare API |
 | `CLOUDFLARE_PAGES_PROJECT` | `<slug>-frontend` |
@@ -148,7 +148,7 @@ already have a saved credential (never the values). Check each service:
 | Service | Saved if these hosts are listed | Check it's a usable setup token |
 |---|---|---|
 | Neon | `console.neon.tech` | `GET https://console.neon.tech/api/v2/projects` succeeds. A project-scoped key fails with "not allowed outside the project", and must be replaced with an org-wide one. |
-| Fly | `api.fly.io` **and** `api.machines.dev` | the GraphQL `{ organizations { nodes { slug type } } }` returns the org |
+| Fly | `api.fly.io` **and** `api.machines.dev` | the GraphQL `{ organizations { nodes { slug type } } }` lists **all** the user's orgs. If it lists only one org while the user has more, it's an org token: ask for a personal access token instead. |
 | Cloudflare | `api.cloudflare.com` | `GET /client/v4/user/tokens/verify` is `active`, **and** `GET /client/v4/accounts` lists the account |
 
 Tell the user which setup tokens are already in place, and walk them through
@@ -163,13 +163,13 @@ card, never into GitHub.
    `console.neon.tech`.
 
 **Fly setup token**
-1. Open **https://fly.io/dashboard**, go to the org's **Tokens** page, and
-   create an **organization** token named `able-setup`. If an expiry is
-   offered, pick whatever the user is comfortable with. When it lapses,
-   the next setup simply asks again. Copy the whole value.
-2. It goes into **two** cards. Delete the leading `FlyV1 ` in each one.
-   Call `request_credential` with host `api.fly.io`, then with host
-   `api.machines.dev`.
+1. Create a **personal access token**, not an org token, because each app
+   gets its own Fly org and the setup token has to reach all of them. In
+   the Fly dashboard, open the account menu (your avatar) → **Access
+   Tokens** → create a token named `able-setup`. Copy the whole value.
+2. It goes into **two** cards. If it starts with `FlyV1 `, delete that
+   prefix in each card. Call `request_credential` with host `api.fly.io`,
+   then with host `api.machines.dev`.
 
 **Cloudflare setup token**
 1. Open **https://dash.cloudflare.com/profile/api-tokens**, then **Create
@@ -233,11 +233,29 @@ Install flyctl once with
    (never print it), then `neon(url).query(sql)`. And a live query must read
    a table: `SELECT 1` is rejected ("upstream rejected").
 
+**Fly: the app's own org.** Give every app its own Fly org, so its CI token
+(an org token, which previews need in order to create apps) can't reach the
+user's other apps. Creating an org needs billing, so the user does it in
+the dashboard (**https://fly.io/dashboard** → the org switcher → **Create
+organization**). Offer the options in this order:
+
+1. **Linked organization**, billed to an existing org. This is the best of
+   both, but Fly reviews these requests manually, so it may be slow or
+   refused for hobby projects.
+2. **A new organization with its own billing.** The user adds a payment
+   method for it. This is the usual choice.
+3. **Reuse an existing org.** Zero setup, but this app's CI token can then
+   create, deploy and destroy the user's other apps in that org. Say so
+   plainly if they pick it.
+
+Name the org after the slug. The user tells you its slug, from
+`fly.io/dashboard/<slug>`, or you find it in the GraphQL org list below.
+
 **Fly: reserve the app name.**
 
 ```bash
 curl -s https://api.fly.io/graphql -H "Authorization: Bearer x" -H "Content-Type: application/json" \
-  -d '{"query":"{ organizations { nodes { slug type } } }"}'          # FLY_ORG
+  -d '{"query":"{ organizations { nodes { slug name type } } }"}'     # find the app's org -> FLY_ORG
 curl -s -o /dev/null -w "%{http_code}\n" https://<github-user>-<slug>-backend.fly.dev/   # 000 = name looks free
 FLY_API_TOKEN=proxy-injected flyctl apps create <github-user>-<slug>-backend --org <FLY_ORG>
 ```
@@ -276,9 +294,9 @@ GitHub type the **Name** (don't copy it), paste the **Secret**, and tap
 1. **`NEON_API_KEY`**: Neon Console → **Organization settings → API keys →
    Create API key** → **project-scoped** → select the new project. Name it
    `<slug>-ci`.
-2. **`FLY_API_TOKEN`**: https://fly.io/dashboard → the org's **Tokens** →
-   create an **organization** token named `<slug>-ci`, with no short expiry,
-   since CI needs it long-term. Paste the **whole** value, including
+2. **`FLY_API_TOKEN`**: https://fly.io/dashboard → switch to **the app's
+   own org** → **Tokens** → create an **organization** token named
+   `<slug>-ci`, with no short expiry, since CI needs it long-term. Paste the **whole** value, including
    `FlyV1 `.
 3. **`CLOUDFLARE_API_TOKEN`**: https://dash.cloudflare.com/profile/api-tokens
    → **Create Token** → **Custom token**. Name `<slug>-ci`, **only**

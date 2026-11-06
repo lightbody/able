@@ -28,7 +28,7 @@ Manage them at `https://github.com/<owner>/<repo>/settings/secrets/actions`.
 | Secret | What it is | Minimum scope | Why it needs that |
 |---|---|---|---|
 | `NEON_API_KEY` | Neon API key | **project-scoped** to this app's project | creates and deletes preview branches, enables Realtime on them, reads their credentials |
-| `FLY_API_TOKEN` | Fly **organization** token (starts with `FlyV1 `) | the Fly org in `FLY_ORG` | creates and destroys a Fly app per PR preview. An app-scoped deploy token can't create apps. To isolate apps from each other, give each app its own Fly org. |
+| `FLY_API_TOKEN` | Fly **organization** token (starts with `FlyV1 `) | this app's own Fly org (`FLY_ORG`) | creates and destroys a Fly app per PR preview. An app-scoped deploy token can't create apps. Because of that, each app gets **its own Fly org**: a linked org billed to your main org if Fly approves it (it reviews these manually), otherwise an org with its own billing. Sharing an org lets this token touch your other apps. |
 | `CLOUDFLARE_API_TOKEN` | Cloudflare API token | `Account` → `Cloudflare Pages` → `Edit`, for one account | uploads deployments and deletes preview deployments. Cloudflare can't narrow this to a single project. |
 
 ## The setup tokens (Claude Code environment)
@@ -41,8 +41,8 @@ network proxy adds it to Claude's requests to that host.
 
 | Host(s) | Token | Scope |
 |---|---|---|
-| `console.neon.tech` | Neon API key `able-setup` | **organization-wide**, so Claude can create new projects |
-| `api.fly.io` and `api.machines.dev` | Fly org token `able-setup`, saved without its `FlyV1 ` prefix | the Fly org |
+| `console.neon.tech` | Neon API key `able-setup` | an **organization** key, so Claude can create new projects. A personal key also works, but it reaches every Neon org you belong to. |
+| `api.fly.io` and `api.machines.dev` | Fly **personal access token** `able-setup`, saved without any `FlyV1 ` prefix | all your Fly orgs, so it works for every app's own org |
 | `api.cloudflare.com` | Cloudflare token `able-setup` | `Cloudflare Pages` → `Edit` and `Account Settings` → `Read`. Add `Zone` → `DNS` → `Edit` plus `Zone` → `Zone` → `Read` only if Claude should set up custom domains. |
 
 These are shared by every session and every app that uses this
@@ -57,8 +57,9 @@ and copy only one thing at a time.
    `<project>-ci`. Copy it.
    - **Neon:** Console → **Organization settings → API keys → Create API
      key** → project-scoped → pick the project.
-   - **Fly:** https://fly.io/dashboard → your org → **Tokens** → create an
-     **organization** token. Copy the whole value, including `FlyV1 `.
+   - **Fly:** https://fly.io/dashboard → switch to this app's org →
+     **Tokens** → create an **organization** token. Copy the whole value,
+     including `FlyV1 `.
    - **Cloudflare:** https://dash.cloudflare.com/profile/api-tokens. Either
      **⋯ → Roll** on the existing `<project>-ci` token (same permissions,
      new value), or **Create Token → Custom token** with the permissions
