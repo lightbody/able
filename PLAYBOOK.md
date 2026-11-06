@@ -522,6 +522,15 @@ NEON_API_KEY=proxy-injected npx -y neon@$V realtime enable --project-id $P \
   --branch <default branch> --allowed-origin "$PROD_FRONTEND_ORIGIN"
 ```
 
+`realtime enable` only answers "Realtime enable requested for branch
+…", and neither the CLI nor the branch API reads the setting back, so
+you can't confirm the allowed origin here. The scratch-branch test in
+the Neon section proves Realtime itself works; the origin is proven only
+by the browser two-tab test in step 9 (and step 11 for a custom domain).
+If the server checks pass but the page signs in and then shows no
+greetings or doesn't sync, suspect the allowed origin first: re-run this
+command with the exact origin, no trailing slash, and retry.
+
 ## Step 6: CI tokens (GitHub secrets only)
 
 The project now exists, so the user can create its narrowly scoped CI
