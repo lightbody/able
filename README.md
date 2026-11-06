@@ -141,7 +141,9 @@ One-time state outside the repo (set up by PLAYBOOK.md):
 
 - **Neon** -- a project in a
   [Realtime region](https://neon.com/docs/realtime/overview#which-regions-is-it-enabled-in)
-  (`aws-us-east-1` sits next to Fly's `iad`). Realtime is enabled on the
+  (`aws-us-east-1` sits next to Fly's `iad`; PLAYBOOK.md step 1 pairs each
+  Realtime region with a Fly region, set as `primary_region` in
+  `fly.backend.toml`). Realtime is enabled on the
   default branch, with allowed origin `PROD_FRONTEND_ORIGIN`. Preview
   branches inherit Realtime, and `preview.yml` widens their origins to `*`.
 - **Cloudflare Pages** -- a direct-upload project, `CLOUDFLARE_PAGES_PROJECT`,
