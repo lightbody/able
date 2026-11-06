@@ -82,11 +82,11 @@ Track these as you go. Every one ends up in `.github/deploy.env`:
 
 | Key | Source |
 |---|---|
-| `NEON_PROJECT_ID` | the project the user creates in step 4, found with the Neon API |
-| `NEON_PROD_BRANCH` | the project's default branch (console-created projects may call it `production`, API-created ones `main`; check it) |
+| `NEON_PROJECT_ID` | the project you create with the Neon API in step 5 |
+| `NEON_PROD_BRANCH` | the project's default branch (API-created projects call it `main`, console-created ones may call it `production`; check it) |
 | `NEON_DB_NAME`, `NEON_DB_ROLE` | Neon API (`neondb` / `neondb_owner` by default) |
 | `NEON_CLI` | `neon@<npm view neon version>` |
-| `FLY_ORG` | the slug of the app's own Fly org (step 6) |
+| `FLY_ORG` | the slug of the app's own Fly org (step 5) |
 | `FLY_BACKEND_APP` | `<github-user>-<slug>-backend`, checked for availability |
 | `CLOUDFLARE_ACCOUNT_ID` | Cloudflare API |
 | `CLOUDFLARE_PAGES_PROJECT` | `<slug>-frontend` |
@@ -144,9 +144,13 @@ links and wait. Signing in with GitHub is fine wherever it's offered.
 | Cloudflare | frontend hosting (Pages) | https://dash.cloudflare.com/sign-up |
 | WorkOS | sign-in (AuthKit) | https://dashboard.workos.com |
 
-If Neon's sign-up goes on to ask for a first project, the user can create
-it right there, using step 4's settings. Otherwise they stop at that form,
-and you pick it up in step 4.
+**New Neon accounts: don't create a project.** Neon's sign-up usually goes
+on to a create-project form. Tell the user, before they sign up, to skip
+that form or close it: you create the project yourself in step 5, in the
+region from step 1, with Postgres and Realtime set up. If the form can't be
+skipped, have them create it with the display name as the project name and
+the Neon region from step 1, and close any connection string without
+copying it. You adopt that project in step 5 instead of creating one.
 
 ## Step 3: Create the repo from the template
 
@@ -169,38 +173,14 @@ and open a PR instead.
 Creating the repo triggers CI on its first commit. The deploy jobs skip
 themselves while `.github/deploy.env` is empty, so the run is harmless.
 
-## Step 4: Create the Neon project (user)
-
-The user creates the project in the Neon Console. A brand-new Neon account
-has nothing yet to scope an API key to, and the sign-up flow usually leads
-straight to this form anyway. Skip this step if they already created the
-project in step 2 with these settings. Have the user:
-
-1. Open **https://console.neon.tech** and start a new project. On a new
-   account the create-project form opens by itself. Otherwise tap **New
-   Project**.
-2. **Project name:** type the display name, e.g. `Chore Chart`.
-3. **Cloud provider:** AWS. **Region:** the Neon region from step 1, e.g.
-   *AWS US East 1 (N. Virginia)* for `aws-us-east-1`. Realtime works only
-   in its regions, so the region has to be right here. You can't change it
-   later.
-4. Leave the Postgres version at its default.
-5. If the form lists features or services to turn on, make sure both
-   **Postgres** and **Realtime** are on.
-6. Tap **Create**. If Neon then shows a connection string, close it without
-   copying it. You'll fetch everything you need through the API.
-
-Then have them reply "done". You find the project yourself in step 6 and
-check its region and Realtime there.
-
-## Step 5: Setup tokens (only the missing ones)
+## Step 4: Setup tokens (only the missing ones)
 
 First call `get_environment`. Its `network_secrets` lists the hosts that
 already have a saved credential (never the values). Check each service:
 
 | Service | Saved if these hosts are listed | Check it's a usable setup token |
 |---|---|---|
-| Neon | `console.neon.tech` | `GET https://console.neon.tech/api/v2/projects` succeeds. A project-scoped key fails with "not allowed outside the project", and must be replaced with an org-wide one. |
+| Neon | `console.neon.tech` | `GET https://console.neon.tech/api/v2/projects` succeeds. A project-scoped key fails with "not allowed outside the project". It can't create the new project, so it must be replaced with an organization key. |
 | Fly | `api.fly.io` **and** `api.machines.dev` | the GraphQL `{ organizations { nodes { slug type } } }` lists **all** the user's orgs. If it lists only one org while the user has more, it's an org token: ask for a personal access token instead. |
 | Cloudflare | `api.cloudflare.com` | `GET /client/v4/user/tokens/verify` is `active`, **and** `GET /client/v4/accounts` lists the account |
 
@@ -209,11 +189,19 @@ creating only the missing or unusable ones. Each one goes **only** into a
 card, never into GitHub.
 
 **Neon setup token**
+
+This key creates the app's project in step 5, so it has to be an
+**organization** key. A project-scoped key can't create projects. Tell the
+user that, because the key-type choice is easy to miss.
 1. Neon Console → **Organization settings → API keys → Create API key**.
-   Choose the **organization** key type, not project-scoped. Name it
-   `able-setup`. Copy it.
+   Choose the **Organization** key type, and don't select a project. Name
+   it `able-setup`. Copy it.
 2. Paste it into the card. Call `request_credential` with host
    `console.neon.tech`.
+
+If the user belongs to more than one Neon organization, ask which one the
+app's project belongs in, and have them create the key there. The key's
+organization is where you create the project.
 
 **Fly setup token**
 1. Create a **personal access token**, not an org token, because each app
@@ -244,33 +232,47 @@ card, never into GitHub.
 
 Re-run the checks in the table for each new token.
 
-## Step 6: Provision (you)
+## Step 5: Provision (you)
 
 Install flyctl once with
 `curl -fsSL https://fly.io/install.sh | FLYCTL_INSTALL=<scratch dir>/fly sh`.
 
-**Neon: find and check the project from step 4.**
+**Neon: create the project.**
 
-1. Find the project. Print only non-secret fields:
+1. Check whether a project with the display name already exists, for
+   example one the user couldn't skip creating at sign-up. Print only
+   non-secret fields:
    ```bash
    curl -s https://console.neon.tech/api/v2/projects -H "Authorization: Bearer x" \
      | jq '.projects[] | {id, name, region_id, org_id}'
    ```
-   Match it by the display name. If no project or more than one matches,
-   ask the user which one it is. Its `id` is `NEON_PROJECT_ID`.
-2. **Check `region_id`** is the Neon region from step 1. If it's different,
-   or not a Realtime region, stop. The region can't be changed, so have
-   the user delete the project and create it again in step 4. Don't carry
-   on in the wrong region.
-3. From `GET /api/v2/projects/$P/branches` (the one with `"default": true`)
+   If exactly one matches, adopt it and go on to item 3 below. If more
+   than one matches, ask the user which one to use.
+2. Otherwise create it in the Neon region from step 1. The response
+   includes connection URIs with the password, so **never print it raw**.
+   Keep only the project fields:
+   ```bash
+   curl -s -X POST https://console.neon.tech/api/v2/projects -H "Authorization: Bearer x" \
+     -H "Content-Type: application/json" \
+     -d '{"project":{"name":"<display name>","region_id":"<neon region>"}}' \
+     | jq '.project | {id, name, region_id, org_id}, (.message // empty)'
+   ```
+   The org key puts the project in its own organization. Its `id` is
+   `NEON_PROJECT_ID`. Leave the Postgres version at Neon's default.
+3. **Check `region_id`** with a read-only `GET /api/v2/projects/$P`. It
+   must be the Neon region from step 1, and a Realtime region. The region
+   can't be changed. If you just created the project in the wrong region,
+   delete it (`DELETE /api/v2/projects/$P`) and create it again. If it's a
+   project you adopted, ask the user before deleting it. Don't carry on in
+   the wrong region.
+4. From `GET /api/v2/projects/$P/branches` (the one with `"default": true`)
    and `npx -y neon@latest databases list --project-id $P --branch <default>`,
    record the default branch, the database name and the owner role.
    **Never print** connection strings.
-4. Enable Realtime on the default branch, even if the user already turned
-   it on in the console. The command is idempotent, and the next steps
-   need it on:
+5. Enable Realtime on the default branch, even if it's already on. The
+   command is idempotent, and the next steps need it on:
    `NEON_API_KEY=proxy-injected npx -y neon@latest realtime enable --project-id $P --branch <default>`.
-5. Verify Realtime on a throwaway branch, never the default:
+6. Verify Realtime on a throwaway branch, never the default:
    - `neon branches create --name scratch/rt-test --parent <default>`.
    - Create a table with a primary key and insert a row.
    - Run `neon realtime subscribe --output json "SELECT * FROM items ORDER BY id"`
@@ -332,7 +334,7 @@ NEON_API_KEY=proxy-injected npx -y neon@latest realtime enable --project-id $P \
   --branch <default branch> --allowed-origin "$PROD_FRONTEND_ORIGIN"
 ```
 
-## Step 7: CI tokens (GitHub secrets only)
+## Step 6: CI tokens (GitHub secrets only)
 
 The project now exists, so the user can create its narrowly scoped CI
 tokens. Every one goes **only** into GitHub, at:
@@ -354,9 +356,9 @@ GitHub type the **Name** (don't copy it), paste the **Secret**, and tap
    `Account` → `Cloudflare Pages` → `Edit`, Account Resources → their
    account.
 
-You can't read GitHub secrets. The first deploy in step 10 verifies them.
+You can't read GitHub secrets. The first deploy in step 9 verifies them.
 
-## Step 8: WorkOS (sign-in)
+## Step 7: WorkOS (sign-in)
 
 WorkOS has no step you can automate here. Have the user, in
 **https://dashboard.workos.com** with the **Production** environment
@@ -388,7 +390,7 @@ that's the cause. Also check the client is real:
 `curl -s https://api.workos.com/sso/jwks/$CID` should list at least one
 key.
 
-## Step 9: Make the code the user's app
+## Step 8: Make the code the user's app
 
 In the cloned repo:
 
@@ -425,7 +427,7 @@ In the cloned repo:
    lookalikes you've checked. Then commit everything as one commit,
    "Set up <Name>", and push to `main`.
 
-## Step 10: Production comes up
+## Step 9: Production comes up
 
 The push to `main` runs `backend.yml`, which tests and then deploys to Fly
 against the default Neon branch, running migrations on boot. It also runs
@@ -449,7 +451,7 @@ Then ask the user to open `PROD_FRONTEND_ORIGIN` in **two tabs**, sign in,
 see "Hello, <Name>!", add a greeting in one tab, and watch it appear in the
 other.
 
-## Step 11: Previews come up
+## Step 10: Previews come up
 
 Open a small real PR, such as a README tweak on a new branch, and subscribe
 to its activity. `preview.yml` creates Neon branch `preview/pr-<n>`, enables
@@ -461,7 +463,7 @@ Run the same server-side checks against the preview, then have the user do
 the two-tab test on the preview URL from the PR comment. Then merge or
 close the PR. Closing tears the preview down.
 
-## Step 12 (optional): Custom domain
+## Step 11 (optional): Custom domain
 
 Only if the user wants one, for example `chore-chart.example.com`:
 
