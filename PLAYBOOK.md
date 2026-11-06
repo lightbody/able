@@ -401,8 +401,9 @@ Re-run the checks in the table for each new token.
 
 ## Step 5: Provision (you)
 
-Install flyctl once with
-`curl -fsSL https://fly.io/install.sh | FLYCTL_INSTALL=<scratch dir>/fly sh`.
+You don't need flyctl for setup: everything below uses Fly's HTTP APIs.
+(Piping Fly's install script into `sh` can be refused by the session's
+safety checks anyway.) CI installs its own flyctl.
 
 **Neon: create the project.**
 
@@ -462,9 +463,16 @@ example with a suffix.
 ```bash
 curl -s https://api.fly.io/graphql -H "Authorization: Bearer x" -H "Content-Type: application/json" \
   -d '{"query":"{ organizations { nodes { slug name type } } }"}'     # find the app's org -> FLY_ORG
-curl -s -o /dev/null -w "%{http_code}\n" https://<github-user>-<slug>-backend.fly.dev/   # 000 = name looks free
-FLY_API_TOKEN=proxy-injected flyctl apps create <github-user>-<slug>-backend --org <FLY_ORG>
+curl -s -X POST https://api.machines.dev/v1/apps -H "Authorization: Bearer x" \
+  -H "Content-Type: application/json" \
+  -d '{"app_name":"<github-user>-<slug>-backend","org_slug":"<FLY_ORG>"}'
+curl -s https://api.machines.dev/v1/apps/<github-user>-<slug>-backend -H "Authorization: Bearer x" \
+  | jq '{name, organization}'                                         # check it landed in the right org
 ```
+
+Creating the app is how you check the name is free: a `201` reserves it,
+and `422` with `"status":"name_taken"` means someone already has it, so
+add a suffix and try again.
 
 Fly's logs API rejects bearer-injected tokens (401). Use the Machines API
 (`GET https://api.machines.dev/v1/apps/<app>/machines`) for machine state
