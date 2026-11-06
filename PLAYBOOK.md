@@ -207,15 +207,45 @@ turn as the creation steps.
 This key creates the app's project in step 5, so it has to be an
 **organization** key. A project-scoped key can't create projects. Tell the
 user that, because the key-type choice is easy to miss.
-1. Neon Console → **Organization settings → API keys → Create API key**.
-   Choose the **Organization** key type, and don't select a project. Name
-   it `able-setup`. Copy it, then tell Claude it's copied.
-2. **After the user confirms:** call `request_credential` with host
-   `console.neon.tech`. They paste the key into the card.
+
+There's no deep link, because the settings URL contains the organization's
+ID. Spell out the navigation, and warn about the trap: the profile menu
+also has a **Settings → API keys** page, but that one makes **personal**
+keys. The key has to come from the **organization's** Settings. Give the
+user these steps, in your own words:
+
+1. Open **https://console.neon.tech** and sign in.
+2. Make sure the right organization is active. Tap your name or avatar
+   in the **top-right** to open the profile menu, and use the
+   **organization switcher** there to choose the organization this app
+   should live in. Then close the menu. **Don't** use the profile menu's
+   own **Settings**: that's your personal account, and its API keys are
+   personal keys.
+3. With the organization active, open **Settings** in the organization's
+   navigation (the left sidebar; on a narrow screen it may be behind a ☰
+   menu button). The page is the organization's settings: it shows the
+   organization's name and ID, alongside tabs for things like people and
+   billing.
+4. Open the **API keys** tab and tap **Create new**.
+5. Choose the **Organization** key type, not **Project-scoped**. Don't
+   pick a project.
+6. Name: type `able-setup`. Create the key.
+7. The key is shown **only once**. Copy it now, and don't copy anything
+   else until it's saved in the card. If the dialog closes before you
+   copy it, revoke that key and create another.
+8. Tell Claude it's copied.
+
+Only organization **Admins** can create organization keys. If the user
+doesn't see **Create new** or the **Organization** option, they aren't an
+Admin of that organization: have them pick an organization they administer
+(their own default one is fine).
+
+**After the user confirms:** call `request_credential` with host
+`console.neon.tech`. They paste the key into the card.
 
 If the user belongs to more than one Neon organization, ask which one the
-app's project belongs in, and have them create the key there. The key's
-organization is where you create the project.
+app's project belongs in before giving the steps, and have them create the
+key there. The key's organization is where you create the project.
 
 **Fly setup token**
 1. Create a **personal access token**, not an org token, because each app
@@ -361,9 +391,12 @@ Do one service at a time. For each: create the token and copy it, then in
 GitHub type the **Name** (don't copy it), paste the **Secret**, and tap
 **Add secret**. These tokens never go into a card.
 
-1. **`NEON_API_KEY`**: Neon Console → **Organization settings → API keys →
-   Create API key** → **project-scoped** → select the new project. Name it
-   `<slug>-ci`.
+1. **`NEON_API_KEY`**: the same place as the Neon setup token in step 4.
+   That's the **organization's** Settings with the project's organization
+   active, **not** the profile menu's Settings. Then **API keys → Create
+   new**, choose **Project-scoped**, and select the new project. Name: type
+   `<slug>-ci`. It's shown only once, so copy it straight away. Repeat
+   the navigation steps from step 4; don't assume the user remembers them.
 2. **`FLY_API_TOKEN`**: https://fly.io/dashboard → switch to **the app's
    own org** → **Tokens** → create an **organization** token named
    `<slug>-ci`, with no short expiry, since CI needs it long-term. Paste the **whole** value, including
