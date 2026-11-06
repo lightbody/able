@@ -41,7 +41,7 @@ network proxy adds it to Claude's requests to that host.
 
 | Host(s) | Token | Scope |
 |---|---|---|
-| `console.neon.tech` | Neon API key `able-setup` | an **organization** key, so Claude can create new projects. A personal key also works, but it reaches every Neon org you belong to. |
+| `console.neon.tech` | Neon API key `able-setup` | an **organization** key, so Claude can find and manage each new app's project (you create the project in the console). A personal key also works, but it reaches every Neon org you belong to. |
 | `api.fly.io` and `api.machines.dev` | Fly **personal access token** `able-setup`, saved without any `FlyV1 ` prefix | all your Fly orgs, so it works for every app's own org |
 | `api.cloudflare.com` | Cloudflare token `able-setup` | `Cloudflare Pages` → `Edit` and `Account Settings` → `Read`. Add `Zone` → `DNS` → `Edit` plus `Zone` → `Zone` → `Read` only if Claude should set up custom domains. |
 

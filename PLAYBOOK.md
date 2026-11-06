@@ -82,16 +82,20 @@ Track these as you go. Every one ends up in `.github/deploy.env`:
 
 | Key | Source |
 |---|---|
-| `NEON_PROJECT_ID` | returned when you create the Neon project |
-| `NEON_PROD_BRANCH` | the project's default branch (`main` for API-created projects; check it) |
+| `NEON_PROJECT_ID` | the project the user creates in step 4, found with the Neon API |
+| `NEON_PROD_BRANCH` | the project's default branch (console-created projects may call it `production`, API-created ones `main`; check it) |
 | `NEON_DB_NAME`, `NEON_DB_ROLE` | Neon API (`neondb` / `neondb_owner` by default) |
 | `NEON_CLI` | `neon@<npm view neon version>` |
-| `FLY_ORG` | the slug of the app's own Fly org (step 5) |
+| `FLY_ORG` | the slug of the app's own Fly org (step 6) |
 | `FLY_BACKEND_APP` | `<github-user>-<slug>-backend`, checked for availability |
 | `CLOUDFLARE_ACCOUNT_ID` | Cloudflare API |
 | `CLOUDFLARE_PAGES_PROJECT` | `<slug>-frontend` |
 | `PROD_FRONTEND_ORIGIN` | `https://<pages subdomain>`, returned when the Pages project is created |
 | `WORKOS_CLIENT_ID` | pasted by the user in chat |
+
+You also pick a **region pair** in step 1. The Neon region is the project's
+`region_id`. The Fly region goes into `primary_region` in
+`fly.backend.toml`, not `deploy.env`.
 
 ---
 
@@ -102,9 +106,30 @@ Ask the user:
 1. **What's the app called?** This is the display name, e.g. "Chore Chart".
 2. **One sentence on what it's for.** This goes into the README and
    `CLAUDE.md`.
+3. **Roughly where are you and your users?** A continent or country is
+   enough. This picks where the database and backend run.
 
-Derive the **slug**: lowercase, hyphens only, e.g. `chore-chart`. Confirm
-the name and slug with the user in one line, then continue.
+Derive the **slug**: lowercase, hyphens only, e.g. `chore-chart`.
+
+Suggest a **region pair** from the table below. The backend talks to the
+database on every request, so the Fly region must sit next to the Neon
+region. Neon Realtime is in beta and available only in the four Neon
+regions below, so the Neon region comes first and the Fly region follows
+it. Before you suggest one, check the current list at
+https://neon.com/docs/realtime/overview#which-regions-is-it-enabled-in. If
+it has changed, pair any new region with the nearest Fly region.
+
+| Users mostly in | Neon region | Fly region |
+|---|---|---|
+| North or South America (default) | `aws-us-east-1` (N. Virginia) | `iad` (Ashburn, Virginia) |
+| US Midwest, if they prefer it | `aws-us-east-2` (Ohio) | `ord` (Chicago) |
+| Europe, the Middle East or Africa | `aws-eu-central-1` (Frankfurt) | `fra` (Frankfurt) |
+| Asia or Oceania | `aws-ap-southeast-1` (Singapore) | `sin` (Singapore) |
+
+No Realtime region is in the western Americas yet. Users there still get
+`aws-us-east-1` + `iad`, so say that pages will be a little slower for
+them. Confirm the name, slug and region pair with the user in one line,
+then continue.
 
 ## Step 2: Accounts
 
@@ -118,6 +143,10 @@ links and wait. Signing in with GitHub is fine wherever it's offered.
 | Fly.io | backend hosting (asks for a payment method) | https://fly.io/app/sign-up |
 | Cloudflare | frontend hosting (Pages) | https://dash.cloudflare.com/sign-up |
 | WorkOS | sign-in (AuthKit) | https://dashboard.workos.com |
+
+If Neon's sign-up goes on to ask for a first project, the user can create
+it right there, using step 4's settings. Otherwise they stop at that form,
+and you pick it up in step 4.
 
 ## Step 3: Create the repo from the template
 
@@ -140,7 +169,31 @@ and open a PR instead.
 Creating the repo triggers CI on its first commit. The deploy jobs skip
 themselves while `.github/deploy.env` is empty, so the run is harmless.
 
-## Step 4: Setup tokens (only the missing ones)
+## Step 4: Create the Neon project (user)
+
+The user creates the project in the Neon Console. A brand-new Neon account
+has nothing yet to scope an API key to, and the sign-up flow usually leads
+straight to this form anyway. Skip this step if they already created the
+project in step 2 with these settings. Have the user:
+
+1. Open **https://console.neon.tech** and start a new project. On a new
+   account the create-project form opens by itself. Otherwise tap **New
+   Project**.
+2. **Project name:** type the display name, e.g. `Chore Chart`.
+3. **Cloud provider:** AWS. **Region:** the Neon region from step 1, e.g.
+   *AWS US East 1 (N. Virginia)* for `aws-us-east-1`. Realtime works only
+   in its regions, so the region has to be right here. You can't change it
+   later.
+4. Leave the Postgres version at its default.
+5. If the form lists features or services to turn on, make sure both
+   **Postgres** and **Realtime** are on.
+6. Tap **Create**. If Neon then shows a connection string, close it without
+   copying it. You'll fetch everything you need through the API.
+
+Then have them reply "done". You find the project yourself in step 6 and
+check its region and Realtime there.
+
+## Step 5: Setup tokens (only the missing ones)
 
 First call `get_environment`. Its `network_secrets` lists the hosts that
 already have a saved credential (never the values). Check each service:
@@ -191,33 +244,31 @@ card, never into GitHub.
 
 Re-run the checks in the table for each new token.
 
-## Step 5: Provision (you)
+## Step 6: Provision (you)
 
 Install flyctl once with
 `curl -fsSL https://fly.io/install.sh | FLYCTL_INSTALL=<scratch dir>/fly sh`.
 
-**Neon: create the project.**
+**Neon: find and check the project from step 4.**
 
-1. Find the org ID. Org keys can list projects, so read it from any
-   project's `org_id`. If there are no projects yet, try
-   `GET /api/v2/users/me/organizations`. As a last resort, ask the user: it's
-   on Neon Console → **Organization settings → General**, it starts with
-   `org-`, and it isn't secret.
-2. Create the project:
+1. Find the project. Print only non-secret fields:
    ```bash
-   curl -s -X POST https://console.neon.tech/api/v2/projects -H "Authorization: Bearer x" \
-     -H "Content-Type: application/json" \
-     -d '{"project":{"name":"<Display Name>","region_id":"aws-us-east-1","org_id":"<org id>"}}'
+   curl -s https://console.neon.tech/api/v2/projects -H "Authorization: Bearer x" \
+     | jq '.projects[] | {id, name, region_id, org_id}'
    ```
-   Realtime is beta and available only in `aws-us-east-1`, `aws-us-east-2`,
-   `aws-eu-central-1` and `aws-ap-southeast-1`. Use `aws-us-east-1` (next
-   to Fly's `iad`) unless the user asks otherwise.
-3. From the response and from
-   `npx -y neon@latest databases list --project-id $P --branch <default>`,
-   record `NEON_PROJECT_ID`, the default branch, the database name and the
-   owner role. **Never print** the `connection_uris` the create call
-   returns.
-4. Enable Realtime on the default branch:
+   Match it by the display name. If no project or more than one matches,
+   ask the user which one it is. Its `id` is `NEON_PROJECT_ID`.
+2. **Check `region_id`** is the Neon region from step 1. If it's different,
+   or not a Realtime region, stop. The region can't be changed, so have
+   the user delete the project and create it again in step 4. Don't carry
+   on in the wrong region.
+3. From `GET /api/v2/projects/$P/branches` (the one with `"default": true`)
+   and `npx -y neon@latest databases list --project-id $P --branch <default>`,
+   record the default branch, the database name and the owner role.
+   **Never print** connection strings.
+4. Enable Realtime on the default branch, even if the user already turned
+   it on in the console. The command is idempotent, and the next steps
+   need it on:
    `NEON_API_KEY=proxy-injected npx -y neon@latest realtime enable --project-id $P --branch <default>`.
 5. Verify Realtime on a throwaway branch, never the default:
    - `neon branches create --name scratch/rt-test --parent <default>`.
@@ -281,7 +332,7 @@ NEON_API_KEY=proxy-injected npx -y neon@latest realtime enable --project-id $P \
   --branch <default branch> --allowed-origin "$PROD_FRONTEND_ORIGIN"
 ```
 
-## Step 6: CI tokens (GitHub secrets only)
+## Step 7: CI tokens (GitHub secrets only)
 
 The project now exists, so the user can create its narrowly scoped CI
 tokens. Every one goes **only** into GitHub, at:
@@ -303,9 +354,9 @@ GitHub type the **Name** (don't copy it), paste the **Secret**, and tap
    `Account` → `Cloudflare Pages` → `Edit`, Account Resources → their
    account.
 
-You can't read GitHub secrets. The first deploy in step 9 verifies them.
+You can't read GitHub secrets. The first deploy in step 10 verifies them.
 
-## Step 7: WorkOS (sign-in)
+## Step 8: WorkOS (sign-in)
 
 WorkOS has no step you can automate here. Have the user, in
 **https://dashboard.workos.com** with the **Production** environment
@@ -337,7 +388,7 @@ that's the cause. Also check the client is real:
 `curl -s https://api.workos.com/sso/jwks/$CID` should list at least one
 key.
 
-## Step 8: Make the code the user's app
+## Step 9: Make the code the user's app
 
 In the cloned repo:
 
@@ -346,7 +397,9 @@ In the cloned repo:
    - `My App` → display name
    - `myapp` → slug. This covers the package names, `@myapp/shared` → `@<slug>/shared`,
      the Pages project and the Fly app placeholder.
-   - In `fly.backend.toml`, set `app = "<FLY_BACKEND_APP>"`.
+   - In `fly.backend.toml`, set `app = "<FLY_BACKEND_APP>"` and
+     `primary_region = "<Fly region from step 1>"`. Previews deploy from
+     the same file, so they land in the same region.
 
    Leave `app_test` alone. It's the local test database, named so it never
    needs renaming.
@@ -372,7 +425,7 @@ In the cloned repo:
    lookalikes you've checked. Then commit everything as one commit,
    "Set up <Name>", and push to `main`.
 
-## Step 9: Production comes up
+## Step 10: Production comes up
 
 The push to `main` runs `backend.yml`, which tests and then deploys to Fly
 against the default Neon branch, running migrations on boot. It also runs
@@ -396,7 +449,7 @@ Then ask the user to open `PROD_FRONTEND_ORIGIN` in **two tabs**, sign in,
 see "Hello, <Name>!", add a greeting in one tab, and watch it appear in the
 other.
 
-## Step 10: Previews come up
+## Step 11: Previews come up
 
 Open a small real PR, such as a README tweak on a new branch, and subscribe
 to its activity. `preview.yml` creates Neon branch `preview/pr-<n>`, enables
@@ -408,7 +461,7 @@ Run the same server-side checks against the preview, then have the user do
 the two-tab test on the preview URL from the PR comment. Then merge or
 close the PR. Closing tears the preview down.
 
-## Step 11 (optional): Custom domain
+## Step 12 (optional): Custom domain
 
 Only if the user wants one, for example `chore-chart.example.com`:
 
