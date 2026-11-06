@@ -58,8 +58,16 @@ the user creates only the three CI tokens.
 
 ## How `request_credential` works
 
-- Call it with the API **host**, a short `display_name` and a `reason`. Tell
-  the user in your message which token to paste, *before* calling it.
+- **Two turns, never one.** The card can cover your message, and the user
+  can't create a token while it is open. So:
+  1. **Guide turn.** Send only the steps for creating that one token, ending
+     with "copy it, then tell me when you have it copied". Don't call
+     `request_credential` in this turn. End the turn and wait.
+  2. **Card turn.** Only after the user confirms they have the token
+     copied, say in one line which token the card is for, then call
+     `request_credential`. If they report a problem instead, help with
+     that, and don't show the card yet.
+- Call it with the API **host**, a short `display_name` and a `reason`.
 - The value is saved on this session's cloud environment, and every session
   that uses the environment can use it. The network proxy injects it as
   `Authorization: Bearer <value>` on requests to that host, and you never
@@ -188,47 +196,119 @@ Tell the user which setup tokens are already in place, and walk them through
 creating only the missing or unusable ones. Each one goes **only** into a
 card, never into GitHub.
 
+Do one token at a time, in the two turns described in "How
+`request_credential` works". First send the creation steps below and end
+your turn with "copy it, then tell me when you have it copied". Only after
+the user confirms, call `request_credential`. Never show a card in the same
+turn as the creation steps.
+
 **Neon setup token**
 
 This key creates the app's project in step 5, so it has to be an
 **organization** key. A project-scoped key can't create projects. Tell the
 user that, because the key-type choice is easy to miss.
-1. Neon Console → **Organization settings → API keys → Create API key**.
-   Choose the **Organization** key type, and don't select a project. Name
-   it `able-setup`. Copy it.
-2. Paste it into the card. Call `request_credential` with host
-   `console.neon.tech`.
+
+There's no deep link, because the settings URL contains the organization's
+ID. Spell out the navigation, and warn about the trap: the profile menu
+also has a **Settings → API keys** page, but that one makes **personal**
+keys. The key has to come from the **organization's** Settings. Give the
+user these steps, in your own words:
+
+1. Open **https://console.neon.tech** and sign in.
+2. Make sure the right organization is active. Tap your name or avatar
+   in the **top-right** to open the profile menu, and use the
+   **organization switcher** there to choose the organization this app
+   should live in. Then close the menu. **Don't** use the profile menu's
+   own **Settings**: that's your personal account, and its API keys are
+   personal keys.
+3. With the organization active, open **Settings** in the organization's
+   navigation (the left sidebar; on a narrow screen it may be behind a ☰
+   menu button). The page is the organization's settings: it shows the
+   organization's name and ID, alongside tabs for things like people and
+   billing.
+4. Open the **API keys** tab and tap **Create new**.
+5. Choose the **Organization** key type, not **Project-scoped**. Don't
+   pick a project.
+6. Name: type `able-setup`. Create the key.
+7. The key is shown **only once**. Copy it now, and don't copy anything
+   else until it's saved in the card. If the dialog closes before you
+   copy it, revoke that key and create another.
+8. Tell Claude it's copied.
+
+Only organization **Admins** can create organization keys. If the user
+doesn't see **Create new** or the **Organization** option, they aren't an
+Admin of that organization: have them pick an organization they administer
+(their own default one is fine).
+
+**After the user confirms:** call `request_credential` with host
+`console.neon.tech`. They paste the key into the card.
 
 If the user belongs to more than one Neon organization, ask which one the
-app's project belongs in, and have them create the key there. The key's
-organization is where you create the project.
+app's project belongs in before giving the steps, and have them create the
+key there. The key's organization is where you create the project.
 
 **Fly setup token**
-1. Create a **personal access token**, not an org token, because each app
-   gets its own Fly org and the setup token has to reach all of them. In
-   the Fly dashboard, open the account menu (your avatar) → **Access
-   Tokens** → create a token named `able-setup`. Copy the whole value.
-2. It goes into **two** cards. If it starts with `FlyV1 `, delete that
-   prefix in each card. Call `request_credential` with host `api.fly.io`,
-   then with host `api.machines.dev`.
+
+This has to be a **personal access token**, not an org token, because
+each app gets its own Fly org and the setup token has to reach all of
+them. Tell the user that, because the dashboard also offers **Tokens**
+pages for each org and each app, and those make org or app tokens. Give
+the user these steps, in your own words:
+
+1. Open **https://fly.io/dashboard** and sign in.
+2. Open the **account menu**: tap your avatar or email address. Don't use
+   the organization dropdown or an app's **Tokens** page; those make org
+   and app tokens.
+3. Choose **Access Tokens** and create a token. Name: type `able-setup`.
+   Leave the expiry at the default, or pick an end date if you prefer.
+4. The token is shown **only once**. Copy the **whole** value; it's long,
+   so use the page's copy button if there is one rather than selecting it.
+   It goes into **two** cards, so don't copy anything else until both
+   are saved.
+5. Tell Claude it's copied.
+
+**After the user confirms:** say there are two cards, and that if the
+token starts with `FlyV1 ` they delete that prefix (including the space)
+in **each** card before saving. Then call `request_credential` with host
+`api.fly.io`, and after it's saved, with host `api.machines.dev`.
 
 **Cloudflare setup token**
-1. Open **https://dash.cloudflare.com/profile/api-tokens**, then **Create
-   Token** → (scroll down) **Custom token** → **Get started**.
-   - **Name:** `able-setup`
-   - **Permissions:**
-     - `Account` → `Cloudflare Pages` → `Edit`
-     - `Account` → `Account Settings` → `Read`
-     - Optional, so Claude can set up custom domains:
-       - `Zone` → `DNS` → `Edit`
-       - `Zone` → `Zone` → `Read`
-   - **Account Resources:** `Include` → their account. If zone permissions
-     were added, **Zone Resources:** `Include` → `All zones from an
-     account` → their account.
-   - Leave **TTL** empty, or set an end date if the user prefers.
-   - Tap **Continue to summary**, then **Create Token**, then **Copy**.
-2. Paste it into the card. Call `request_credential` with host
-   `api.cloudflare.com`.
+
+This is a **user API token** made from a custom template. Warn about two
+traps on that page: the **Global API Key** further down is all-powerful
+and must not be used, and the ready-made templates (such as "Edit
+Cloudflare Workers") grant the wrong permissions. Ask first whether the
+user wants Claude to be able to set up custom domains later (step 11);
+that adds two optional permissions. Give the user these steps, in your
+own words:
+
+1. Open **https://dash.cloudflare.com/profile/api-tokens** and sign in.
+   This is **My Profile → API Tokens** (user tokens). Don't use
+   **Manage Account → API Tokens** (account tokens), and don't touch the
+   **Global API Key** section.
+2. Tap **Create Token**. Scroll to the bottom, to **Create Custom
+   Token**, and tap **Get started**.
+3. **Token name:** type `able-setup`.
+4. **Permissions:** one row per permission. Pick the three dropdowns left
+   to right, and tap **+ Add more** for the next row:
+   - `Account` · `Cloudflare Pages` · `Edit`
+   - `Account` · `Account Settings` · `Read`
+   - Only if they want custom domains:
+     - `Zone` · `DNS` · `Edit`
+     - `Zone` · `Zone` · `Read`
+5. **Account Resources:** `Include` · their account.
+   If they added the zone rows, **Zone Resources:** `Include` ·
+   `All zones from an account` · their account.
+6. Leave **Client IP Address Filtering** empty. Leave **TTL** empty, or
+   set an end date if they prefer.
+7. Tap **Continue to summary**, check it lists exactly the rows above,
+   then tap **Create Token**.
+8. The token is shown **only once**. Tap **Copy**. Don't copy the
+   example `curl` command on that page.
+9. Tell Claude it's copied.
+
+**After the user confirms:** call `request_credential` with host
+`api.cloudflare.com`. They paste the token into the card.
 
 Re-run the checks in the table for each new token.
 
@@ -289,8 +369,9 @@ Install flyctl once with
 **Fly: the app's own org.** Give every app its own Fly org, so its CI token
 (an org token, which previews need in order to create apps) can't reach the
 user's other apps. Creating an org needs billing, so the user does it in
-the dashboard (**https://fly.io/dashboard** → the org switcher → **Create
-organization**). Offer the options in this order:
+the dashboard, at **https://fly.io/organizations/new** (Fly's new
+organization page). Offer the options in this order, then give the steps
+for the one they pick:
 
 1. **Linked organization**, billed to an existing org. This is the best of
    both, but Fly reviews these requests manually, so it may be slow or
@@ -301,8 +382,18 @@ organization**). Offer the options in this order:
    create, deploy and destroy the user's other apps in that org. Say so
    plainly if they pick it.
 
-Name the org after the slug. The user tells you its slug, from
-`fly.io/dashboard/<slug>`, or you find it in the GraphQL org list below.
+Steps for the user:
+
+1. Open **https://fly.io/organizations/new**.
+2. Name: type the slug, e.g. `chore-chart`.
+3. For a linked organization, choose the existing organization to bill
+   it to. Otherwise add a payment method for the new org when asked.
+4. Create it, then tell Claude it's done.
+
+The user doesn't need to copy anything here. Find the new org's slug
+yourself in the GraphQL org list below. It may differ from the name, for
+example with a suffix. If it isn't listed yet, ask the user to check
+that it finished creating.
 
 **Fly: reserve the app name.**
 
@@ -340,21 +431,49 @@ The project now exists, so the user can create its narrowly scoped CI
 tokens. Every one goes **only** into GitHub, at:
 `https://github.com/<owner>/<repo>/settings/secrets/actions/new`
 
-Do one service at a time. For each: create the token and copy it, then in
-GitHub type the **Name** (don't copy it), paste the **Secret**, and tap
-**Add secret**. These tokens never go into a card.
+Do one token at a time, and give the steps in full each time; don't
+assume the user remembers them from step 4. For each:
 
-1. **`NEON_API_KEY`**: Neon Console → **Organization settings → API keys →
-   Create API key** → **project-scoped** → select the new project. Name it
-   `<slug>-ci`.
-2. **`FLY_API_TOKEN`**: https://fly.io/dashboard → switch to **the app's
-   own org** → **Tokens** → create an **organization** token named
-   `<slug>-ci`, with no short expiry, since CI needs it long-term. Paste the **whole** value, including
-   `FlyV1 `.
-3. **`CLOUDFLARE_API_TOKEN`**: https://dash.cloudflare.com/profile/api-tokens
-   → **Create Token** → **Custom token**. Name `<slug>-ci`, **only**
-   `Account` → `Cloudflare Pages` → `Edit`, Account Resources → their
-   account.
+1. Before they create anything, have the user open the GitHub page above
+   in its own tab, ready. Give the full URL, filled in.
+2. In another tab, they create the token, as below, and copy it. Each
+   token is shown only once.
+3. Back in the GitHub tab: **Name**: *type* it, don't copy it, because
+   copying the name would replace the token on the clipboard.
+   **Secret**: paste. Tap **Add secret**.
+4. They tell you it's added, and only then do you give the next token.
+
+These tokens never go into a card.
+
+1. **`NEON_API_KEY`**: the same place as the Neon setup token in step 4.
+   That's the **organization's** Settings with the project's organization
+   active, **not** the profile menu's Settings. Then **API keys → Create
+   new**, choose **Project-scoped**, and select the new project. Name: type
+   `<slug>-ci`. It's shown only once, so copy it straight away. Repeat
+   the navigation steps from step 4; don't assume the user remembers them.
+2. **`FLY_API_TOKEN`**: an **organization** token for **the app's own
+   org**, not a personal token like the setup token.
+   1. Open **https://fly.io/dashboard**.
+   2. In the **organization dropdown**, choose the app's own org (step 5).
+      Check that it's the right one before going on: a token for the
+      wrong org breaks previews or reaches other apps.
+   3. Tap **Tokens** in that org's menu (not an app's **Tokens**, which
+      makes deploy tokens that can't create preview apps).
+   4. Create a token. Name: type `<slug>-ci`. Choose a long expiry, or
+      none if offered, since CI needs it long-term.
+   5. Copy the **whole** value. In GitHub, paste it **as is**, including
+      `FlyV1 ` at the start. Unlike the card, GitHub needs the prefix.
+3. **`CLOUDFLARE_API_TOKEN`**: the same page as the setup token in step 4,
+   with fewer permissions.
+   1. Open **https://dash.cloudflare.com/profile/api-tokens** (My Profile
+      → API Tokens, not the Global API Key).
+   2. **Create Token** → bottom of the page, **Create Custom Token** →
+      **Get started**.
+   3. **Token name:** type `<slug>-ci`.
+   4. **Permissions:** exactly **one** row: `Account` · `Cloudflare
+      Pages` · `Edit`. Nothing else.
+   5. **Account Resources:** `Include` · their account.
+   6. **Continue to summary** → **Create Token** → **Copy**.
 
 You can't read GitHub secrets. The first deploy in step 9 verifies them.
 
@@ -364,16 +483,23 @@ WorkOS has no step you can automate here. Have the user, in
 **https://dashboard.workos.com** with the **Production** environment
 selected (environment switcher, top left):
 
-1. **Redirects** (under **Applications** → their app, or in the sidebar).
-   Add, one at a time, copied from your message, with **no trailing slash**:
-   - `<PROD_FRONTEND_ORIGIN>`
-   - `https://*.<pages subdomain>`, for example
-     `https://*.chore-chart-frontend.pages.dev`, which covers every PR
-     preview
-2. **Authentication → Sessions → Cross-Origin Resource Sharing (CORS)**,
-   which some dashboards call "Allowed origins". Add the same two values.
-3. **API Keys**: copy the **Client ID** (`client_…`) last, and paste it in
-   chat.
+Each of the two values below goes into **two** places, so have the user
+open both pages first, in separate tabs:
+
+- **Redirects**: under **Applications** → their app, or in the sidebar.
+- **CORS**: **Authentication → Sessions → Cross-Origin Resource Sharing
+  (CORS)**. Some dashboards call it "Allowed origins".
+
+Then, one value at a time, copied from your message, with **no trailing
+slash**: copy it, paste it into Redirects, paste it into CORS, save both,
+and only then copy the next one.
+
+1. `<PROD_FRONTEND_ORIGIN>`
+2. `https://*.<pages subdomain>`, for example
+   `https://*.chore-chart-frontend.pages.dev`, which covers every PR
+   preview.
+3. Last, **API Keys**: copy the **Client ID** (`client_…`) and paste it in
+   chat. It isn't a secret.
 
 **Verify** each redirect without signing in. Probe both the prod origin
 and an invented preview origin such as `https://pr-test.<pages subdomain>`:

@@ -55,15 +55,21 @@ and copy only one thing at a time.
 
 1. **Create the new token** with the same scope (table above), named
    `<project>-ci`. Copy it.
-   - **Neon:** Console → **Organization settings → API keys → Create API
-     key** → project-scoped → pick the project.
-   - **Fly:** https://fly.io/dashboard → switch to this app's org →
-     **Tokens** → create an **organization** token. Copy the whole value,
-     including `FlyV1 `.
-   - **Cloudflare:** https://dash.cloudflare.com/profile/api-tokens. Either
-     **⋯ → Roll** on the existing `<project>-ci` token (same permissions,
-     new value), or **Create Token → Custom token** with the permissions
-     above.
+   - **Neon:** https://console.neon.tech → in the profile menu (top
+     right), use the organization switcher to pick this app's
+     organization → the organization's **Settings** in the left sidebar
+     (not the profile menu's Settings, which makes personal keys) →
+     **API keys → Create new** → **Project-scoped** → pick the project.
+     It's shown only once.
+   - **Fly:** https://fly.io/dashboard → in the organization dropdown,
+     pick this app's org → that org's **Tokens** (not an app's Tokens,
+     and not the account menu's Access Tokens) → create an
+     **organization** token. Copy the whole value, including `FlyV1 `.
+   - **Cloudflare:** https://dash.cloudflare.com/profile/api-tokens (My
+     Profile → API Tokens; never the Global API Key). Either **⋯ → Roll**
+     on the existing `<project>-ci` token (same permissions, new value),
+     or **Create Token → Create Custom Token** with only `Account` ·
+     `Cloudflare Pages` · `Edit`.
 2. **Update the GitHub secret.** In the repo's secrets page, tap the
    secret's ✏️ (**Update**), paste, and tap **Update secret**.
 3. **Prove it works.** Re-run the latest **Backend** workflow on `main`
