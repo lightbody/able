@@ -391,11 +391,10 @@ need a new one: **⋯ → Edit** on the token, add the Zone policy, and save.
 The value doesn't change, but they need it on the clipboard for the
 card; if they no longer have it, **Roll** gives a new value to copy.
 
-Check the zone with `GET /client/v4/zones?name=<apex>`: it must list the
-zone, in the same account.
-
 **After the user confirms:** call `request_credential` with host
 `api.cloudflare.com`. They paste the token into the card.
+If the token has a Zone policy, also check
+`GET /client/v4/zones?name=<apex>` lists the zone, in the same account.
 
 Re-run the checks in the table for each new token.
 
