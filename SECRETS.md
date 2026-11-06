@@ -43,7 +43,7 @@ network proxy adds it to Claude's requests to that host.
 |---|---|---|
 | `console.neon.tech` | Neon API key `able-setup` | an **organization** key, so Claude can create and manage each new app's project. A project-scoped key can't create projects. A personal key also works, but it reaches every Neon org you belong to. |
 | `api.fly.io` and `api.machines.dev` | Fly **org deploy token** `able-setup`, saved without any `FlyV1 ` prefix | the app's own Fly org only. Fly personal access tokens no longer work, so each new app replaces this with a token for its own org, and Claude then reaches only that org. |
-| `api.cloudflare.com` | Cloudflare token `able-setup` | `Cloudflare Pages` → `Edit` and `Account Settings` → `Read`. Add `Zone` → `DNS` → `Edit` plus `Zone` → `Zone` → `Read` only if Claude should set up custom domains. |
+| `api.cloudflare.com` | Cloudflare token `able-setup` | an Account policy with `Cloudflare Pages` → `Edit` and `Account Settings` → `Read`. Only if Claude should set up a custom domain, add a Zone policy for that specific zone with `DNS` → `Edit` and `Zone` → `Read`. |
 
 These are shared by every session and every app that uses this
 environment. Removing them doesn't affect any deploy.
@@ -63,13 +63,13 @@ and copy only one thing at a time.
      It's shown only once.
    - **Fly:** https://fly.io/dashboard → in the organization dropdown,
      pick this app's org → that org's **Tokens** (not an app's Tokens,
-     and not the account menu's Access Tokens) → create an
-     **organization** token. Copy the whole value, including `FlyV1 `.
+     and not the account menu's Access Tokens) → create an **Org Deploy
+     Token**. Copy the whole value, including `FlyV1 `.
    - **Cloudflare:** https://dash.cloudflare.com/profile/api-tokens (My
      Profile → API Tokens; never the Global API Key). Either **⋯ → Roll**
      on the existing `<project>-ci` token (same permissions, new value),
-     or **Create Token → Create Custom Token** with only `Account` ·
-     `Cloudflare Pages` · `Edit`.
+     or **Create Token → Start from scratch** with one Account policy
+     (your account) that ticks only **Cloudflare Pages → Edit**.
 2. **Update the GitHub secret.** In the repo's secrets page, tap the
    secret's ✏️ (**Update**), paste, and tap **Update secret**.
 3. **Prove it works.** Re-run the latest **Backend** workflow on `main`

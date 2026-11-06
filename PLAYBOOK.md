@@ -101,13 +101,16 @@ Track these as you go. Every one ends up in `.github/deploy.env`:
 | `NEON_PROJECT_ID` | the project you create with the Neon API in step 5 |
 | `NEON_PROD_BRANCH` | the project's default branch (API-created projects call it `main`, console-created ones may call it `production`; check it) |
 | `NEON_DB_NAME`, `NEON_DB_ROLE` | Neon API (`neondb` / `neondb_owner` by default) |
-| `NEON_CLI` | `neon@<npm view neon version>` |
-| `FLY_ORG` | the slug of the app's own Fly org (step 5) |
+| `NEON_CLI` | `neon@<version>`: the version you pick and check in step 5 |
+| `FLY_ORG` | the slug, as Fly's GraphQL API lists it, of the org the user chose in step 4 (new, linked or reused; step 5) |
 | `FLY_BACKEND_APP` | `<github-user>-<slug>-backend`, checked for availability |
 | `CLOUDFLARE_ACCOUNT_ID` | Cloudflare API |
 | `CLOUDFLARE_PAGES_PROJECT` | `<slug>-frontend` |
 | `PROD_FRONTEND_ORIGIN` | `https://<pages subdomain>`, returned when the Pages project is created |
 | `WORKOS_CLIENT_ID` | pasted by the user in chat |
+
+Also record the **custom domain** from step 1, if any. It isn't in
+`deploy.env` until step 11, when it replaces `PROD_FRONTEND_ORIGIN`.
 
 You also pick a **region pair** in step 1. The Neon region is the project's
 `region_id`. The Fly region goes into `primary_region` in
@@ -124,6 +127,22 @@ Ask the user:
    `CLAUDE.md`.
 3. **Roughly where are you and your users?** A continent or country is
    enough. This picks where the database and backend run.
+4. **Do you want a custom domain, and if so, which one?** For example
+   `chore-chart.example.com`. Ask now, not later: the answer decides which
+   permissions the Cloudflare setup token needs in step 4, and creating it
+   with the right ones the first time saves the user a second trip to
+   Cloudflare. If they want one, also ask whether the domain's DNS is on
+   Cloudflare, in the account they'll use for this app. Only then can
+   Claude set it up; otherwise the user attaches it by hand in step 11.
+
+   If they want one, tell them in a sentence or two how it goes, so they
+   aren't left wondering when it'll come up: the app first goes live on
+   its `pages.dev` address, and the domain is switched on **last** (step
+   11), once production and previews are tested, so a domain problem
+   can't be mistaken for anything else. At that point Claude attaches the
+   domain and its DNS record in Cloudflare, points the app and the
+   database's live-updates setting at it, and the user adds it to WorkOS
+   (one more value, the same two lists as step 7).
 
 Derive the **slug**: lowercase, hyphens only, e.g. `chore-chart`.
 
@@ -144,8 +163,8 @@ it has changed, pair any new region with the nearest Fly region.
 
 No Realtime region is in the western Americas yet. Users there still get
 `aws-us-east-1` + `iad`, so say that pages will be a little slower for
-them. Confirm the name, slug and region pair with the user in one line,
-then continue.
+them. Confirm the name, slug, region pair and custom domain (or "none")
+with the user in one line, then continue.
 
 ## Step 2: Accounts
 
@@ -197,7 +216,7 @@ already have a saved credential (never the values). Check each service:
 | Service | Saved if these hosts are listed | Check it's a usable setup token |
 |---|---|---|
 | Neon | `console.neon.tech` | `GET https://console.neon.tech/api/v2/projects` succeeds. A project-scoped key fails with "not allowed outside the project". It can't create the new project, so it must be replaced with an organization key. |
-| Fly | `api.fly.io` **and** `api.machines.dev` | the GraphQL `{ organizations { nodes { slug type } } }` lists **this app's own org**. A saved Fly token from an earlier app reaches only that app's org, so on every new app it must be replaced with one for the new org. |
+| Fly | `api.fly.io` **and** `api.machines.dev` | the GraphQL `{ organizations { nodes { slug name type } } }` lists **the org the user chose for this app**. A saved Fly token from an earlier app reaches only that app's org, so on every new app it must be replaced with one for this app's org, unless the user is deliberately reusing that same org. |
 | Cloudflare | `api.cloudflare.com` | `GET /client/v4/user/tokens/verify` is `active`, **and** `GET /client/v4/accounts` lists the account |
 
 Tell the user which setup tokens are already in place, and walk them through
@@ -296,7 +315,7 @@ can't create apps.
    the right one before going on.
 3. Tap **Tokens** in that org's menu (not an app's **Tokens**, and not
    the account menu's **Access Tokens**).
-4. Create an org deploy token. Name: type `able-setup`. Leave the expiry at
+4. Create a token of type **Org Deploy Token**. Name: type `able-setup`. Leave the expiry at
    the default, or pick an end date if they prefer.
 5. The token is shown **only once**. Copy the **whole** value; it's long,
    so use the page's copy button if there is one rather than selecting it.
@@ -331,45 +350,66 @@ that Claude then reaches only the new app's Fly org.
 This is a **user API token** made from a custom template. Warn about two
 traps on that page: the **Global API Key** further down is all-powerful
 and must not be used, and the ready-made templates (such as "Edit
-Cloudflare Workers") grant the wrong permissions. Ask first whether the
-user wants Claude to be able to set up custom domains later (step 11);
-that adds two optional permissions. Give the user these steps, in your
-own words:
+Cloudflare Workers") grant the wrong permissions. Use the custom-domain
+answer from step 1, and don't ask again: include the zone permissions
+only if the user wants a custom domain whose DNS is on Cloudflare. Give
+the user these steps, in your own words:
 
 1. Open **https://dash.cloudflare.com/profile/api-tokens** and sign in.
    This is **My Profile → API Tokens** (user tokens). Don't use
    **Manage Account → API Tokens** (account tokens), and don't touch the
    **Global API Key** section.
-2. Tap **Create Token**. Scroll to the bottom, to **Create Custom
-   Token**, and tap **Get started**.
+2. Tap **Create Token**, then **Start from scratch** (older dashboards:
+   scroll to the bottom, **Create Custom Token** → **Get started**).
 3. **Token name:** type `able-setup`.
-4. **Permissions:** one row per permission. Pick the three dropdowns left
-   to right, and tap **+ Add more** for the next row:
-   - `Account` · `Cloudflare Pages` · `Edit`
-   - `Account` · `Account Settings` · `Read`
-   - Only if they want custom domains:
-     - `Zone` · `DNS` · `Edit`
-     - `Zone` · `Zone` · `Read`
-5. **Account Resources:** `Include` · their account.
-   If they added the zone rows, **Zone Resources:** `Include` ·
-   `All zones from an account` · their account.
-6. Leave **Client IP Address Filtering** empty. Leave **TTL** empty, or
+4. Cloudflare groups permissions into **policies**. Each policy has a
+   scope (an account or a zone) and a list of permission groups with
+   **Read** and **Edit** checkboxes. Search the list, or open the
+   category, to find each one.
+   1. **Add new Account policy.** Scope: `Include` · their account.
+      Tick **Cloudflare Pages → Edit** and **Account Settings → Read**.
+      Nothing else.
+   2. Only if they chose a custom domain on Cloudflare DNS in step 1:
+      **Add new Zone policy.** Scope: `Include` · `Specific zone` · the
+      domain's zone (for `chore-chart.example.com`, that's
+      `example.com`). Under **DNS & Zones**, tick **DNS → Edit** and
+      **Zone → Read**. Nothing else. A specific zone is narrower than
+      "All zones from an account", so prefer it.
+   3. Close each policy editor so it shows as a summary card.
+5. Leave **Client IP Address Filtering** empty. Leave **TTL** empty, or
    set an end date if they prefer.
-7. Tap **Continue to summary**, check it lists exactly the rows above,
-   then tap **Create Token**.
-8. The token is shown **only once**. Tap **Copy**. Don't copy the
+6. Check the summary: one Account policy (Pages, Account Settings) and,
+   if added, one Zone policy for that zone (DNS, Zone). The summary may
+   say "Write" where the checkbox said "Edit". Then tap **Create
+   Token**.
+7. The token is shown **only once**. Tap **Copy**. Don't copy the
    example `curl` command on that page.
-9. Tell Claude it's copied.
+8. Tell Claude it's copied.
+
+If the user already made the token without the zone policy, they don't
+need a new one: **⋯ → Edit** on the token, add the Zone policy, and save.
+The value doesn't change, but they need it on the clipboard for the
+card; if they no longer have it, **Roll** gives a new value to copy.
 
 **After the user confirms:** call `request_credential` with host
 `api.cloudflare.com`. They paste the token into the card.
+If the token has a Zone policy, also check
+`GET /client/v4/zones?name=<apex>` lists the zone, in the same account.
 
 Re-run the checks in the table for each new token.
 
 ## Step 5: Provision (you)
 
-Install flyctl once with
-`curl -fsSL https://fly.io/install.sh | FLYCTL_INSTALL=<scratch dir>/fly sh`.
+You don't need flyctl for setup: everything below uses Fly's HTTP APIs.
+(Piping Fly's install script into `sh` can be refused by the session's
+safety checks anyway.) CI installs its own flyctl.
+
+**Neon: pick the CLI version.** Realtime is in beta and the `neon` CLI's
+surface still moves, so use one exact version for every command here and
+in CI. Take the newer of the template's pin (`NEON_CLI` in
+`.github/deploy.env`) and `npm view neon version`, as `V`. If it's newer
+than the pin, the check in item 7 below is what proves CI can use it; if
+that check fails, fall back to the pin.
 
 **Neon: create the project.**
 
@@ -400,12 +440,12 @@ Install flyctl once with
    project you adopted, ask the user before deleting it. Don't carry on in
    the wrong region.
 4. From `GET /api/v2/projects/$P/branches` (the one with `"default": true`)
-   and `npx -y neon@latest databases list --project-id $P --branch <default>`,
+   and `npx -y neon@$V databases list --project-id $P --branch <default>`,
    record the default branch, the database name and the owner role.
    **Never print** connection strings.
 5. Enable Realtime on the default branch, even if it's already on. The
    command is idempotent, and the next steps need it on:
-   `NEON_API_KEY=proxy-injected npx -y neon@latest realtime enable --project-id $P --branch <default>`.
+   `NEON_API_KEY=proxy-injected npx -y neon@$V realtime enable --project-id $P --branch <default>`.
 6. Verify Realtime on a throwaway branch, never the default:
    - `neon branches create --name scratch/rt-test --parent <default>`.
    - Create a table with a primary key and insert a row.
@@ -413,6 +453,13 @@ Install flyctl once with
      in the background, insert another row, and check that a second
      snapshot arrives.
    - `neon branches delete scratch/rt-test`.
+7. Check that `neon@$V env pull --service postgres --service realtime`
+   still writes what `.github/actions/deploy-backend` reads, without
+   printing values: pull the default branch into a file in your scratch
+   directory, check `DATABASE_URL` has the `postgresql://*-pooler.*`
+   shape and `NEON_REALTIME_URL` and `NEON_REALTIME_SECRET` are
+   non-empty (strip surrounding quotes as the action does), list only the
+   key names, then delete the file.
 
    Two catches. **Port 5432 is blocked** from cloud containers, so
    `neon psql` fails. Run SQL over HTTPS with `@neondatabase/serverless`:
@@ -420,18 +467,38 @@ Install flyctl once with
    (never print it), then `neon(url).query(sql)`. And a live query must read
    a table: `SELECT 1` is rejected ("upstream rejected").
 
-**Fly: the app's org.** The user created it in step 4. Find its slug
-yourself in the GraphQL org list below. It may differ from the name, for
-example with a suffix.
+**Fly: the app's org.** In step 4 the user either created a new org,
+created a linked org, or chose an existing org to reuse. Whichever it
+was, find it yourself in the GraphQL org list below and record its
+`slug`, exactly as GraphQL prints it, as `FLY_ORG`:
+
+- An org deploy token normally sees only its own org, so expect one
+  entry. If several are listed, match the org the user picked by its
+  `name`, and confirm it with them in one line rather than guessing.
+- Don't derive the slug from the name. Fly may add a suffix to a new
+  org's slug, and some orgs answer to more than one slug: the Machines
+  API's app record can show a different slug for the same org than
+  GraphQL does. Record the GraphQL one; it's what `flyctl --org` in CI
+  is known to accept.
+- After reserving the app (below), check that the app's
+  `organization.name` is the org the user picked. A different `slug`
+  there for the same org name is fine.
 
 **Fly: reserve the app name.**
 
 ```bash
 curl -s https://api.fly.io/graphql -H "Authorization: Bearer x" -H "Content-Type: application/json" \
   -d '{"query":"{ organizations { nodes { slug name type } } }"}'     # find the app's org -> FLY_ORG
-curl -s -o /dev/null -w "%{http_code}\n" https://<github-user>-<slug>-backend.fly.dev/   # 000 = name looks free
-FLY_API_TOKEN=proxy-injected flyctl apps create <github-user>-<slug>-backend --org <FLY_ORG>
+curl -s -X POST https://api.machines.dev/v1/apps -H "Authorization: Bearer x" \
+  -H "Content-Type: application/json" \
+  -d '{"app_name":"<github-user>-<slug>-backend","org_slug":"<FLY_ORG>"}'
+curl -s https://api.machines.dev/v1/apps/<github-user>-<slug>-backend -H "Authorization: Bearer x" \
+  | jq '{name, organization}'                                         # check it landed in the right org
 ```
+
+Creating the app is how you check the name is free: a `201` reserves it,
+and `422` with `"status":"name_taken"` means someone already has it, so
+add a suffix and try again.
 
 Fly's logs API rejects bearer-injected tokens (401). Use the Machines API
 (`GET https://api.machines.dev/v1/apps/<app>/machines`) for machine state
@@ -450,9 +517,18 @@ a suffix. `PROD_FRONTEND_ORIGIN` is `https://<subdomain>`. Then restrict
 Realtime on the default branch:
 
 ```bash
-NEON_API_KEY=proxy-injected npx -y neon@latest realtime enable --project-id $P \
+NEON_API_KEY=proxy-injected npx -y neon@$V realtime enable --project-id $P \
   --branch <default branch> --allowed-origin "$PROD_FRONTEND_ORIGIN"
 ```
+
+`realtime enable` only answers "Realtime enable requested for branch
+…", and neither the CLI nor the branch API reads the setting back, so
+you can't confirm the allowed origin here. The scratch-branch test in
+the Neon section proves Realtime itself works; the origin is proven only
+by the browser two-tab test in step 9 (and step 11 for a custom domain).
+If the server checks pass but the page signs in and then shows no
+greetings or doesn't sync, suspect the allowed origin first: re-run this
+command with the exact origin, no trailing slash, and retry.
 
 ## Step 6: CI tokens (GitHub secrets only)
 
@@ -489,47 +565,91 @@ These tokens never go into a card.
       wrong org breaks previews or reaches other apps.
    3. Tap **Tokens** in that org's menu (not an app's **Tokens**, which
       makes deploy tokens that can't create preview apps).
-   4. Create a token. Name: type `<slug>-ci`. Choose a long expiry, or
-      none if offered, since CI needs it long-term.
+   4. Create a token of type **Org Deploy Token**, the same type as the
+      `able-setup` token in step 4. Name: type `<slug>-ci`. Choose a long
+      expiry, or none if offered, since CI needs it long-term.
    5. Copy the **whole** value. In GitHub, paste it **as is**, including
       `FlyV1 ` at the start. Unlike the card, GitHub needs the prefix.
 3. **`CLOUDFLARE_API_TOKEN`**: the same page as the setup token in step 4,
    with fewer permissions.
    1. Open **https://dash.cloudflare.com/profile/api-tokens** (My Profile
       → API Tokens, not the Global API Key).
-   2. **Create Token** → bottom of the page, **Create Custom Token** →
-      **Get started**.
+   2. **Create Token** → **Start from scratch** (older dashboards:
+      bottom of the page, **Create Custom Token** → **Get started**).
    3. **Token name:** type `<slug>-ci`.
-   4. **Permissions:** exactly **one** row: `Account` · `Cloudflare
-      Pages` · `Edit`. Nothing else.
-   5. **Account Resources:** `Include` · their account.
-   6. **Continue to summary** → **Create Token** → **Copy**.
+   4. **Add new Account policy.** Scope: `Include` · their account. Tick
+      **only Cloudflare Pages → Edit**. No Account Settings and no Zone
+      policy.
+   5. **Create Token** → **Copy**.
 
 You can't read GitHub secrets. The first deploy in step 9 verifies them.
 
 ## Step 7: WorkOS (sign-in)
 
-WorkOS has no step you can automate here. Have the user, in
-**https://dashboard.workos.com** with the **Production** environment
-selected (environment switcher, top left):
+WorkOS has no step you can automate here. The user does it in
+**https://dashboard.workos.com**. Give them these steps, in your own
+words, in three short parts: find the application, add the addresses,
+send the Client ID.
 
-Each of the two values below goes into **two** places, so have the user
-open both pages first, in separate tabs:
+**Only the Production environment.** Tell the user that the app uses
+WorkOS's **Production** environment for everything: production and every
+PR preview sign in against it, sharing one user pool (`WORKOS_CLIENT_ID`
+is the Production client ID). Staging and Development environments
+aren't used, so nothing needs setting up there, and a Client ID from
+them won't work.
 
-- **Redirects**: under **Applications** → their app, or in the sidebar.
-- **CORS**: **Authentication → Sessions → Cross-Origin Resource Sharing
-  (CORS)**. Some dashboards call it "Allowed origins".
+**Part 1: find the application.**
 
-Then, one value at a time, copied from your message, with **no trailing
-slash**: copy it, paste it into Redirects, paste it into CORS, save both,
-and only then copy the next one.
+1. Open **https://dashboard.workos.com** and sign in.
+2. Make sure there's a **Project** for this app. If the dashboard asks
+   to create one, name it after the app (the display name). The
+   application lives inside the project.
+3. Switch to the **Production** environment with the environment
+   switcher at the top left.
+4. Open **Applications**, then the app's application, to reach its
+   **Application details** page. If there's no application yet, create
+   one first. The page has tabs, including **Redirects** and, just to
+   its right, **Session**.
 
-1. `<PROD_FRONTEND_ORIGIN>`
-2. `https://*.<pages subdomain>`, for example
+**Part 2: add the addresses.** They go into these places on that same
+page:
+
+- **Redirects** tab → **Redirect URIs**: both addresses below.
+- **Redirects** tab → **Sign-out URIs**: the production address only.
+  The app's **Sign out** button doesn't name a return address, so WorkOS
+  sends the user to the default sign-out URI. With none set, signing out
+  ends on WorkOS's `app-homepage-url-not-found` error page.
+- **Session** tab → **Manage** (the CORS allowed origins): both
+  addresses below.
+
+The Redirects tab has six address settings: Redirect URIs, Initiate
+login URI, Sign-out URIs, Sign-up URL, User invitation URL and Password
+reset URL. Tell the user only the first and third are needed, and to
+leave the other four empty, so they aren't left wondering.
+
+Then, one address at a time, copied from your message, with **no
+trailing slash**: copy it, add it everywhere it goes and save each, and
+only then copy the next one.
+
+1. `<PROD_FRONTEND_ORIGIN>`: into **Redirect URIs**, **Sign-out URIs**
+   and **Session → Manage**. Add it to Redirect URIs **first**: WorkOS
+   makes the first one the **default**, and the default must be the
+   production address, never the preview wildcard. If another entry is
+   marked default, in either list, tell the user to make this one the
+   default.
+2. Into **Redirect URIs** and **Session → Manage** only:
+   `https://*.<pages subdomain>`, for example
    `https://*.chore-chart-frontend.pages.dev`, which covers every PR
-   preview.
-3. Last, **API Keys**: copy the **Client ID** (`client_…`) and paste it in
-   chat. It isn't a secret.
+   preview. Signing out of a preview lands on the production site,
+   because the default sign-out URI is production's. That's expected.
+
+   Don't add the custom domain here yet, even if the user chose one. It's
+   added in step 11, and only works once the app has moved to it.
+
+**Part 3: the Client ID.** Last, because it's another copy: on the same
+Application details page, near the top, the Client ID (`client_…`) is
+shown in grey text. Tapping it copies it. Have the user paste it in
+chat. It isn't a secret.
 
 **Verify** each redirect without signing in. Probe both the prod origin
 and an invented preview origin such as `https://pr-test.<pages subdomain>`:
@@ -562,10 +682,11 @@ In the cloned repo:
    Leave `app_test` alone. It's the local test database, named so it never
    needs renaming.
 2. **Fill in `.github/deploy.env`.** Every value from the table above. Set
-   `NEON_CLI` to the current `neon` version.
+   `NEON_CLI` to `neon@$V`, the version you checked in step 5.
 3. **Docs:**
    - `README.md`: delete everything from `<!-- able:template-start` through
-     `<!-- able:template-end -->`. Under the title, put the user's
+     `<!-- able:template-end -->`, and the blank line after it, so the
+     file starts with `# <Name>`. Under the title, put the user's
      one-sentence description in place of the template text.
    - `CLAUDE.md`: replace "My App is a new web app." with the description.
    - **Keep `SECRETS.md`.** It's the app's guide to its tokens and to
@@ -607,10 +728,25 @@ Then ask the user to open `PROD_FRONTEND_ORIGIN` in **two tabs**, sign in,
 see "Hello, <Name>!", add a greeting in one tab, and watch it appear in the
 other.
 
+If the user chose a custom domain, remind them in one line that it's not
+forgotten: it's switched on in step 11, after previews.
+
 ## Step 10: Previews come up
 
 Open a small real PR, such as a README tweak on a new branch, and subscribe
-to its activity. `preview.yml` creates Neon branch `preview/pr-<n>`, enables
+to its activity.
+
+- `gh pr create` fails in Claude Code sessions, because it uses GitHub's
+  GraphQL API, which they block. Use the REST API instead:
+  `gh api repos/<owner>/<repo>/pulls -f title=… -f head=<branch> -f base=main -f body=…`.
+  Close it later with `gh api -X PATCH repos/<owner>/<repo>/pulls/<n> -f state=closed`.
+- The clone from step 3 is shallow and tracks only `main`. Push the new
+  branch with `git push -u origin <branch>`. If a hook still says the
+  branch has no remote, add a fetch refspec for it
+  (`git config --add remote.origin.fetch +refs/heads/<branch>:refs/remotes/origin/<branch>`)
+  and fetch it.
+- Keep the tweak clean: it's merged or closed at the end of this step,
+  and the user may choose either. `preview.yml` creates Neon branch `preview/pr-<n>`, enables
 Realtime on it with origin `*`, deploys `<FLY_BACKEND_APP>-pr-<n>`, and
 comments the URLs. `frontend.yml` deploys a Pages preview at
 `https://<branch-alias>.<pages subdomain>`.
@@ -619,9 +755,11 @@ Run the same server-side checks against the preview, then have the user do
 the two-tab test on the preview URL from the PR comment. Then merge or
 close the PR. Closing tears the preview down.
 
-## Step 11 (optional): Custom domain
+## Step 11: Custom domain (if chosen in step 1)
 
-Only if the user wants one, for example `chore-chart.example.com`:
+Use the domain from step 1. If the user didn't want one, skip to "Done".
+Before starting, remind them in one line what changes: sign-in moves to
+the domain, and the `pages.dev` address stops working for sign-in.
 
 1. **Attach the domain.**
    - If the Cloudflare setup token has the zone permissions and the
@@ -640,8 +778,16 @@ Only if the user wants one, for example `chore-chart.example.com`:
 2. **You:** set `PROD_FRONTEND_ORIGIN=https://<domain>` in
    `.github/deploy.env` and push, which redeploys with the new CORS origin.
    Then re-run `neon realtime enable --branch <default> --allowed-origin https://<domain>`.
-3. **User:** add `https://<domain>` to the WorkOS Redirects and CORS lists.
-   You verify it with the authorize probe.
+3. **User:** in WorkOS (**Production** environment → **Applications** →
+   the app's **Application details**), add `https://<domain>`, as in step
+   7: under **Redirects → Redirect URIs**, **Redirects → Sign-out URIs**
+   and **Session → Manage**. Have them make it the **default** in both
+   Redirect URIs and Sign-out URIs, since it's now the production
+   address. Then have them sign in at the domain and tap **Sign out**:
+   it should land back on the app. Tell them to leave the `pages.dev` entries in
+   place: the wildcard one still serves every PR preview. You verify it
+   with the authorize probe, and wait for the redeploy from item 2 before
+   checking CORS from the new origin.
 4. Sign-in now works only at the custom domain. The `pages.dev` address
    still serves the page, but the backend rejects its API calls.
 
