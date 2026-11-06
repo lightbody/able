@@ -102,7 +102,7 @@ Track these as you go. Every one ends up in `.github/deploy.env`:
 | `NEON_PROD_BRANCH` | the project's default branch (API-created projects call it `main`, console-created ones may call it `production`; check it) |
 | `NEON_DB_NAME`, `NEON_DB_ROLE` | Neon API (`neondb` / `neondb_owner` by default) |
 | `NEON_CLI` | `neon@<npm view neon version>` |
-| `FLY_ORG` | the slug of the app's own Fly org (step 5) |
+| `FLY_ORG` | the slug, as Fly's GraphQL API lists it, of the org the user chose in step 4 (new, linked or reused; step 5) |
 | `FLY_BACKEND_APP` | `<github-user>-<slug>-backend`, checked for availability |
 | `CLOUDFLARE_ACCOUNT_ID` | Cloudflare API |
 | `CLOUDFLARE_PAGES_PROJECT` | `<slug>-frontend` |
@@ -216,7 +216,7 @@ already have a saved credential (never the values). Check each service:
 | Service | Saved if these hosts are listed | Check it's a usable setup token |
 |---|---|---|
 | Neon | `console.neon.tech` | `GET https://console.neon.tech/api/v2/projects` succeeds. A project-scoped key fails with "not allowed outside the project". It can't create the new project, so it must be replaced with an organization key. |
-| Fly | `api.fly.io` **and** `api.machines.dev` | the GraphQL `{ organizations { nodes { slug type } } }` lists **this app's own org**. A saved Fly token from an earlier app reaches only that app's org, so on every new app it must be replaced with one for the new org. |
+| Fly | `api.fly.io` **and** `api.machines.dev` | the GraphQL `{ organizations { nodes { slug name type } } }` lists **the org the user chose for this app**. A saved Fly token from an earlier app reaches only that app's org, so on every new app it must be replaced with one for this app's org, unless the user is deliberately reusing that same org. |
 | Cloudflare | `api.cloudflare.com` | `GET /client/v4/user/tokens/verify` is `active`, **and** `GET /client/v4/accounts` lists the account |
 
 Tell the user which setup tokens are already in place, and walk them through
@@ -454,9 +454,22 @@ safety checks anyway.) CI installs its own flyctl.
    (never print it), then `neon(url).query(sql)`. And a live query must read
    a table: `SELECT 1` is rejected ("upstream rejected").
 
-**Fly: the app's org.** The user created it in step 4. Find its slug
-yourself in the GraphQL org list below. It may differ from the name, for
-example with a suffix.
+**Fly: the app's org.** In step 4 the user either created a new org,
+created a linked org, or chose an existing org to reuse. Whichever it
+was, find it yourself in the GraphQL org list below and record its
+`slug`, exactly as GraphQL prints it, as `FLY_ORG`:
+
+- An org deploy token normally sees only its own org, so expect one
+  entry. If several are listed, match the org the user picked by its
+  `name`, and confirm it with them in one line rather than guessing.
+- Don't derive the slug from the name. Fly may add a suffix to a new
+  org's slug, and some orgs answer to more than one slug: the Machines
+  API's app record can show a different slug for the same org than
+  GraphQL does. Record the GraphQL one; it's what `flyctl --org` in CI
+  is known to accept.
+- After reserving the app (below), check that the app's
+  `organization.name` is the org the user picked. A different `slug`
+  there for the same org name is fine.
 
 **Fly: reserve the app name.**
 
