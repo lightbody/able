@@ -101,7 +101,7 @@ Track these as you go. Every one ends up in `.github/deploy.env`:
 | `NEON_PROJECT_ID` | the project you create with the Neon API in step 5 |
 | `NEON_PROD_BRANCH` | the project's default branch (API-created projects call it `main`, console-created ones may call it `production`; check it) |
 | `NEON_DB_NAME`, `NEON_DB_ROLE` | Neon API (`neondb` / `neondb_owner` by default) |
-| `NEON_CLI` | `neon@<npm view neon version>` |
+| `NEON_CLI` | `neon@<version>`: the version you pick and check in step 5 |
 | `FLY_ORG` | the slug, as Fly's GraphQL API lists it, of the org the user chose in step 4 (new, linked or reused; step 5) |
 | `FLY_BACKEND_APP` | `<github-user>-<slug>-backend`, checked for availability |
 | `CLOUDFLARE_ACCOUNT_ID` | Cloudflare API |
@@ -405,6 +405,13 @@ You don't need flyctl for setup: everything below uses Fly's HTTP APIs.
 (Piping Fly's install script into `sh` can be refused by the session's
 safety checks anyway.) CI installs its own flyctl.
 
+**Neon: pick the CLI version.** Realtime is in beta and the `neon` CLI's
+surface still moves, so use one exact version for every command here and
+in CI. Take the newer of the template's pin (`NEON_CLI` in
+`.github/deploy.env`) and `npm view neon version`, as `V`. If it's newer
+than the pin, the check in item 7 below is what proves CI can use it; if
+that check fails, fall back to the pin.
+
 **Neon: create the project.**
 
 1. Check whether a project with the display name already exists, for
@@ -434,12 +441,12 @@ safety checks anyway.) CI installs its own flyctl.
    project you adopted, ask the user before deleting it. Don't carry on in
    the wrong region.
 4. From `GET /api/v2/projects/$P/branches` (the one with `"default": true`)
-   and `npx -y neon@latest databases list --project-id $P --branch <default>`,
+   and `npx -y neon@$V databases list --project-id $P --branch <default>`,
    record the default branch, the database name and the owner role.
    **Never print** connection strings.
 5. Enable Realtime on the default branch, even if it's already on. The
    command is idempotent, and the next steps need it on:
-   `NEON_API_KEY=proxy-injected npx -y neon@latest realtime enable --project-id $P --branch <default>`.
+   `NEON_API_KEY=proxy-injected npx -y neon@$V realtime enable --project-id $P --branch <default>`.
 6. Verify Realtime on a throwaway branch, never the default:
    - `neon branches create --name scratch/rt-test --parent <default>`.
    - Create a table with a primary key and insert a row.
@@ -447,6 +454,13 @@ safety checks anyway.) CI installs its own flyctl.
      in the background, insert another row, and check that a second
      snapshot arrives.
    - `neon branches delete scratch/rt-test`.
+7. Check that `neon@$V env pull --service postgres --service realtime`
+   still writes what `.github/actions/deploy-backend` reads, without
+   printing values: pull the default branch into a file in your scratch
+   directory, check `DATABASE_URL` has the `postgresql://*-pooler.*`
+   shape and `NEON_REALTIME_URL` and `NEON_REALTIME_SECRET` are
+   non-empty (strip surrounding quotes as the action does), list only the
+   key names, then delete the file.
 
    Two catches. **Port 5432 is blocked** from cloud containers, so
    `neon psql` fails. Run SQL over HTTPS with `@neondatabase/serverless`:
@@ -504,7 +518,7 @@ a suffix. `PROD_FRONTEND_ORIGIN` is `https://<subdomain>`. Then restrict
 Realtime on the default branch:
 
 ```bash
-NEON_API_KEY=proxy-injected npx -y neon@latest realtime enable --project-id $P \
+NEON_API_KEY=proxy-injected npx -y neon@$V realtime enable --project-id $P \
   --branch <default branch> --allowed-origin "$PROD_FRONTEND_ORIGIN"
 ```
 
@@ -620,7 +634,7 @@ In the cloned repo:
    Leave `app_test` alone. It's the local test database, named so it never
    needs renaming.
 2. **Fill in `.github/deploy.env`.** Every value from the table above. Set
-   `NEON_CLI` to the current `neon` version.
+   `NEON_CLI` to `neon@$V`, the version you checked in step 5.
 3. **Docs:**
    - `README.md`: delete everything from `<!-- able:template-start` through
      `<!-- able:template-end -->`. Under the title, put the user's
