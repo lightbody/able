@@ -135,6 +135,15 @@ Ask the user:
    Cloudflare, in the account they'll use for this app. Only then can
    Claude set it up; otherwise the user attaches it by hand in step 11.
 
+   If they want one, tell them in a sentence or two how it goes, so they
+   aren't left wondering when it'll come up: the app first goes live on
+   its `pages.dev` address, and the domain is switched on **last** (step
+   11), once production and previews are tested, so a domain problem
+   can't be mistaken for anything else. At that point Claude attaches the
+   domain and its DNS record in Cloudflare, points the app and the
+   database's live-updates setting at it, and the user adds it to WorkOS
+   (one more value, the same two lists as step 7).
+
 Derive the **slug**: lowercase, hyphens only, e.g. `chore-chart`.
 
 Suggest a **region pair** from the table below. The backend talks to the
@@ -553,6 +562,9 @@ and only then copy the next one.
 2. `https://*.<pages subdomain>`, for example
    `https://*.chore-chart-frontend.pages.dev`, which covers every PR
    preview.
+
+   Don't add the custom domain here yet, even if the user chose one. It's
+   added in step 11, and only works once the app has moved to it.
 3. Last, **API Keys**: copy the **Client ID** (`client_…`) and paste it in
    chat. It isn't a secret.
 
@@ -632,6 +644,9 @@ Then ask the user to open `PROD_FRONTEND_ORIGIN` in **two tabs**, sign in,
 see "Hello, <Name>!", add a greeting in one tab, and watch it appear in the
 other.
 
+If the user chose a custom domain, remind them in one line that it's not
+forgotten: it's switched on in step 11, after previews.
+
 ## Step 10: Previews come up
 
 Open a small real PR, such as a README tweak on a new branch, and subscribe
@@ -644,9 +659,11 @@ Run the same server-side checks against the preview, then have the user do
 the two-tab test on the preview URL from the PR comment. Then merge or
 close the PR. Closing tears the preview down.
 
-## Step 11 (optional): Custom domain
+## Step 11: Custom domain (if chosen in step 1)
 
-Only if the user wants one, for example `chore-chart.example.com`:
+Use the domain from step 1. If the user didn't want one, skip to "Done".
+Before starting, remind them in one line what changes: sign-in moves to
+the domain, and the `pages.dev` address stops working for sign-in.
 
 1. **Attach the domain.**
    - If the Cloudflare setup token has the zone permissions and the
@@ -665,8 +682,11 @@ Only if the user wants one, for example `chore-chart.example.com`:
 2. **You:** set `PROD_FRONTEND_ORIGIN=https://<domain>` in
    `.github/deploy.env` and push, which redeploys with the new CORS origin.
    Then re-run `neon realtime enable --branch <default> --allowed-origin https://<domain>`.
-3. **User:** add `https://<domain>` to the WorkOS Redirects and CORS lists.
-   You verify it with the authorize probe.
+3. **User:** add `https://<domain>` to the WorkOS Redirects and CORS lists,
+   the same way as step 7. Tell them to leave the `pages.dev` entries in
+   place: the wildcard one still serves every PR preview. You verify it
+   with the authorize probe, and wait for the redeploy from item 2 before
+   checking CORS from the new origin.
 4. Sign-in now works only at the custom domain. The `pages.dev` address
    still serves the page, but the backend rejects its API calls.
 
