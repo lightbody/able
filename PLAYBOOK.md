@@ -586,30 +586,61 @@ You can't read GitHub secrets. The first deploy in step 9 verifies them.
 
 ## Step 7: WorkOS (sign-in)
 
-WorkOS has no step you can automate here. Have the user, in
-**https://dashboard.workos.com** with the **Production** environment
-selected (environment switcher, top left):
+WorkOS has no step you can automate here. The user does it in
+**https://dashboard.workos.com**. Give them these steps, in your own
+words, in three short parts: find the application, add the addresses,
+send the Client ID.
 
-Each of the two values below goes into **two** places, so have the user
-open both pages first, in separate tabs:
+**Only the Production environment.** Tell the user that the app uses
+WorkOS's **Production** environment for everything: production and every
+PR preview sign in against it, sharing one user pool (`WORKOS_CLIENT_ID`
+is the Production client ID). Staging and Development environments
+aren't used, so nothing needs setting up there, and a Client ID from
+them won't work.
 
-- **Redirects**: under **Applications** → their app, or in the sidebar.
-- **CORS**: **Authentication → Sessions → Cross-Origin Resource Sharing
-  (CORS)**. Some dashboards call it "Allowed origins".
+**Part 1: find the application.**
 
-Then, one value at a time, copied from your message, with **no trailing
-slash**: copy it, paste it into Redirects, paste it into CORS, save both,
-and only then copy the next one.
+1. Open **https://dashboard.workos.com** and sign in.
+2. Make sure there's a **Project** for this app. If the dashboard asks
+   to create one, name it after the app (the display name). The
+   application lives inside the project.
+3. Switch to the **Production** environment with the environment
+   switcher at the top left.
+4. Open **Applications**, then the app's application, to reach its
+   **Application details** page. If there's no application yet, create
+   one first. The page has tabs, including **Redirects** and, just to
+   its right, **Session**.
 
-1. `<PROD_FRONTEND_ORIGIN>`
+**Part 2: add the addresses.** Each address goes into **two** places on
+that same page:
+
+- **Redirects** tab → **Redirect URIs**. The tab has six address
+  settings: Redirect URIs, Initiate login URI, Sign-out URIs, Sign-up
+  URL, User invitation URL and Password reset URL. Only **Redirect
+  URIs** is needed; tell the user to leave the other five empty, so they
+  aren't left wondering.
+- **Session** tab → **Manage** (the CORS allowed origins).
+
+Then, one address at a time, copied from your message, with **no
+trailing slash**: copy it, add it under Redirect URIs and save, then
+open the Session tab, tap **Manage**, add it and save. Only then copy
+the next one.
+
+1. `<PROD_FRONTEND_ORIGIN>`. Add this one **first**: WorkOS makes the
+   first Redirect URI the **default**, and the default must be the
+   production address, never the preview wildcard. If another entry is
+   marked default, tell the user to make this one the default.
 2. `https://*.<pages subdomain>`, for example
    `https://*.chore-chart-frontend.pages.dev`, which covers every PR
    preview.
 
    Don't add the custom domain here yet, even if the user chose one. It's
    added in step 11, and only works once the app has moved to it.
-3. Last, **API Keys**: copy the **Client ID** (`client_…`) and paste it in
-   chat. It isn't a secret.
+
+**Part 3: the Client ID.** Last, because it's another copy: on the same
+Application details page, near the top, the Client ID (`client_…`) is
+shown in grey text. Tapping it copies it. Have the user paste it in
+chat. It isn't a secret.
 
 **Verify** each redirect without signing in. Probe both the prod origin
 and an invented preview origin such as `https://pr-test.<pages subdomain>`:
@@ -738,8 +769,11 @@ the domain, and the `pages.dev` address stops working for sign-in.
 2. **You:** set `PROD_FRONTEND_ORIGIN=https://<domain>` in
    `.github/deploy.env` and push, which redeploys with the new CORS origin.
    Then re-run `neon realtime enable --branch <default> --allowed-origin https://<domain>`.
-3. **User:** add `https://<domain>` to the WorkOS Redirects and CORS lists,
-   the same way as step 7. Tell them to leave the `pages.dev` entries in
+3. **User:** in WorkOS (**Production** environment → **Applications** →
+   the app's **Application details**), add `https://<domain>`, as in step
+   7: under **Redirects → Redirect URIs**, then **Session → Manage**.
+   Have them make it the **default** Redirect URI, since it's now the
+   production address. Tell them to leave the `pages.dev` entries in
    place: the wildcard one still serves every PR preview. You verify it
    with the authorize probe, and wait for the redeploy from item 2 before
    checking CORS from the new origin.
