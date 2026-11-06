@@ -350,26 +350,40 @@ the user these steps, in your own words:
    This is **My Profile → API Tokens** (user tokens). Don't use
    **Manage Account → API Tokens** (account tokens), and don't touch the
    **Global API Key** section.
-2. Tap **Create Token**. Scroll to the bottom, to **Create Custom
-   Token**, and tap **Get started**.
+2. Tap **Create Token**, then **Start from scratch** (older dashboards:
+   scroll to the bottom, **Create Custom Token** → **Get started**).
 3. **Token name:** type `able-setup`.
-4. **Permissions:** one row per permission. Pick the three dropdowns left
-   to right, and tap **+ Add more** for the next row:
-   - `Account` · `Cloudflare Pages` · `Edit`
-   - `Account` · `Account Settings` · `Read`
-   - Only if they chose a custom domain on Cloudflare DNS in step 1:
-     - `Zone` · `DNS` · `Edit`
-     - `Zone` · `Zone` · `Read`
-5. **Account Resources:** `Include` · their account.
-   If they added the zone rows, **Zone Resources:** `Include` ·
-   `All zones from an account` · their account.
-6. Leave **Client IP Address Filtering** empty. Leave **TTL** empty, or
+4. Cloudflare groups permissions into **policies**. Each policy has a
+   scope (an account or a zone) and a list of permission groups with
+   **Read** and **Edit** checkboxes. Search the list, or open the
+   category, to find each one.
+   1. **Add new Account policy.** Scope: `Include` · their account.
+      Tick **Cloudflare Pages → Edit** and **Account Settings → Read**.
+      Nothing else.
+   2. Only if they chose a custom domain on Cloudflare DNS in step 1:
+      **Add new Zone policy.** Scope: `Include` · `Specific zone` · the
+      domain's zone (for `chore-chart.example.com`, that's
+      `example.com`). Under **DNS & Zones**, tick **DNS → Edit** and
+      **Zone → Read**. Nothing else. A specific zone is narrower than
+      "All zones from an account", so prefer it.
+   3. Close each policy editor so it shows as a summary card.
+5. Leave **Client IP Address Filtering** empty. Leave **TTL** empty, or
    set an end date if they prefer.
-7. Tap **Continue to summary**, check it lists exactly the rows above,
-   then tap **Create Token**.
-8. The token is shown **only once**. Tap **Copy**. Don't copy the
+6. Check the summary: one Account policy (Pages, Account Settings) and,
+   if added, one Zone policy for that zone (DNS, Zone). The summary may
+   say "Write" where the checkbox said "Edit". Then tap **Create
+   Token**.
+7. The token is shown **only once**. Tap **Copy**. Don't copy the
    example `curl` command on that page.
-9. Tell Claude it's copied.
+8. Tell Claude it's copied.
+
+If the user already made the token without the zone policy, they don't
+need a new one: **⋯ → Edit** on the token, add the Zone policy, and save.
+The value doesn't change, but they need it on the clipboard for the
+card; if they no longer have it, **Roll** gives a new value to copy.
+
+Check the zone with `GET /client/v4/zones?name=<apex>`: it must list the
+zone, in the same account.
 
 **After the user confirms:** call `request_credential` with host
 `api.cloudflare.com`. They paste the token into the card.
@@ -507,13 +521,13 @@ These tokens never go into a card.
    with fewer permissions.
    1. Open **https://dash.cloudflare.com/profile/api-tokens** (My Profile
       → API Tokens, not the Global API Key).
-   2. **Create Token** → bottom of the page, **Create Custom Token** →
-      **Get started**.
+   2. **Create Token** → **Start from scratch** (older dashboards:
+      bottom of the page, **Create Custom Token** → **Get started**).
    3. **Token name:** type `<slug>-ci`.
-   4. **Permissions:** exactly **one** row: `Account` · `Cloudflare
-      Pages` · `Edit`. Nothing else.
-   5. **Account Resources:** `Include` · their account.
-   6. **Continue to summary** → **Create Token** → **Copy**.
+   4. **Add new Account policy.** Scope: `Include` · their account. Tick
+      **only Cloudflare Pages → Edit**. No Account Settings and no Zone
+      policy.
+   5. **Create Token** → **Copy**.
 
 You can't read GitHub secrets. The first deploy in step 9 verifies them.
 
