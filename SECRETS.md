@@ -85,7 +85,10 @@ and copy only one thing at a time.
 1. Create the new token with the setup scope above, named `able-setup`.
    For Fly that's an org deploy token from the org's **Tokens** page.
 2. In the environment's **Network secrets**, replace the value for that
-   host. For Fly, update both hosts and delete `FlyV1 ` from the start.
+   host. For Fly, update both hosts and delete `FlyV1 ` (6 characters,
+   including the space) from the start of the value: the form treats it
+   as a pasted header, shows an error and keeps **Save** greyed out until
+   it's gone. Fly accepts the token without it.
    Alternatively, ask Claude to show the secure card for the host and paste
    it there.
 3. Revoke the old token in the service's dashboard.

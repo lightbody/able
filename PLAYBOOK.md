@@ -78,9 +78,15 @@ card, and then the three CI tokens.
   `NEON_API_KEY=proxy-injected npx neon …` or
   `FLY_API_TOKEN=proxy-injected flyctl …`. For raw HTTP, send any dummy
   bearer token; the proxy overwrites it.
-- The card **rejects values that look like they include a header scheme.**
-  Fly tokens start with `FlyV1 `, so tell the user to delete the leading
-  `FlyV1 ` in the card before saving. Fly accepts `Bearer fm2_…`.
+- **Known card bug: Fly tokens are rejected as pasted.** Fly tokens start
+  with `FlyV1 ` (6 characters: `FlyV1` plus one space). The card treats a
+  value that starts with a word and a space as a pasted header scheme: it
+  shows an error and greys out **Save**. Fly's API works fine without the
+  prefix (it accepts `Bearer fm2_…`), so the fix is to cut it in the card.
+  The card can cover your message, so give this warning in the **guide
+  turn**, before the user copies the token, not only in the card turn.
+  See the Fly setup token steps in step 4. (Hopefully the card is fixed
+  some day; if a pasted `FlyV1 …` value saves as is, that's fine too.)
 - If the user declines a card, don't re-ask unless they say so, for example
   "I submitted it wrong, ask again". If they say that, ask again.
 - After `saved`, retry right away. Wait about a minute only if you get a
@@ -296,11 +302,26 @@ can't create apps.
    so use the page's copy button if there is one rather than selecting it.
    It goes into **two** cards, so don't copy anything else until both
    are saved.
-6. Tell Claude it's copied.
+6. **Heads-up for the cards, before you copy.** The token starts with
+   `FlyV1 `. The card currently mistakes that for a pasted header: it
+   shows an error and the **Save** button stays greyed out. That's a known
+   bug, not a bad token. If it happens, in **each** card:
+   1. Tap just after the space that follows `FlyV1` (the token itself
+      starts with `fm2_`).
+   2. Delete back to the start: **6 characters**, `F`, `l`, `y`, `V`, `1`
+      and the space. The value should now start with `fm2_`.
+   3. **Save** turns on. Tap it.
 
-**After the user confirms:** say there are two cards, and that if the
-token starts with `FlyV1 ` they delete that prefix (including the space)
-in **each** card before saving. Then call `request_credential` with host
+   Don't edit the copied value anywhere else first: the second card needs
+   it too, and GitHub (step 6) needs the full `FlyV1 …` form.
+7. Tell Claude it's copied.
+
+Always include that heads-up in this guide turn. It's the user's only
+chance to read it, because the card can cover the next message.
+
+**After the user confirms:** say in one line that there are two cards and
+that each may need `FlyV1 ` (6 characters) cut from the start, as above.
+Then call `request_credential` with host
 `api.fly.io`, and after it's saved, with host `api.machines.dev`. If a Fly
 token from an earlier app is already saved, these cards replace it; say
 that Claude then reaches only the new app's Fly org.
