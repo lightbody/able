@@ -151,9 +151,10 @@ One-time state outside the repo (set up by PLAYBOOK.md):
 - **Fly** -- nothing. The deploy action creates apps on demand in `FLY_ORG`.
 - **WorkOS** (Production environment only: prod and every PR preview share
   it; Staging and Development aren't used) -- on the application's
-  **Redirects** tab, Redirect URIs (the prod origin is the default; the
-  other five address settings stay empty), and on its **Session** tab,
-  the CORS origins under **Manage**:
+  **Redirects** tab, Redirect URIs (the prod origin is the default) and
+  Sign-out URIs (just the prod origin, as the default: the app's sign-out
+  names no return address; the other four address settings stay empty),
+  and on its **Session** tab, the CORS origins under **Manage**:
   `PROD_FRONTEND_ORIGIN`, plus `https://*.<pages project>.pages.dev` for
   previews. Enter them with **no trailing slash**. The app sends the bare
   origin (`window.location.origin`), and WorkOS matches wildcard entries
@@ -167,7 +168,8 @@ Prod is served at `PROD_FRONTEND_ORIGIN`. To move it (e.g. to a custom
 domain), attach the domain to the Pages project, update
 `PROD_FRONTEND_ORIGIN`, re-run
 `neon realtime enable --branch <default branch> --allowed-origin <origin>`,
-and add it to the WorkOS Redirect URIs (as the default) and CORS origins. Sign-in and API calls
+and add it to the WorkOS Redirect URIs and Sign-out URIs (as the default in
+both) and CORS origins. Sign-in and API calls
 work only from `PROD_FRONTEND_ORIGIN`.
 
 Every pull request gets an isolated preview stack: a Realtime-enabled Neon

@@ -611,28 +611,37 @@ them won't work.
    one first. The page has tabs, including **Redirects** and, just to
    its right, **Session**.
 
-**Part 2: add the addresses.** Each address goes into **two** places on
-that same page:
+**Part 2: add the addresses.** They go into these places on that same
+page:
 
-- **Redirects** tab → **Redirect URIs**. The tab has six address
-  settings: Redirect URIs, Initiate login URI, Sign-out URIs, Sign-up
-  URL, User invitation URL and Password reset URL. Only **Redirect
-  URIs** is needed; tell the user to leave the other five empty, so they
-  aren't left wondering.
-- **Session** tab → **Manage** (the CORS allowed origins).
+- **Redirects** tab → **Redirect URIs**: both addresses below.
+- **Redirects** tab → **Sign-out URIs**: the production address only.
+  The app's **Sign out** button doesn't name a return address, so WorkOS
+  sends the user to the default sign-out URI. With none set, signing out
+  ends on WorkOS's `app-homepage-url-not-found` error page.
+- **Session** tab → **Manage** (the CORS allowed origins): both
+  addresses below.
+
+The Redirects tab has six address settings: Redirect URIs, Initiate
+login URI, Sign-out URIs, Sign-up URL, User invitation URL and Password
+reset URL. Tell the user only the first and third are needed, and to
+leave the other four empty, so they aren't left wondering.
 
 Then, one address at a time, copied from your message, with **no
-trailing slash**: copy it, add it under Redirect URIs and save, then
-open the Session tab, tap **Manage**, add it and save. Only then copy
-the next one.
+trailing slash**: copy it, add it everywhere it goes and save each, and
+only then copy the next one.
 
-1. `<PROD_FRONTEND_ORIGIN>`. Add this one **first**: WorkOS makes the
-   first Redirect URI the **default**, and the default must be the
+1. `<PROD_FRONTEND_ORIGIN>`: into **Redirect URIs**, **Sign-out URIs**
+   and **Session → Manage**. Add it to Redirect URIs **first**: WorkOS
+   makes the first one the **default**, and the default must be the
    production address, never the preview wildcard. If another entry is
-   marked default, tell the user to make this one the default.
-2. `https://*.<pages subdomain>`, for example
+   marked default, in either list, tell the user to make this one the
+   default.
+2. Into **Redirect URIs** and **Session → Manage** only:
+   `https://*.<pages subdomain>`, for example
    `https://*.chore-chart-frontend.pages.dev`, which covers every PR
-   preview.
+   preview. Signing out of a preview lands on the production site,
+   because the default sign-out URI is production's. That's expected.
 
    Don't add the custom domain here yet, even if the user chose one. It's
    added in step 11, and only works once the app has moved to it.
@@ -771,9 +780,11 @@ the domain, and the `pages.dev` address stops working for sign-in.
    Then re-run `neon realtime enable --branch <default> --allowed-origin https://<domain>`.
 3. **User:** in WorkOS (**Production** environment → **Applications** →
    the app's **Application details**), add `https://<domain>`, as in step
-   7: under **Redirects → Redirect URIs**, then **Session → Manage**.
-   Have them make it the **default** Redirect URI, since it's now the
-   production address. Tell them to leave the `pages.dev` entries in
+   7: under **Redirects → Redirect URIs**, **Redirects → Sign-out URIs**
+   and **Session → Manage**. Have them make it the **default** in both
+   Redirect URIs and Sign-out URIs, since it's now the production
+   address. Then have them sign in at the domain and tap **Sign out**:
+   it should land back on the app. Tell them to leave the `pages.dev` entries in
    place: the wildcard one still serves every PR preview. You verify it
    with the authorize probe, and wait for the redeploy from item 2 before
    checking CORS from the new origin.
