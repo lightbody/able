@@ -58,8 +58,16 @@ the user creates only the three CI tokens.
 
 ## How `request_credential` works
 
-- Call it with the API **host**, a short `display_name` and a `reason`. Tell
-  the user in your message which token to paste, *before* calling it.
+- **Two turns, never one.** The card can cover your message, and the user
+  can't create a token while it is open. So:
+  1. **Guide turn.** Send only the steps for creating that one token, ending
+     with "copy it, then tell me when you have it copied". Don't call
+     `request_credential` in this turn. End the turn and wait.
+  2. **Card turn.** Only after the user confirms they have the token
+     copied, say in one line which token the card is for, then call
+     `request_credential`. If they report a problem instead, help with
+     that, and don't show the card yet.
+- Call it with the API **host**, a short `display_name` and a `reason`.
 - The value is saved on this session's cloud environment, and every session
   that uses the environment can use it. The network proxy injects it as
   `Authorization: Bearer <value>` on requests to that host, and you never
@@ -188,6 +196,12 @@ Tell the user which setup tokens are already in place, and walk them through
 creating only the missing or unusable ones. Each one goes **only** into a
 card, never into GitHub.
 
+Do one token at a time, in the two turns described in "How
+`request_credential` works". First send the creation steps below and end
+your turn with "copy it, then tell me when you have it copied". Only after
+the user confirms, call `request_credential`. Never show a card in the same
+turn as the creation steps.
+
 **Neon setup token**
 
 This key creates the app's project in step 5, so it has to be an
@@ -195,9 +209,9 @@ This key creates the app's project in step 5, so it has to be an
 user that, because the key-type choice is easy to miss.
 1. Neon Console → **Organization settings → API keys → Create API key**.
    Choose the **Organization** key type, and don't select a project. Name
-   it `able-setup`. Copy it.
-2. Paste it into the card. Call `request_credential` with host
-   `console.neon.tech`.
+   it `able-setup`. Copy it, then tell Claude it's copied.
+2. **After the user confirms:** call `request_credential` with host
+   `console.neon.tech`. They paste the key into the card.
 
 If the user belongs to more than one Neon organization, ask which one the
 app's project belongs in, and have them create the key there. The key's
@@ -207,10 +221,12 @@ organization is where you create the project.
 1. Create a **personal access token**, not an org token, because each app
    gets its own Fly org and the setup token has to reach all of them. In
    the Fly dashboard, open the account menu (your avatar) → **Access
-   Tokens** → create a token named `able-setup`. Copy the whole value.
-2. It goes into **two** cards. If it starts with `FlyV1 `, delete that
-   prefix in each card. Call `request_credential` with host `api.fly.io`,
-   then with host `api.machines.dev`.
+   Tokens** → create a token named `able-setup`. Copy the whole value,
+   then tell Claude it's copied. Warn them now that it goes into **two**
+   cards, so they shouldn't copy anything else until both are saved.
+2. **After the user confirms:** call `request_credential` with host
+   `api.fly.io`, then with host `api.machines.dev`. If the token starts
+   with `FlyV1 `, the user deletes that prefix in each card.
 
 **Cloudflare setup token**
 1. Open **https://dash.cloudflare.com/profile/api-tokens**, then **Create
@@ -227,8 +243,9 @@ organization is where you create the project.
      account` → their account.
    - Leave **TTL** empty, or set an end date if the user prefers.
    - Tap **Continue to summary**, then **Create Token**, then **Copy**.
-2. Paste it into the card. Call `request_credential` with host
-   `api.cloudflare.com`.
+     Tell Claude it's copied.
+2. **After the user confirms:** call `request_credential` with host
+   `api.cloudflare.com`. They paste the token into the card.
 
 Re-run the checks in the table for each new token.
 
