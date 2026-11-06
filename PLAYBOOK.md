@@ -306,7 +306,7 @@ can't create apps.
    the right one before going on.
 3. Tap **Tokens** in that org's menu (not an app's **Tokens**, and not
    the account menu's **Access Tokens**).
-4. Create an org deploy token. Name: type `able-setup`. Leave the expiry at
+4. Create a token of type **Org Deploy Token**. Name: type `able-setup`. Leave the expiry at
    the default, or pick an end date if they prefer.
 5. The token is shown **only once**. Copy the **whole** value; it's long,
    so use the page's copy button if there is one rather than selecting it.
@@ -513,8 +513,9 @@ These tokens never go into a card.
       wrong org breaks previews or reaches other apps.
    3. Tap **Tokens** in that org's menu (not an app's **Tokens**, which
       makes deploy tokens that can't create preview apps).
-   4. Create a token. Name: type `<slug>-ci`. Choose a long expiry, or
-      none if offered, since CI needs it long-term.
+   4. Create a token of type **Org Deploy Token**, the same type as the
+      `able-setup` token in step 4. Name: type `<slug>-ci`. Choose a long
+      expiry, or none if offered, since CI needs it long-term.
    5. Copy the **whole** value. In GitHub, paste it **as is**, including
       `FlyV1 ` at the start. Unlike the card, GitHub needs the prefix.
 3. **`CLOUDFLARE_API_TOKEN`**: the same page as the setup token in step 4,

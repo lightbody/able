@@ -63,8 +63,8 @@ and copy only one thing at a time.
      It's shown only once.
    - **Fly:** https://fly.io/dashboard → in the organization dropdown,
      pick this app's org → that org's **Tokens** (not an app's Tokens,
-     and not the account menu's Access Tokens) → create an
-     **organization** token. Copy the whole value, including `FlyV1 `.
+     and not the account menu's Access Tokens) → create an **Org Deploy
+     Token**. Copy the whole value, including `FlyV1 `.
    - **Cloudflare:** https://dash.cloudflare.com/profile/api-tokens (My
      Profile → API Tokens; never the Global API Key). Either **⋯ → Roll**
      on the existing `<project>-ci` token (same permissions, new value),
