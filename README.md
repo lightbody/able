@@ -126,7 +126,8 @@ account and Pages project; the prod frontend origin; and the WorkOS client
 ID. Every workflow loads it first. The only GitHub secrets are three API
 tokens: `NEON_API_KEY` (project-scoped), `FLY_API_TOKEN` (org token, since
 previews create apps), and `CLOUDFLARE_API_TOKEN` (Account → Cloudflare
-Pages → Edit).
+Pages → Edit). **[`SECRETS.md`](SECRETS.md)** covers what each token is,
+where it lives, and how to rotate it.
 
 Nothing else is copied by hand. On every deploy,
 `.github/actions/deploy-backend` pulls the target Neon branch's pooled

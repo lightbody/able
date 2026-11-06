@@ -22,10 +22,9 @@ instruction you give must work with that.
    name would replace the token on their clipboard.
 3. **Deep links.** Use the links given here. Don't invent URLs. Where this
    playbook gives a menu path instead of a link, give the menu path.
-4. **Secrets never go through chat.** API tokens go into GitHub secrets
-   (the user pastes them) and into the `request_credential` tool, which
-   shows the user a secure card. Never ask for a token in chat. Non-secret
-   IDs (Cloudflare account ID, WorkOS client ID) are fine in chat.
+4. **Secrets never go through chat.** Never ask for a token in chat.
+   Non-secret IDs (Cloudflare account ID, Neon org ID, WorkOS client ID) are
+   fine in chat.
 5. **Never print a secret.** You will handle connection strings and Realtime
    secrets in shell variables and files. Never `echo`, `cat` or log them.
    Check them by shape (`case "$v" in postgresql://*-pooler.*) …`). Watch out
@@ -35,21 +34,43 @@ instruction you give must work with that.
 6. **Verify, don't assume.** After each provisioning step, check it worked
    with a read-only call before moving on.
 
-## How `request_credential` works (read before step 3)
+## Two kinds of tokens
+
+Read `SECRETS.md` in the template. It is the user-facing version of this
+section and stays in the new app.
+
+| | **Setup tokens** (`able-setup`) | **CI tokens** (`<slug>-ci`) |
+|---|---|---|
+| For | you, Claude: creating and debugging infrastructure | GitHub Actions: every deploy |
+| Saved via | the `request_credential` card, onto this cloud environment | GitHub Actions secrets, pasted by the user |
+| Neon | **organization-wide** key, so you can create the project | **project-scoped** key for this app's project |
+| Fly | org token | org token (previews create apps) |
+| Cloudflare | Pages Edit + Account Settings Read (+ Zone DNS Edit and Zone Read for custom domains) | Pages Edit only |
+| Reused across apps | yes | no, one set per app |
+
+Never put a CI token into a card or a setup token into GitHub. The point
+of the split is that each app's CI holds only what that app needs, while
+the broad setup tokens live only in the Claude environment. The user can
+expire or revoke them without affecting any deploy.
+
+On a second or later app, the setup tokens are usually already saved, so
+the user creates only the three CI tokens.
+
+## How `request_credential` works
 
 - Call it with the API **host**, a short `display_name` and a `reason`. Tell
   the user in your message which token to paste, *before* calling it.
-- The value is saved on this session's cloud environment, and the network
-  proxy injects it as `Authorization: Bearer <value>` on every request to
-  that host. You never see it. CLIs and SDKs still want a key variable, so
-  set it to the placeholder `proxy-injected`, for example
+- The value is saved on this session's cloud environment, and every session
+  that uses the environment can use it. The network proxy injects it as
+  `Authorization: Bearer <value>` on requests to that host, and you never
+  see it. CLIs and SDKs still want a key variable, so set it to the
+  placeholder `proxy-injected`, for example
   `NEON_API_KEY=proxy-injected npx neon …` or
   `FLY_API_TOKEN=proxy-injected flyctl …`. For raw HTTP, send any dummy
   bearer token; the proxy overwrites it.
 - The card **rejects values that look like they include a header scheme.**
-  Fly tokens start with `FlyV1 `. Tell the user to paste the full token into
-  GitHub, then delete the leading `FlyV1 ` in the card before saving. Fly
-  accepts `Bearer fm2_…`.
+  Fly tokens start with `FlyV1 `, so tell the user to delete the leading
+  `FlyV1 ` in the card before saving. Fly accepts `Bearer fm2_…`.
 - If the user declines a card, don't re-ask unless they say so, for example
   "I submitted it wrong, ask again". If they say that, ask again.
 - After `saved`, retry right away. Wait about a minute only if you get a
@@ -61,9 +82,9 @@ Track these as you go. Every one ends up in `.github/deploy.env`:
 
 | Key | Source |
 |---|---|
-| `NEON_PROJECT_ID` | Neon API, after the user creates the project |
-| `NEON_PROD_BRANCH` | the project's default branch (`production` for Console-created projects) |
-| `NEON_DB_NAME`, `NEON_DB_ROLE` | Neon API |
+| `NEON_PROJECT_ID` | returned when you create the Neon project |
+| `NEON_PROD_BRANCH` | the project's default branch (`main` for API-created projects; check it) |
+| `NEON_DB_NAME`, `NEON_DB_ROLE` | Neon API (`neondb` / `neondb_owner` by default) |
 | `NEON_CLI` | `neon@<npm view neon version>` |
 | `FLY_ORG` | Fly GraphQL (`personal` for most users) |
 | `FLY_BACKEND_APP` | `<github-user>-<slug>-backend`, checked for availability |
@@ -111,118 +132,121 @@ Then attach it with push access: call `add_repo` with `access: "push"`.
 If it's refused because the Claude GitHub App can't see the new repo (the
 app is installed on selected repos only), have the user add the repo at
 **https://github.com/apps/claude/installations/select_target**, then retry.
-Once attached, clone it to the path the result gives you, and work on `main`. The user's
-request to set up this app authorizes pushing the setup commit to `main`
-of this new repo. If the session refuses, push a branch and open a PR
-instead.
+Once attached, clone it to the path the result gives you, and work on
+`main`. The user's request to set up this app authorizes pushing the setup
+commit to `main` of this new repo. If the session refuses, push a branch
+and open a PR instead.
 
 Creating the repo triggers CI on its first commit. The deploy jobs skip
 themselves while `.github/deploy.env` is empty, so the run is harmless.
 
-Each GitHub secret the user adds goes here (fill in owner/repo):
-`https://github.com/<owner>/<repo>/settings/secrets/actions/new`
+## Step 4: Setup tokens (only the missing ones)
 
-## Step 4: Neon (database + Realtime)
+First call `get_environment`. Its `network_secrets` lists the hosts that
+already have a saved credential (never the values). Check each service:
 
-**User:**
+| Service | Saved if these hosts are listed | Check it's a usable setup token |
+|---|---|---|
+| Neon | `console.neon.tech` | `GET https://console.neon.tech/api/v2/projects` succeeds. A project-scoped key fails with "not allowed outside the project", and must be replaced with an org-wide one. |
+| Fly | `api.fly.io` **and** `api.machines.dev` | the GraphQL `{ organizations { nodes { slug type } } }` returns the org |
+| Cloudflare | `api.cloudflare.com` | `GET /client/v4/user/tokens/verify` is `active`, **and** `GET /client/v4/accounts` lists the account |
 
-1. Go to **https://console.neon.tech/app/projects** and tap **New project**.
-   - **Name:** the display name.
-   - **Region:** **AWS US East 1 (N. Virginia)**. Realtime is beta and
-     available only in `aws-us-east-1`, `aws-us-east-2`, `aws-eu-central-1`
-     and `aws-ap-southeast-1`. Projects can't change region later.
-   - Leave the rest at the defaults.
-2. Create an API key: **Organization settings → API keys → Create API key**.
-   Pick **project-scoped**, select the new project, and name it `<slug>-ci`.
-   Copy it.
-3. In the GitHub secrets tab: **Name** `NEON_API_KEY` (typed), **Secret**:
-   paste. Then **Add secret**.
-4. Paste the same key into the card you're about to show.
+Tell the user which setup tokens are already in place, and walk them through
+creating only the missing or unusable ones. Each one goes **only** into a
+card, never into GitHub.
 
-**You:** `request_credential` with host `console.neon.tech`. Then:
+**Neon setup token**
+1. Neon Console → **Organization settings → API keys → Create API key**.
+   Choose the **organization** key type, not project-scoped. Name it
+   `able-setup`. Copy it.
+2. Paste it into the card. Call `request_credential` with host
+   `console.neon.tech`.
 
-```bash
-# A project-scoped key can only see its own project. Listing projects is
-# refused, and the error message names the project id.
-curl -s https://console.neon.tech/api/v2/projects -H "Authorization: Bearer x"
-P=<project id>
-curl -s https://console.neon.tech/api/v2/projects/$P -H "Authorization: Bearer x"           # check region_id
-curl -s https://console.neon.tech/api/v2/projects/$P/branches -H "Authorization: Bearer x"  # default branch
-export NEON_API_KEY=proxy-injected
-npx -y neon@latest databases list --project-id $P --branch <default branch>   # db name + owner role
-npx -y neon@latest realtime enable --project-id $P --branch <default branch>
-```
+**Fly setup token**
+1. Open **https://fly.io/dashboard**, go to the org's **Tokens** page, and
+   create an **organization** token named `able-setup`. If an expiry is
+   offered, pick whatever the user is comfortable with. When it lapses,
+   the next setup simply asks again. Copy the whole value.
+2. It goes into **two** cards. Delete the leading `FlyV1 ` in each one.
+   Call `request_credential` with host `api.fly.io`, then with host
+   `api.machines.dev`.
 
-**Verify that Realtime works.** Use a throwaway branch, never the default
-branch:
+**Cloudflare setup token**
+1. Open **https://dash.cloudflare.com/profile/api-tokens**, then **Create
+   Token** → (scroll down) **Custom token** → **Get started**.
+   - **Name:** `able-setup`
+   - **Permissions:**
+     - `Account` → `Cloudflare Pages` → `Edit`
+     - `Account` → `Account Settings` → `Read`
+     - Optional, so Claude can set up custom domains:
+       - `Zone` → `DNS` → `Edit`
+       - `Zone` → `Zone` → `Read`
+   - **Account Resources:** `Include` → their account. If zone permissions
+     were added, **Zone Resources:** `Include` → `All zones from an
+     account` → their account.
+   - Leave **TTL** empty, or set an end date if the user prefers.
+   - Tap **Continue to summary**, then **Create Token**, then **Copy**.
+2. Paste it into the card. Call `request_credential` with host
+   `api.cloudflare.com`.
 
-1. `neon branches create --name scratch/rt-test --parent <default>`.
-2. Create a table with a primary key and insert a row.
-3. Run `neon realtime subscribe --output json "SELECT * FROM items ORDER BY id"`
-   in the background, insert another row, and check that a second snapshot
-   arrives.
-4. `neon branches delete scratch/rt-test`.
+Re-run the checks in the table for each new token.
 
-Two catches:
+## Step 5: Provision (you)
 
-- **Port 5432 is blocked** from cloud containers, so `neon psql` fails. Run
-  SQL over HTTPS with `@neondatabase/serverless`: get a connection string
-  with `neon connection-string` into a variable (never print it), then
-  `neon(url).query(sql)`.
-- A live query must read a table. `SELECT 1` is rejected ("upstream
-  rejected").
+Install flyctl once with
+`curl -fsSL https://fly.io/install.sh | FLYCTL_INSTALL=<scratch dir>/fly sh`.
 
-You'll set Realtime's allowed origin on the default branch in step 6, once
-the Pages URL exists.
+**Neon: create the project.**
 
-## Step 5: Fly.io (backend)
+1. Find the org ID. Org keys can list projects, so read it from any
+   project's `org_id`. If there are no projects yet, try
+   `GET /api/v2/users/me/organizations`. As a last resort, ask the user: it's
+   on Neon Console → **Organization settings → General**, it starts with
+   `org-`, and it isn't secret.
+2. Create the project:
+   ```bash
+   curl -s -X POST https://console.neon.tech/api/v2/projects -H "Authorization: Bearer x" \
+     -H "Content-Type: application/json" \
+     -d '{"project":{"name":"<Display Name>","region_id":"aws-us-east-1","org_id":"<org id>"}}'
+   ```
+   Realtime is beta and available only in `aws-us-east-1`, `aws-us-east-2`,
+   `aws-eu-central-1` and `aws-ap-southeast-1`. Use `aws-us-east-1` (next
+   to Fly's `iad`) unless the user asks otherwise.
+3. From the response and from
+   `npx -y neon@latest databases list --project-id $P --branch <default>`,
+   record `NEON_PROJECT_ID`, the default branch, the database name and the
+   owner role. **Never print** the `connection_uris` the create call
+   returns.
+4. Enable Realtime on the default branch:
+   `NEON_API_KEY=proxy-injected npx -y neon@latest realtime enable --project-id $P --branch <default>`.
+5. Verify Realtime on a throwaway branch, never the default:
+   - `neon branches create --name scratch/rt-test --parent <default>`.
+   - Create a table with a primary key and insert a row.
+   - Run `neon realtime subscribe --output json "SELECT * FROM items ORDER BY id"`
+     in the background, insert another row, and check that a second
+     snapshot arrives.
+   - `neon branches delete scratch/rt-test`.
 
-**User:**
+   Two catches. **Port 5432 is blocked** from cloud containers, so
+   `neon psql` fails. Run SQL over HTTPS with `@neondatabase/serverless`:
+   get a connection string with `neon connection-string` into a variable
+   (never print it), then `neon(url).query(sql)`. And a live query must read
+   a table: `SELECT 1` is rejected ("upstream rejected").
 
-1. Open **https://fly.io/dashboard**, open their organization's **Tokens**
-   page, and create an **organization** token named `<slug>-ci`. It must be
-   an organization token, not an app deploy token, because PR previews
-   create apps. Copy the whole value, including `FlyV1 `.
-2. In GitHub: **Name** `FLY_API_TOKEN` (typed), **Secret**: paste the full
-   token. Then **Add secret**.
-3. Paste it into the two cards you'll show next, **deleting the leading
-   `FlyV1 `** in each one.
-
-**You:** call `request_credential` twice with the same token: host
-`api.fly.io`, then host `api.machines.dev`. Both are Fly's. Install
-flyctl with `curl -fsSL https://fly.io/install.sh | FLYCTL_INSTALL=<scratch dir>/fly sh`.
-Then:
+**Fly: reserve the app name.**
 
 ```bash
 curl -s https://api.fly.io/graphql -H "Authorization: Bearer x" -H "Content-Type: application/json" \
   -d '{"query":"{ organizations { nodes { slug type } } }"}'          # FLY_ORG
 curl -s -o /dev/null -w "%{http_code}\n" https://<github-user>-<slug>-backend.fly.dev/   # 000 = name looks free
-FLY_API_TOKEN=proxy-injected flyctl apps create <github-user>-<slug>-backend --org <FLY_ORG>  # reserve the name
+FLY_API_TOKEN=proxy-injected flyctl apps create <github-user>-<slug>-backend --org <FLY_ORG>
 ```
 
 Fly's logs API rejects bearer-injected tokens (401). Use the Machines API
 (`GET https://api.machines.dev/v1/apps/<app>/machines`) for machine state
 and exit codes when debugging.
 
-## Step 6: Cloudflare (frontend)
-
-**User:**
-
-1. Open **https://dash.cloudflare.com/profile/api-tokens**, tap **Create
-   Token**, scroll to **Custom token**, and tap **Get started**.
-   - **Name:** `<slug>-ci`
-   - **Permissions:** add two rows:
-     - `Account` → `Cloudflare Pages` → `Edit`
-     - `Account` → `Account Settings` → `Read`, so you can look up the
-       account ID
-   - **Account Resources:** `Include` → their account.
-   - Tap **Continue to summary**, then **Create Token**, then **Copy**. The
-     token is shown only once.
-2. In GitHub: **Name** `CLOUDFLARE_API_TOKEN` (typed), **Secret**: paste.
-   Then **Add secret**.
-3. Paste it into the card.
-
-**You:** `request_credential` with host `api.cloudflare.com`. Then:
+**Cloudflare: create the Pages project.**
 
 ```bash
 curl -s https://api.cloudflare.com/client/v4/accounts -H "Authorization: Bearer x"   # CLOUDFLARE_ACCOUNT_ID
@@ -231,7 +255,7 @@ curl -s -X POST "https://api.cloudflare.com/client/v4/accounts/$A/pages/projects
 ```
 
 Use the returned `result.subdomain`. If the name was taken, Cloudflare adds
-a suffix. `PROD_FRONTEND_ORIGIN` is `https://<subdomain>`. Now restrict
+a suffix. `PROD_FRONTEND_ORIGIN` is `https://<subdomain>`. Then restrict
 Realtime on the default branch:
 
 ```bash
@@ -239,10 +263,29 @@ NEON_API_KEY=proxy-injected npx -y neon@latest realtime enable --project-id $P \
   --branch <default branch> --allowed-origin "$PROD_FRONTEND_ORIGIN"
 ```
 
-If `/accounts` comes back empty, the token lacks the Account Settings
-permission. Ask the user for the Account ID instead. It's on the right of
-**Workers & Pages → Overview**, or it's the 32-character segment after
-`dash.cloudflare.com/` in the address bar. It isn't secret, so chat is fine.
+## Step 6: CI tokens (GitHub secrets only)
+
+The project now exists, so the user can create its narrowly scoped CI
+tokens. Every one goes **only** into GitHub, at:
+`https://github.com/<owner>/<repo>/settings/secrets/actions/new`
+
+Do one service at a time. For each: create the token and copy it, then in
+GitHub type the **Name** (don't copy it), paste the **Secret**, and tap
+**Add secret**. These tokens never go into a card.
+
+1. **`NEON_API_KEY`**: Neon Console → **Organization settings → API keys →
+   Create API key** → **project-scoped** → select the new project. Name it
+   `<slug>-ci`.
+2. **`FLY_API_TOKEN`**: https://fly.io/dashboard → the org's **Tokens** →
+   create an **organization** token named `<slug>-ci`, with no short expiry,
+   since CI needs it long-term. Paste the **whole** value, including
+   `FlyV1 `.
+3. **`CLOUDFLARE_API_TOKEN`**: https://dash.cloudflare.com/profile/api-tokens
+   → **Create Token** → **Custom token**. Name `<slug>-ci`, **only**
+   `Account` → `Cloudflare Pages` → `Edit`, Account Resources → their
+   account.
+
+You can't read GitHub secrets. The first deploy in step 9 verifies them.
 
 ## Step 7: WorkOS (sign-in)
 
@@ -296,6 +339,8 @@ In the cloned repo:
      `<!-- able:template-end -->`. Under the title, put the user's
      one-sentence description in place of the template text.
    - `CLAUDE.md`: replace "My App is a new web app." with the description.
+   - **Keep `SECRETS.md`.** It's the app's guide to its tokens and to
+     rotating them.
 4. **Delete `PLAYBOOK.md`.** The new app doesn't need it.
 5. Run `npm install`, which regenerates the lockfile for the new names.
    Then run the same checks CI runs:
@@ -313,8 +358,13 @@ In the cloned repo:
 
 The push to `main` runs `backend.yml`, which tests and then deploys to Fly
 against the default Neon branch, running migrations on boot. It also runs
-`frontend.yml`, which deploys Pages production. Watch the runs with the
-GitHub tools, read failed job logs, fix, and push. Then verify:
+`frontend.yml`, which deploys Pages production. **This is the first use of
+the CI tokens.** A failure at a Neon, Fly or Cloudflare step usually means
+a CI token was pasted into the wrong secret or has the wrong scope, so
+check the job log for which call failed.
+
+Watch the runs with the GitHub tools, read failed job logs, fix, and push.
+Then verify:
 
 - `curl https://<FLY_BACKEND_APP>.fly.dev/health` returns `{"status":"ok"}`.
 - `/live/config` without a token returns 401.
@@ -344,12 +394,20 @@ close the PR. Closing tears the preview down.
 
 Only if the user wants one, for example `chore-chart.example.com`:
 
-1. **User:** in Cloudflare, **Workers & Pages → `<slug>-frontend` → Custom
-   domains → Set up a custom domain**, then type the domain and **Activate**.
-   If the domain's DNS is on Cloudflare, the record is created
-   automatically. Otherwise they add the CNAME it shows at their DNS host.
-   You can check status with
-   `GET /accounts/$A/pages/projects/<project>/domains`.
+1. **Attach the domain.**
+   - If the Cloudflare setup token has the zone permissions and the
+     domain's DNS is on Cloudflare in the same account, do it yourself:
+     - `POST /accounts/$A/pages/projects/<project>/domains` with
+       `{"name":"<domain>"}`
+     - find the zone with `GET /zones?name=<apex>`
+     - create a proxied CNAME, `<domain>` → `<pages subdomain>`, with
+       `POST /zones/<zone id>/dns_records`
+   - Otherwise the user does it: **Workers & Pages → `<slug>-frontend` →
+     Custom domains → Set up a custom domain**, types the domain, and taps
+     **Activate**. If the DNS isn't on Cloudflare, they add the CNAME it
+     shows at their DNS host.
+   - Either way, check status with
+     `GET /accounts/$A/pages/projects/<project>/domains`.
 2. **You:** set `PROD_FRONTEND_ORIGIN=https://<domain>` in
    `.github/deploy.env` and push, which redeploys with the new CORS origin.
    Then re-run `neon realtime enable --branch <default> --allowed-origin https://<domain>`.
@@ -363,8 +421,10 @@ Only if the user wants one, for example `chore-chart.example.com`:
 Tell the user, briefly:
 
 - the prod URL, the repo, and how previews work
-- that the three tokens live in GitHub secrets and on this cloud
-  environment, and where to manage them: the environment menu in the session
-  title bar → **Edit** → **Network secrets**
-- that `CLAUDE.md` tells future sessions how deploys work and how to use
-  those keys
+- that deploys use only the three `<slug>-ci` tokens in GitHub, and that
+  `SECRETS.md` explains how to rotate them
+- that the `able-setup` tokens stay on this cloud environment for the next
+  app and for debugging. They can revoke them at any time without
+  affecting deploys, by removing them under the environment name in the
+  session title bar → **Edit** → **Network secrets**, and revoking them in
+  each service's dashboard.

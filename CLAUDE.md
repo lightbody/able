@@ -69,12 +69,14 @@ asserts the SQL and params, like the existing `POST /live/:view` test.
   skip themselves while any value in it is empty
   (`.github/workflows/deploy-config.yml`).
 - GitHub has only three secrets: `NEON_API_KEY`, `FLY_API_TOKEN` and
-  `CLOUDFLARE_API_TOKEN`. `.github/actions/deploy-backend` pulls the DB URL
+  `CLOUDFLARE_API_TOKEN` -- this app's narrowly scoped CI tokens. See
+  `SECRETS.md` for scopes and rotation. `.github/actions/deploy-backend` pulls the DB URL
   and Realtime credentials from Neon on every deploy, so never set those on
   Fly by hand.
-- Cloud sessions on the owner's environment may have API keys for
-  `console.neon.tech`, `api.fly.io`, `api.machines.dev` and
-  `api.cloudflare.com`, injected by the network proxy. To use the CLIs, set
+- Cloud sessions on the owner's environment may have broader `able-setup`
+  API keys for `console.neon.tech`, `api.fly.io`, `api.machines.dev` and
+  `api.cloudflare.com`, injected by the network proxy (separate from the CI
+  tokens, and possibly revoked -- check with a read-only call first). To use the CLIs, set
   the key variable to the placeholder `proxy-injected`, e.g.
   `NEON_API_KEY=proxy-injected npx neon@<NEON_CLI version> ...`,
   `FLY_API_TOKEN=proxy-injected flyctl ...`. Direct Postgres connections
