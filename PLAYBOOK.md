@@ -686,7 +686,19 @@ forgotten: it's switched on in step 11, after previews.
 ## Step 10: Previews come up
 
 Open a small real PR, such as a README tweak on a new branch, and subscribe
-to its activity. `preview.yml` creates Neon branch `preview/pr-<n>`, enables
+to its activity.
+
+- `gh pr create` fails in Claude Code sessions, because it uses GitHub's
+  GraphQL API, which they block. Use the REST API instead:
+  `gh api repos/<owner>/<repo>/pulls -f title=… -f head=<branch> -f base=main -f body=…`.
+  Close it later with `gh api -X PATCH repos/<owner>/<repo>/pulls/<n> -f state=closed`.
+- The clone from step 3 is shallow and tracks only `main`. Push the new
+  branch with `git push -u origin <branch>`. If a hook still says the
+  branch has no remote, add a fetch refspec for it
+  (`git config --add remote.origin.fetch +refs/heads/<branch>:refs/remotes/origin/<branch>`)
+  and fetch it.
+- Keep the tweak clean: it's merged or closed at the end of this step,
+  and the user may choose either. `preview.yml` creates Neon branch `preview/pr-<n>`, enables
 Realtime on it with origin `*`, deploys `<FLY_BACKEND_APP>-pr-<n>`, and
 comments the URLs. `frontend.yml` deploys a Pages preview at
 `https://<branch-alias>.<pages subdomain>`.
