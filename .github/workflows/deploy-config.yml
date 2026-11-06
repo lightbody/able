@@ -1,0 +1,29 @@
+name: Deploy config
+
+# Reusable check: deploy jobs run only once every value in
+# .github/deploy.env is filled in. Keeps the empty template, and a new app
+# mid-setup, from attempting (and failing) deploys.
+on:
+  workflow_call:
+    outputs:
+      configured:
+        description: "'true' when .github/deploy.env has no empty values"
+        value: ${{ jobs.check.outputs.configured }}
+
+jobs:
+  check:
+    name: Check deploy config
+    runs-on: ubuntu-latest
+    outputs:
+      configured: ${{ steps.check.outputs.configured }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: check
+        run: |
+          missing="$(grep -E '^[A-Z_]+=\s*$' .github/deploy.env | cut -d= -f1 | tr '\n' ' ')"
+          if [ -n "$missing" ]; then
+            echo "::notice::Skipping deploys: .github/deploy.env has no value for: $missing"
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi

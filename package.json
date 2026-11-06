@@ -1,0 +1,9 @@
+{
+  "name": "myapp",
+  "private": true,
+  "workspaces": [
+    "shared",
+    "frontend",
+    "backend"
+  ]
+}

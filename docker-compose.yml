@@ -1,0 +1,28 @@
+# Postgres for backend tests only. Local dev runs against a personal Neon
+# branch instead, since Neon Realtime's live query engine only runs on Neon
+# (see README "Local development").
+name: myapp
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: app_test
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "0.0.0.0:5432:5432"
+      - ":::5432:5432"
+    command:
+      - -c
+      - listen_addresses=*
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

@@ -1,0 +1,91 @@
+name: Backend
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - backend/**
+      - shared/**
+      - fly.backend.toml
+      - .github/deploy.env
+      - .github/actions/deploy-backend/**
+      - .github/workflows/backend.yml
+  pull_request:
+    paths:
+      - backend/**
+      - shared/**
+      - fly.backend.toml
+      - .github/deploy.env
+      - .github/actions/deploy-backend/**
+      - .github/workflows/backend.yml
+
+jobs:
+  config:
+    uses: ./.github/workflows/deploy-config.yml
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: app_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://postgres:password@localhost:5432/app_test?sslmode=disable
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build shared
+        run: npm run build --workspace=shared
+
+      - name: Test shared
+        run: npm test --workspace=shared
+
+      - name: Build backend
+        run: npm run build --workspace=backend
+
+      - name: Test backend
+        run: npm test --workspace=backend
+
+  deploy:
+    name: Deploy to Fly
+    needs: [test, config]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && needs.config.outputs.configured == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Load deploy config
+        run: grep -Ev '^\s*(#|$)' .github/deploy.env >> "$GITHUB_ENV"
+
+      - name: Deploy backend
+        uses: ./.github/actions/deploy-backend
+        with:
+          app: ${{ env.FLY_BACKEND_APP }}
+          neon-branch: ${{ env.NEON_PROD_BRANCH }}
+          allowed-origin: ${{ env.PROD_FRONTEND_ORIGIN }}
+          neon-api-key: ${{ secrets.NEON_API_KEY }}
+          fly-api-token: ${{ secrets.FLY_API_TOKEN }}

@@ -1,0 +1,29 @@
+{
+  "name": "myapp-backend",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/main.js",
+    "dev": "tsx watch src/main.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@myapp/shared": "*",
+    "@fastify/cors": "^9.0.1",
+    "@neon/realtime": "0.1.2",
+    "dotenv": "^16.4.5",
+    "fastify": "^4.28.1",
+    "jose": "^5.9.6",
+    "pg": "^8.13.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@types/pg": "^8.11.10",
+    "tsx": "^4.19.1",
+    "typescript": "^5.4.5",
+    "vitest": "^2.0.5"
+  }
+}

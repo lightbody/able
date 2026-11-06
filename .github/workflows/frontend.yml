@@ -1,0 +1,103 @@
+name: Frontend
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - frontend/**
+      - shared/**
+      - .github/deploy.env
+      - .github/workflows/frontend.yml
+  # No paths filter on PRs: every PR gets a full preview stack, so the
+  # frontend must always be rebuilt against the PR's backend app.
+  pull_request:
+
+concurrency:
+  group: frontend-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  config:
+    uses: ./.github/workflows/deploy-config.yml
+
+  build:
+    name: Type-check & build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Load deploy config
+        run: grep -Ev '^\s*(#|$)' .github/deploy.env >> "$GITHUB_ENV"
+
+      - name: Build
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          # A PR's frontend talks to that PR's preview backend app.
+          app="$FLY_BACKEND_APP${PR_NUMBER:+-pr-$PR_NUMBER}"
+          # Same WorkOS Production Client ID for prod and every PR preview
+          # (with a wildcard redirect URI registered in the WorkOS
+          # dashboard) so prod and preview share one user pool/IDs.
+          VITE_API_URL="https://$app.fly.dev" VITE_WORKOS_CLIENT_ID="$WORKOS_CLIENT_ID" \
+            npm run build --workspace=frontend
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist
+          retention-days: 1
+
+  deploy:
+    name: Deploy to Cloudflare Pages
+    needs: [build, config]
+    if: needs.config.outputs.configured == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Load deploy config
+        run: grep -Ev '^\s*(#|$)' .github/deploy.env >> "$GITHUB_ENV"
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist
+
+      - name: Deploy
+        id: deploy
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ env.CLOUDFLARE_ACCOUNT_ID }}
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          command: >-
+            pages deploy frontend/dist
+            --project-name=${{ env.CLOUDFLARE_PAGES_PROJECT }}
+            --branch=${{ github.head_ref || github.ref_name }}
+
+      - name: Update preview environment comment
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { upsertPreviewComment } = require('./.github/scripts/preview-comment.js');
+            await upsertPreviewComment(github, context, {
+              frontendUrl: '${{ steps.deploy.outputs.pages-deployment-alias-url || steps.deploy.outputs.deployment-url }}',
+            });
