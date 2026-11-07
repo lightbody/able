@@ -72,7 +72,7 @@
           <li>
             <span class="role">Backend</span>
             <strong>Fly.io</strong>
-            <p>Your TypeScript API, running close to your database.</p>
+            <p>Your TypeScript API, close to your database. It sleeps when idle, so a quiet app costs next to nothing.</p>
             <span class="tier tier-paid">Pay as you go</span>
           </li>
           <li>
@@ -111,9 +111,16 @@
           <details>
             <summary>What does it cost?</summary>
             <p>For a low-traffic app, close to nothing. Cloudflare Pages, Neon and WorkOS
-              all have free tiers that cover it. Fly.io bills by usage, and a small
-              backend costs a few dollars a month. Check each platform's pricing page
-              for current limits.</p>
+              all have free tiers that cover it. Fly.io has no free plan but bills by
+              usage, which for a quiet app is usually nothing (see below). Check each
+              platform's pricing page for current limits.</p>
+          </details>
+          <details>
+            <summary>Fly.io has no free plan. Will I get a bill?</summary>
+            <p>Probably not, for a low-traffic app. Able configures the backend to
+              sleep when no one is using it and wake on the next request, so you pay
+              only for the minutes it actually runs. Fly.io also waives monthly bills
+              under $5, so your card isn't charged at all.</p>
           </details>
           <details>
             <summary>What does Able expect of my app after setup?</summary>
