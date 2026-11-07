@@ -629,7 +629,14 @@ leave the other four empty, so they aren't left wondering.
 
 Then, one address at a time, copied from your message, with **no
 trailing slash**: copy it, add it everywhere it goes and save each, and
-only then copy the next one.
+only then copy the next one. After saving, have the user look at each
+saved entry: if it ends in `/`, edit it and delete the slash. This
+applies to **every** entry, the production address as much as the
+wildcard: WorkOS compares the redirect URI as an exact string, the app
+sends the bare origin (`window.location.origin`, which has no trailing
+slash), and an entry ending in `/` fails sign-in with
+`redirect-uri-invalid`. A slash can creep in from the paste or the form,
+so check rather than assume.
 
 1. `<PROD_FRONTEND_ORIGIN>`: into **Redirect URIs**, **Sign-out URIs**
    and **Session → Manage**. Add it to Redirect URIs **first**: WorkOS
@@ -659,10 +666,13 @@ curl -s -o /dev/null -w "%{redirect_url}\n" "https://api.workos.com/user_managem
 ```
 
 A redirect to `error.workos.com/redirect-uri-invalid` means the origin isn't
-registered. The usual culprit is a trailing `/` on the wildcard entry:
-WorkOS matches wildcards exactly, and the app sends the bare origin. If
-`https://pr-test.<sub>/` passes but the version without the slash fails,
-that's the cause. Also check the client is real:
+registered. The usual culprit is a trailing `/` on that entry, prod or
+wildcard alike: WorkOS matches exactly, and the app sends the bare
+origin. If the origin with a trailing `/` (`$ORIGIN/`) passes but the
+version without it fails, that's the cause: have the user edit that
+Redirect URI and delete the slash (and check the Sign-out URI and
+Session entries for the same address while they're there), then probe
+again. Also check the client is real:
 `curl -s https://api.workos.com/sso/jwks/$CID` should list at least one
 key.
 
@@ -783,7 +793,8 @@ the domain, and the `pages.dev` address stops working for sign-in.
    7: under **Redirects → Redirect URIs**, **Redirects → Sign-out URIs**
    and **Session → Manage**. Have them make it the **default** in both
    Redirect URIs and Sign-out URIs, since it's now the production
-   address. Then have them sign in at the domain and tap **Sign out**:
+   address. As in step 7, it goes in with no trailing slash, and they
+   check each saved entry for one. Then have them sign in at the domain and tap **Sign out**:
    it should land back on the app. Tell them to leave the `pages.dev` entries in
    place: the wildcard one still serves every PR preview. You verify it
    with the authorize probe, and wait for the redeploy from item 2 before
