@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Able — one prompt to a real, deployed app</title>
+  <meta name="description" content="Able is a TypeScript app skeleton plus a playbook that Claude Code follows to stand up a new app end to end: production, per-PR previews, sign-in and live data.">
+  <meta property="og:title" content="Able — one prompt to a real, deployed app">
+  <meta property="og:description" content="Paste one prompt into Claude Code. Get production, per-PR preview stacks, sign-in and live data, verified end to end.">
+  <meta property="og:url" content="https://able.lightbody.net/">
+  <meta property="og:type" content="website">
+  <meta name="theme-color" content="#0e3b2c">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="#top" aria-label="Able home">
+        <svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><use href="#leaf"/></svg>
+        <span>Able</span>
+      </a>
+      <nav class="nav-links">
+        <a href="#features">What you get</a>
+        <a href="#how">How it works</a>
+        <a href="#security">Security</a>
+        <a class="btn btn-ghost" href="https://github.com/lightbody/able">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <!-- Hero -->
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div class="hero-copy">
+          <p class="eyebrow">An app template Claude Code sets up for you</p>
+          <h1>Paste one prompt.<br><em>Get a real app,</em> deployed.</h1>
+          <p class="lede">
+            Able is a TypeScript app skeleton plus a playbook that Claude Code
+            follows from start to finish. You end up with production, a preview
+            stack for every pull request, sign-in and live data, all
+            working and checked. You can do the whole thing from your phone.
+          </p>
+
+          <div class="prompt" id="prompt">
+            <div class="prompt-head">
+              <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+              <span class="prompt-label">Paste into a Claude Code session</span>
+            </div>
+            <p class="prompt-body" id="prompt-text">Read https://github.com/lightbody/able/blob/main/PLAYBOOK.md and follow it to set up a new app for me. Ask me what it's called first.</p>
+            <button class="btn btn-primary copy" type="button" data-copy="#prompt-text">
+              <span class="copy-label">Copy prompt</span>
+            </button>
+          </div>
+          <p class="fine">Works in the terminal or at claude.ai/code, including on a phone or tablet.</p>
+        </div>
+
+        <div class="hero-visual" aria-hidden="true">
+          <div class="chat">
+            <div class="bubble user">Set up a new app for me.</div>
+            <div class="bubble claude">What's it called?</div>
+            <div class="bubble user">Chore Chart</div>
+            <ol class="progress">
+              <li class="done">Repo created from the template</li>
+              <li class="done">Neon project in a Realtime region</li>
+              <li class="done">Fly org, Cloudflare Pages project</li>
+              <li class="done">CI tokens in GitHub secrets</li>
+              <li class="done">WorkOS sign-in configured</li>
+              <li class="live">Production &amp; previews verified</li>
+            </ol>
+          </div>
+          <div class="pr-card">
+            <div class="pr-title"><span class="pr-badge">PR #12</span> Add chore rotation</div>
+            <table>
+              <tr><th>Frontend</th><td>pr-12.chore-chart.pages.dev</td></tr>
+              <tr><th>Backend</th><td>chore-chart-pr-12.fly.dev</td></tr>
+              <tr><th>Neon branch</th><td>preview/pr-12</td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features -->
+    <section class="section" id="features">
+      <div class="wrap">
+        <p class="eyebrow">Ready on day one</p>
+        <h2>The boring parts are already done, so you start on features.</h2>
+        <div class="cards">
+          <article class="card">
+            <div class="icon">🚀</div>
+            <h3>Production, deployed</h3>
+            <p>A push to <code>main</code> tests and deploys the backend to Fly.io
+              and the frontend to Cloudflare Pages. Database migrations run on boot.</p>
+          </article>
+          <article class="card">
+            <div class="icon">🌱</div>
+            <h3>A full stack for every PR</h3>
+            <p>Each pull request gets its own Neon database branch, its own backend
+              app and its own frontend preview, linked from one PR comment.
+              All of it is torn down when the PR closes.</p>
+          </article>
+          <article class="card">
+            <div class="icon">⚡</div>
+            <h3>Live data, no polling</h3>
+            <p>Reads are Neon Realtime live SQL queries that stream straight to the
+              browser. Writes come back on the same stream, so every tab
+              stays in sync, and you don't run a WebSocket server.</p>
+          </article>
+          <article class="card">
+            <div class="icon">🔐</div>
+            <h3>Sign-in that just works</h3>
+            <p>WorkOS AuthKit handles sign-in. Every backend route except
+              <code>/health</code> checks the bearer token, and prod and every
+              preview share one user pool.</p>
+          </article>
+          <article class="card">
+            <div class="icon">🧩</div>
+            <h3>TypeScript end to end</h3>
+            <p>React + Vite, Fastify and Postgres in one npm workspaces monorepo,
+              with a <code>shared</code> package that both sides import with no
+              build step on the frontend.</p>
+          </article>
+          <article class="card">
+            <div class="icon">✅</div>
+            <h3>Tests and CI included</h3>
+            <p>Backend integration tests run against real Postgres. Type checks
+              and builds run on every PR. Deploy jobs wait until the app's
+              deploy config has been filled in.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- How it works -->
+    <section class="section section-tint" id="how">
+      <div class="wrap">
+        <p class="eyebrow">How it works</p>
+        <h2>You click a few buttons. Claude does the rest.</h2>
+        <ol class="steps">
+          <li>
+            <span class="step-n">1</span>
+            <div>
+              <h3>Name it</h3>
+              <p>Claude asks for the app's name and a one-line description, then picks a
+                region where Neon Realtime and Fly sit next to each other.</p>
+            </div>
+          </li>
+          <li>
+            <span class="step-n">2</span>
+            <div>
+              <h3>Create accounts and tokens</h3>
+              <p>Claude walks you through GitHub, Neon, Fly, Cloudflare and WorkOS
+                one step at a time, with direct links. The steps work on a phone,
+                one clipboard item at a time, and tokens go into secure cards,
+                never the chat.</p>
+            </div>
+          </li>
+          <li>
+            <span class="step-n">3</span>
+            <div>
+              <h3>Claude provisions everything</h3>
+              <p>It creates the database, enables Realtime, sets up hosting, wires
+                up CI and renames the skeleton to your app. It checks every step
+                with a read-only call before moving on.</p>
+            </div>
+          </li>
+          <li>
+            <span class="step-n">4</span>
+            <div>
+              <h3>Both environments, verified</h3>
+              <p>Production and a preview are checked with a full sign-in and a live-data
+                round trip. You can add a custom domain at the end.</p>
+            </div>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- Architecture -->
+    <section class="section" id="architecture">
+      <div class="wrap arch-grid">
+        <div>
+          <p class="eyebrow">Under the hood</p>
+          <h2>A small, clear shape that grows with you.</h2>
+          <p class="body">
+            The browser asks the backend to <strong>seal</strong> a named view.
+            The backend encrypts that view's SQL, which is good for 60 seconds.
+            The browser then subscribes to it over a WebSocket directly to Neon.
+            Writes are plain REST calls, and the client waits for its own write to
+            come back on the live query, so it knows the write has synced.
+          </p>
+          <p class="body">
+            Add tables, add views, add routes. The pattern stays the same.
+          </p>
+        </div>
+        <div class="arch" aria-label="Architecture: the browser writes through the Fastify backend to Postgres, and reads live from Neon Realtime">
+          <div class="node node-browser">
+            <strong>Browser</strong>
+            <span>React + Vite on Cloudflare Pages</span>
+          </div>
+          <div class="arch-row">
+            <div class="edge"><span>REST writes<br>+ seal requests</span></div>
+            <div class="edge edge-live"><span>live query<br>WebSocket</span></div>
+          </div>
+          <div class="arch-row">
+            <div class="node">
+              <strong>Backend</strong>
+              <span>Fastify on Fly.io</span>
+            </div>
+            <div class="node node-live">
+              <strong>Neon Realtime</strong>
+              <span>Live SQL API</span>
+            </div>
+          </div>
+          <div class="arch-row single">
+            <div class="edge"><span>SQL</span></div>
+          </div>
+          <div class="node node-db">
+            <strong>Postgres</strong>
+            <span>Neon: one branch per environment</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Security -->
+    <section class="section section-dark" id="security">
+      <div class="wrap">
+        <p class="eyebrow">Secure by construction</p>
+        <h2>Built so the easy way is also the safe way.</h2>
+        <div class="cards cards-dark">
+          <article class="card">
+            <h3>The client can't change the query</h3>
+            <p>The browser only ever names a view. The backend builds that view's SQL
+              from the signed-in user and seals it, so the client can't read or
+              change the SQL or its parameters.</p>
+          </article>
+          <article class="card">
+            <h3>Narrow tokens for CI</h3>
+            <p>GitHub holds exactly three tokens, each scoped as narrowly as its service allows.
+              Database URLs and Realtime secrets are pulled from Neon on every
+              deploy and are never copied by hand.</p>
+          </article>
+          <article class="card">
+            <h3>Setup keys stay out of your repo</h3>
+            <p>The broader keys Claude uses to set things up live only in your
+              Claude Code environment. You can revoke them any time and
+              deploys keep working.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Stack -->
+    <section class="section">
+      <div class="wrap">
+        <p class="eyebrow">The stack</p>
+        <h2>Proven, well-documented pieces.</h2>
+        <ul class="stack">
+          <li><strong>React 18</strong><span>+ Vite + TypeScript</span></li>
+          <li><strong>Fastify</strong><span>Node + <code>pg</code></span></li>
+          <li><strong>Neon Postgres</strong><span>branch per preview</span></li>
+          <li><strong>Neon Realtime</strong><span>live SQL queries</span></li>
+          <li><strong>WorkOS AuthKit</strong><span>sign-in</span></li>
+          <li><strong>Fly.io</strong><span>backend hosting</span></li>
+          <li><strong>Cloudflare Pages</strong><span>frontend hosting</span></li>
+          <li><strong>GitHub Actions</strong><span>CI + previews</span></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta">
+      <div class="wrap cta-inner">
+        <h2>Your next app is one prompt away.</h2>
+        <p>Open Claude Code, paste the prompt, and tell it what to call your app.</p>
+        <div class="cta-actions">
+          <button class="btn btn-primary copy" type="button" data-copy="#prompt-text">
+            <span class="copy-label">Copy prompt</span>
+          </button>
+          <a class="btn btn-ghost-light" href="https://github.com/lightbody/able">Read the playbook</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap footer-inner">
+      <span class="brand small">
+        <svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><use href="#leaf"/></svg>
+        Able
+      </span>
+      <span>Open source on <a href="https://github.com/lightbody/able">GitHub</a>.</span>
+    </div>
+  </footer>
+
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="leaf" viewBox="0 0 32 32">
+      <path d="M16 2c6 5 9 10 9 15a9 9 0 0 1-18 0c0-5 3-10 9-15Z" fill="currentColor"/>
+      <path d="M16 9v19M16 16l-4-3M16 21l5-4" stroke="var(--mark-vein)" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+    </symbol>
+  </svg>
+
+  <script>
+    document.querySelectorAll('[data-copy]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var text = document.querySelector(btn.getAttribute('data-copy')).textContent.trim();
+        var label = btn.querySelector('.copy-label');
+        var done = function () {
+          label.textContent = 'Copied!';
+          btn.classList.add('copied');
+          setTimeout(function () { label.textContent = 'Copy prompt'; btn.classList.remove('copied'); }, 1800);
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(done, function () { label.textContent = 'Select & copy above'; });
+        } else {
+          label.textContent = 'Select & copy above';
+        }
+      });
+    });
+  </script>
+</body>
+</html>

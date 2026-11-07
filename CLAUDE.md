@@ -5,6 +5,23 @@ yet, just the plumbing (Postgres -> Neon Realtime -> React, a REST write
 path, and WorkOS auth gating all of it), generated from the
 [Able](https://github.com/lightbody/able) template.
 
+<!-- able:template-start -- PLAYBOOK.md removes this block in new apps -->
+## Able's landing page (template repo only)
+
+`site/` is Able's own marketing page, served at https://able.lightbody.net
+from the Cloudflare Pages project `able-site`. It's plain static HTML/CSS
+(`site/index.html`, `site/styles.css`): no build step, and not an npm
+workspace. `.github/workflows/site.yml` deploys it: a push to `main` goes to
+production, and a PR that touches `site/` gets a preview at
+`<branch>.able-site.pages.dev`, linked from a PR comment and deleted when
+the PR closes. It uses the `SITE_CLOUDFLARE_API_TOKEN` secret (Pages Edit
+only), and only runs on `lightbody/able`. PLAYBOOK.md step 8 deletes
+`site/`, `site.yml` and `.github/scripts/site-comment.js` from new apps, so
+nothing else may depend on them. Keep the page's claims in step with what
+the template and playbook actually do.
+
+<!-- able:template-end -->
+
 ## Stack
 
 - `frontend/` -- React 18 + TypeScript + Vite. Data sync via Neon Realtime

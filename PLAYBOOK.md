@@ -698,10 +698,16 @@ In the cloned repo:
      `<!-- able:template-end -->`, and the blank line after it, so the
      file starts with `# <Name>`. Under the title, put the user's
      one-sentence description in place of the template text.
-   - `CLAUDE.md`: replace "My App is a new web app." with the description.
+   - `CLAUDE.md`: delete everything from `<!-- able:template-start` through
+     `<!-- able:template-end -->`, and the blank line after it, the same as
+     in `README.md`. Then replace "My App is a new web app." with the
+     description.
    - **Keep `SECRETS.md`.** It's the app's guide to its tokens and to
      rotating them.
-4. **Delete `PLAYBOOK.md`.** The new app doesn't need it.
+4. **Delete `PLAYBOOK.md`, and Able's own landing page:** `site/`,
+   `.github/workflows/site.yml` and `.github/scripts/site-comment.js`. The
+   new app needs none of them. (The workflow checks the repo name and never
+   deploys outside `lightbody/able`, but the files are clutter.)
 5. Run `npm install`, which regenerates the lockfile for the new names.
    Then run the same checks CI runs:
    - `npm run build --workspace=shared && npm test --workspace=shared`
