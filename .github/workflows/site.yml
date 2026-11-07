@@ -1,0 +1,104 @@
+# Able's own landing page (site/), served at https://able.lightbody.net from
+# the Cloudflare Pages project below. Template-only: PLAYBOOK.md deletes
+# site/ and this workflow from new apps, and every job also checks the repo
+# name, so a copy that keeps them never deploys.
+#
+# Push to main -> production. A PR that touches site/ -> a preview at
+# <branch>.able-site.pages.dev, linked from a PR comment; its preview
+# deployments are deleted when the PR closes.
+name: Site
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - site/**
+      - .github/workflows/site.yml
+  pull_request:
+    types: [opened, reopened, synchronize, closed]
+    paths:
+      - site/**
+      - .github/workflows/site.yml
+
+concurrency:
+  group: site-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  CLOUDFLARE_ACCOUNT_ID: c662baf5660b2c222201983dbffa8399
+  SITE_PAGES_PROJECT: able-site
+
+jobs:
+  deploy:
+    name: Deploy site
+    # Fork PRs can't read the secret, so they don't get a preview.
+    if: >-
+      github.repository == 'lightbody/able' &&
+      github.event.action != 'closed' &&
+      (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to Cloudflare Pages
+        id: deploy
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.SITE_CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ env.CLOUDFLARE_ACCOUNT_ID }}
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          command: >-
+            pages deploy site
+            --project-name=${{ env.SITE_PAGES_PROJECT }}
+            --branch=${{ github.head_ref || github.ref_name }}
+            --commit-dirty=true
+
+      - name: Comment preview URL on the PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        env:
+          PREVIEW_URL: ${{ steps.deploy.outputs.pages-deployment-alias-url || steps.deploy.outputs.deployment-url }}
+          DEPLOY_URL: ${{ steps.deploy.outputs.deployment-url }}
+        with:
+          script: |
+            const { upsertSiteComment } = require('./.github/scripts/site-comment.js');
+            await upsertSiteComment(github, context, {
+              previewUrl: process.env.PREVIEW_URL,
+              deployUrl: process.env.DEPLOY_URL,
+              sha: context.payload.pull_request.head.sha,
+            });
+
+  cleanup:
+    name: Delete site previews
+    if: >-
+      github.repository == 'lightbody/able' &&
+      github.event.action == 'closed' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Delete Cloudflare Pages preview deployments
+        uses: actions/github-script@v7
+        env:
+          SITE_CLOUDFLARE_API_TOKEN: ${{ secrets.SITE_CLOUDFLARE_API_TOKEN }}
+        with:
+          script: |
+            const { deleteCloudflarePreviewDeployments } = require('./.github/scripts/cleanup-cf-pages.js');
+            await deleteCloudflarePreviewDeployments({
+              accountId: process.env.CLOUDFLARE_ACCOUNT_ID,
+              apiToken: process.env.SITE_CLOUDFLARE_API_TOKEN,
+              projectName: process.env.SITE_PAGES_PROJECT,
+              branch: context.payload.pull_request.head.ref,
+            });
+            const { upsertSiteComment } = require('./.github/scripts/site-comment.js');
+            await upsertSiteComment(github, context, { closed: true });

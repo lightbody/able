@@ -16,6 +16,9 @@ tokens, and does the rest: it renames the skeleton, provisions Neon, Fly and
 Cloudflare, configures CI, and verifies both environments. A custom domain is
 an optional last step.
 
+The landing page at **https://able.lightbody.net** lives in `site/` and
+deploys with `.github/workflows/site.yml`. New apps don't get either.
+
 Everything below describes the app that results, with `My App` / `myapp`
 as placeholder names.
 
