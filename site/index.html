@@ -129,6 +129,14 @@
               on and no updates you have to pull.</p>
           </details>
           <details>
+            <summary>Why no staging environment?</summary>
+            <p>When you build with AI, you make lots of changes quickly, and each one
+              needs to be previewed on its own. So instead of one shared staging
+              environment, every pull request gets its own live preview, with a
+              database forked from production. That fits the way people actually
+              build with agents.</p>
+          </details>
+          <details>
             <summary>Why WorkOS rather than Clerk?</summary>
             <p>Both are good. It was a judgement call about their free plans.
               Clerk's free plan supports custom domains and has a really nice
