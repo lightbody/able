@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Able — one prompt to a real, deployed app</title>
-  <meta name="description" content="Able is a TypeScript app skeleton plus a playbook that Claude Code follows to stand up a new app end to end: production, per-PR previews, sign-in and live data.">
-  <meta property="og:title" content="Able — one prompt to a real, deployed app">
-  <meta property="og:description" content="Paste one prompt into Claude Code. Get production, per-PR preview stacks, sign-in and live data, verified end to end.">
+  <title>Able — ship real apps on best-in-class platforms</title>
+  <meta name="description" content="Able is an easy, opinionated TypeScript stack for deploying new apps on Cloudflare, Neon, Fly.io and WorkOS, set up for you by your coding agent.">
+  <meta property="og:title" content="Able — ship real apps on best-in-class platforms">
+  <meta property="og:description" content="An easy, opinionated stack for deploying new apps on Cloudflare, Neon, Fly.io and WorkOS, set up for you by your coding agent.">
   <meta property="og:url" content="https://able.lightbody.net/">
   <meta property="og:type" content="website">
   <meta name="theme-color" content="#0e3b2c">
@@ -24,266 +24,160 @@
         <span>Able</span>
       </a>
       <nav class="nav-links">
-        <a href="#features">What you get</a>
-        <a href="#how">How it works</a>
-        <a href="#security">Security</a>
+        <a href="#platforms">Platforms</a>
+        <a href="#faq">FAQ</a>
         <a class="btn btn-ghost" href="https://github.com/lightbody/able">GitHub</a>
       </nav>
     </div>
   </header>
 
   <main id="top">
-    <!-- Hero -->
     <section class="hero">
-      <div class="wrap hero-grid">
-        <div class="hero-copy">
-          <p class="eyebrow">An app template Claude Code sets up for you</p>
-          <h1>Paste one prompt.<br><em>Get a real app,</em> deployed.</h1>
-          <p class="lede">
-            Able is a TypeScript app skeleton plus a playbook that Claude Code
-            follows from start to finish. You end up with production, a preview
-            stack for every pull request, sign-in and live data, all
-            working and checked. You can do the whole thing from your phone.
-          </p>
+      <div class="wrap hero-inner">
+        <p class="eyebrow">An opinionated app stack, set up by your agent</p>
+        <h1>Ship real apps on<br><em>best-in-class</em> platforms.</h1>
+        <p class="lede">
+          Able is an easy, opinionated TypeScript stack. It deploys new apps on
+          Cloudflare, Neon, Fly.io and WorkOS, the same platforms professional
+          teams use, and a low-traffic app runs on their free tiers or close to it.
+        </p>
 
-          <div class="prompt" id="prompt">
-            <div class="prompt-head">
-              <span class="dot"></span><span class="dot"></span><span class="dot"></span>
-              <span class="prompt-label">Paste into a Claude Code session</span>
-            </div>
-            <p class="prompt-body" id="prompt-text">Read https://github.com/lightbody/able/blob/main/PLAYBOOK.md and follow it to set up a new app for me. Ask me what it's called first.</p>
-            <button class="btn btn-primary copy" type="button" data-copy="#prompt-text">
-              <span class="copy-label">Copy prompt</span>
-            </button>
-          </div>
-          <p class="fine">Works in the terminal or at claude.ai/code, including on a phone or tablet.</p>
+        <div class="prompt">
+          <p class="prompt-label">Paste this into your coding agent</p>
+          <p class="prompt-body" id="prompt-text">Read https://github.com/lightbody/able/blob/main/PLAYBOOK.md and follow it to set up a new app for me. Ask me what it's called first.</p>
+          <button class="btn btn-primary copy" type="button" data-copy="#prompt-text">
+            <span class="copy-label">Copy prompt</span>
+          </button>
         </div>
-
-        <div class="hero-visual" aria-hidden="true">
-          <div class="chat">
-            <div class="bubble user">Set up a new app for me.</div>
-            <div class="bubble claude">What's it called?</div>
-            <div class="bubble user">Chore Chart</div>
-            <ol class="progress">
-              <li class="done">Repo created from the template</li>
-              <li class="done">Neon project in a Realtime region</li>
-              <li class="done">Fly org, Cloudflare Pages project</li>
-              <li class="done">CI tokens in GitHub secrets</li>
-              <li class="done">WorkOS sign-in configured</li>
-              <li class="live">Production &amp; previews verified</li>
-            </ol>
-          </div>
-          <div class="pr-card">
-            <div class="pr-title"><span class="pr-badge">PR #12</span> Add chore rotation</div>
-            <table>
-              <tr><th>Frontend</th><td>pr-12.chore-chart.pages.dev</td></tr>
-              <tr><th>Backend</th><td>chore-chart-pr-12.fly.dev</td></tr>
-              <tr><th>Neon branch</th><td>preview/pr-12</td></tr>
-            </table>
-          </div>
-        </div>
+        <p class="fine">Your agent walks you through creating the accounts and does the rest.</p>
       </div>
     </section>
 
-    <!-- Features -->
-    <section class="section" id="features">
+    <section class="section" id="platforms">
       <div class="wrap">
-        <p class="eyebrow">Ready on day one</p>
-        <h2>The boring parts are already done, so you start on features.</h2>
-        <div class="cards">
-          <article class="card">
-            <div class="icon">🚀</div>
-            <h3>Production, deployed</h3>
-            <p>A push to <code>main</code> tests and deploys the backend to Fly.io
-              and the frontend to Cloudflare Pages. Database migrations run on boot.</p>
-          </article>
-          <article class="card">
-            <div class="icon">🌱</div>
-            <h3>A full stack for every PR</h3>
-            <p>Each pull request gets its own Neon database branch, its own backend
-              app and its own frontend preview, linked from one PR comment.
-              All of it is torn down when the PR closes.</p>
-          </article>
-          <article class="card">
-            <div class="icon">⚡</div>
-            <h3>Live data, no polling</h3>
-            <p>Reads are Neon Realtime live SQL queries that stream straight to the
-              browser. Writes come back on the same stream, so every tab
-              stays in sync, and you don't run a WebSocket server.</p>
-          </article>
-          <article class="card">
-            <div class="icon">🔐</div>
-            <h3>Sign-in that just works</h3>
-            <p>WorkOS AuthKit handles sign-in. Every backend route except
-              <code>/health</code> checks the bearer token, and prod and every
-              preview share one user pool.</p>
-          </article>
-          <article class="card">
-            <div class="icon">🧩</div>
-            <h3>TypeScript end to end</h3>
-            <p>React + Vite, Fastify and Postgres in one npm workspaces monorepo,
-              with a <code>shared</code> package that both sides import with no
-              build step on the frontend.</p>
-          </article>
-          <article class="card">
-            <div class="icon">✅</div>
-            <h3>Tests and CI included</h3>
-            <p>Backend integration tests run against real Postgres. Type checks
-              and builds run on every PR. Deploy jobs wait until the app's
-              deploy config has been filled in.</p>
-          </article>
-        </div>
-      </div>
-    </section>
-
-    <!-- How it works -->
-    <section class="section section-tint" id="how">
-      <div class="wrap">
-        <p class="eyebrow">How it works</p>
-        <h2>You click a few buttons. Claude does the rest.</h2>
-        <ol class="steps">
+        <h2>Four platforms, already wired together.</h2>
+        <ul class="platforms">
           <li>
-            <span class="step-n">1</span>
-            <div>
-              <h3>Name it</h3>
-              <p>Claude asks for the app's name and a one-line description, then picks a
-                region where Neon Realtime and Fly sit next to each other.</p>
-            </div>
+            <span class="role">Frontend</span>
+            <strong>Cloudflare Pages</strong>
+            <p>Your React app, served from Cloudflare's global network.</p>
+            <span class="tier">Free tier</span>
           </li>
           <li>
-            <span class="step-n">2</span>
-            <div>
-              <h3>Create accounts and tokens</h3>
-              <p>Claude walks you through GitHub, Neon, Fly, Cloudflare and WorkOS
-                one step at a time, with direct links. The steps work on a phone,
-                one clipboard item at a time, and tokens go into secure cards,
-                never the chat.</p>
-            </div>
+            <span class="role">Database</span>
+            <strong>Neon</strong>
+            <p>Serverless Postgres, with live queries that push changes to the browser.</p>
+            <span class="tier">Free tier</span>
           </li>
           <li>
-            <span class="step-n">3</span>
-            <div>
-              <h3>Claude provisions everything</h3>
-              <p>It creates the database, enables Realtime, sets up hosting, wires
-                up CI and renames the skeleton to your app. It checks every step
-                with a read-only call before moving on.</p>
-            </div>
+            <span class="role">Backend</span>
+            <strong>Fly.io</strong>
+            <p>Your TypeScript API, close to your database. It sleeps when idle, so a quiet app costs next to nothing.</p>
+            <span class="tier tier-paid">Pay as you go</span>
           </li>
           <li>
-            <span class="step-n">4</span>
-            <div>
-              <h3>Both environments, verified</h3>
-              <p>Production and a preview are checked with a full sign-in and a live-data
-                round trip. You can add a custom domain at the end.</p>
-            </div>
+            <span class="role">Sign-in</span>
+            <strong>WorkOS</strong>
+            <p>Hosted sign-in with AuthKit, so you never handle passwords.</p>
+            <span class="tier">Free tier</span>
           </li>
-        </ol>
-      </div>
-    </section>
+        </ul>
 
-    <!-- Architecture -->
-    <section class="section" id="architecture">
-      <div class="wrap arch-grid">
-        <div>
-          <p class="eyebrow">Under the hood</p>
-          <h2>A small, clear shape that grows with you.</h2>
-          <p class="body">
-            The browser asks the backend to <strong>seal</strong> a named view.
-            The backend encrypts that view's SQL, which is good for 60 seconds.
-            The browser then subscribes to it over a WebSocket directly to Neon.
-            Writes are plain REST calls, and the client waits for its own write to
-            come back on the live query, so it knows the write has synced.
-          </p>
-          <p class="body">
-            Add tables, add views, add routes. The pattern stays the same.
-          </p>
-        </div>
-        <div class="arch" aria-label="Architecture: the browser writes through the Fastify backend to Postgres, and reads live from Neon Realtime">
-          <div class="node node-browser">
-            <strong>Browser</strong>
-            <span>React + Vite on Cloudflare Pages</span>
-          </div>
-          <div class="arch-row">
-            <div class="edge"><span>REST writes<br>+ seal requests</span></div>
-            <div class="edge edge-live"><span>live query<br>WebSocket</span></div>
-          </div>
-          <div class="arch-row">
-            <div class="node">
-              <strong>Backend</strong>
-              <span>Fastify on Fly.io</span>
-            </div>
-            <div class="node node-live">
-              <strong>Neon Realtime</strong>
-              <span>Live SQL API</span>
-            </div>
-          </div>
-          <div class="arch-row single">
-            <div class="edge"><span>SQL</span></div>
-          </div>
-          <div class="node node-db">
-            <strong>Postgres</strong>
-            <span>Neon: one branch per environment</span>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Security -->
-    <section class="section section-dark" id="security">
-      <div class="wrap">
-        <p class="eyebrow">Secure by construction</p>
-        <h2>Built so the easy way is also the safe way.</h2>
-        <div class="cards cards-dark">
-          <article class="card">
-            <h3>The client can't change the query</h3>
-            <p>The browser only ever names a view. The backend builds that view's SQL
-              from the signed-in user and seals it, so the client can't read or
-              change the SQL or its parameters.</p>
-          </article>
-          <article class="card">
-            <h3>Narrow tokens for CI</h3>
-            <p>GitHub holds exactly three tokens, each scoped as narrowly as its service allows.
-              Database URLs and Realtime secrets are pulled from Neon on every
-              deploy and are never copied by hand.</p>
-          </article>
-          <article class="card">
-            <h3>Setup keys stay out of your repo</h3>
-            <p>The broader keys Claude uses to set things up live only in your
-              Claude Code environment. You can revoke them any time and
-              deploys keep working.</p>
-          </article>
-        </div>
-      </div>
-    </section>
-
-    <!-- Stack -->
-    <section class="section">
-      <div class="wrap">
-        <p class="eyebrow">The stack</p>
-        <h2>Proven, well-documented pieces.</h2>
-        <ul class="stack">
-          <li><strong>React 18</strong><span>+ Vite + TypeScript</span></li>
-          <li><strong>Fastify</strong><span>Node + <code>pg</code></span></li>
-          <li><strong>Neon Postgres</strong><span>branch per preview</span></li>
-          <li><strong>Neon Realtime</strong><span>live SQL queries</span></li>
-          <li><strong>WorkOS AuthKit</strong><span>sign-in</span></li>
-          <li><strong>Fly.io</strong><span>backend hosting</span></li>
-          <li><strong>Cloudflare Pages</strong><span>frontend hosting</span></li>
-          <li><strong>GitHub Actions</strong><span>CI + previews</span></li>
+        <ul class="gets">
+          <li><strong>Production on day one.</strong> Merge to <code>main</code> and it deploys.</li>
+          <li><strong>A preview for every pull request,</strong> with its own database branch. It's deleted when the PR closes.</li>
+          <li><strong>Sign-in and live data already working</strong>, so you start on features, not plumbing.</li>
         </ul>
       </div>
     </section>
 
-    <!-- CTA -->
+    <section class="section section-tint" id="faq">
+      <div class="wrap">
+        <h2>FAQ</h2>
+        <div class="faq">
+          <details>
+            <summary>What's in the stack?</summary>
+            <p>TypeScript everywhere: a React + Vite frontend, a Fastify backend and
+              Postgres. It's one npm workspaces monorepo with a <code>shared</code>
+              package that both sides import. GitHub Actions runs the tests and deploys
+              production and previews.</p>
+          </details>
+          <details>
+            <summary>Why TypeScript?</summary>
+            <p>It's the easiest way to share logic between the frontend and the backend.
+              Validation, types and business rules live in one place and run on both
+              sides.</p>
+          </details>
+          <details>
+            <summary>What does it cost?</summary>
+            <p>For a low-traffic app, close to nothing. Cloudflare Pages, Neon and WorkOS
+              all have free tiers that cover it. Fly.io has no free plan but bills by
+              usage, which for a quiet app is usually nothing (see below). Check each
+              platform's pricing page for current limits.</p>
+          </details>
+          <details>
+            <summary>Fly.io has no free plan. Will I get a bill?</summary>
+            <p>Probably not, for a low-traffic app. Able configures the backend to
+              sleep when no one is using it and wake on the next request, so you pay
+              only for the minutes it actually runs. Fly.io also waives monthly bills
+              under $5, so your card isn't charged at all.</p>
+          </details>
+          <details>
+            <summary>What does Able expect of my app after setup?</summary>
+            <p>Nothing. Able is a template, not a framework. Setup copies it into your own
+              repo, and from then on the code is yours. There's no Able library to depend
+              on and no updates you have to pull.</p>
+          </details>
+          <details>
+            <summary>Why no staging environment?</summary>
+            <p>When you build with AI, you make lots of changes quickly, and each one
+              needs to be previewed on its own. So instead of one shared staging
+              environment, every pull request gets its own live preview, with a
+              database forked from production. That fits the way people actually
+              build with agents. It also fits WorkOS pricing: its Production
+              environment is free but Staging costs extra, so production and every
+              preview share the free Production environment.</p>
+          </details>
+          <details>
+            <summary>Why WorkOS rather than Clerk?</summary>
+            <p>Both are good. It was a judgement call about their free plans.
+              Clerk's free plan supports custom domains and has a really nice
+              built-in React component for managing a user's profile, but 2FA and
+              passkeys need a paid plan. WorkOS's free plan doesn't support custom
+              domains, but it does include 2FA and passkeys. If you'd rather use
+              Clerk, it's easy to swap in.</p>
+          </details>
+          <details>
+            <summary>Why Neon Realtime rather than Electric?</summary>
+            <p>Electric's team joined Neon, and Neon Realtime is built from that work.
+              It comes with the database you already have, so there's no separate sync
+              service to run.</p>
+          </details>
+          <details>
+            <summary>What do I need to get started?</summary>
+            <p>A coding agent, plus accounts on GitHub, Neon, Fly.io, Cloudflare and
+              WorkOS. Your agent walks you through creating each one and the API tokens
+              it needs, one step at a time.</p>
+          </details>
+          <details>
+            <summary>Which agents are supported?</summary>
+            <p>Able's setup has been tested most with Claude Code, including its
+              browser and mobile versions, which let you do the whole thing from your
+              phone. The setup is a plain-text playbook, so Codex and other capable
+              coding agents will likely work well too.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
     <section class="cta">
       <div class="wrap cta-inner">
         <h2>Your next app is one prompt away.</h2>
-        <p>Open Claude Code, paste the prompt, and tell it what to call your app.</p>
         <div class="cta-actions">
           <button class="btn btn-primary copy" type="button" data-copy="#prompt-text">
             <span class="copy-label">Copy prompt</span>
           </button>
-          <a class="btn btn-ghost-light" href="https://github.com/lightbody/able">Read the playbook</a>
+          <a class="btn btn-ghost-light" href="https://github.com/lightbody/able">View on GitHub</a>
         </div>
       </div>
     </section>
