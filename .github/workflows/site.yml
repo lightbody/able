@@ -45,6 +45,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # The lightbody.net zone's Browser Cache TTL makes browsers keep static
+      # files for up to a day, while index.html is always revalidated. Give
+      # the assets a new URL on every deploy so new HTML never meets old CSS.
+      - name: Version asset URLs
+        run: |
+          v="${GITHUB_SHA::8}"
+          sed -i -E "s/(href=\"(styles\.css|favicon\.svg))\"/\1?v=$v\"/g" site/index.html
+          grep -q "styles.css?v=$v" site/index.html
+
       - name: Deploy to Cloudflare Pages
         id: deploy
         uses: cloudflare/wrangler-action@v3
