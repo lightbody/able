@@ -170,8 +170,9 @@ in, and its `other_cloud_environments` lists the user's others by name.
   Then give the steps:
   1. At **claude.ai/code**, on the new-session screen, tap the environment
      selector (the first control in the row under the message box), then
-     **New environment** at the bottom of the menu. If the Claude app
-     doesn't offer it, do this in a browser.
+     **New environment** at the bottom of the menu. The Claude app's
+     **Code** tab works the same way: start a new session, then tap the
+     environment selector.
   2. Name: type `Able Setup`.
   3. **Network access** → **Full**.
   4. Leave everything else as it is, and tap **Add environment**.
@@ -1005,7 +1006,12 @@ that it reaches the whole account.
    - **Account Analytics → Read**
    - **Account Settings → Read**
 
-   Nothing else, and no Zone policy.
+   Nothing else, and no Zone policy. These are the dashboard names
+   from Cloudflare's list at
+   https://developers.cloudflare.com/fundamentals/api/reference/permissions/
+   (the API calls the Edit ones `Pages Write` and `Workers Scripts
+   Write`). If the dashboard shows a name differently, check that page
+   rather than guessing.
 5. Leave **Client IP Address Filtering** and **TTL** empty, or set an end
    date if they prefer. **Create Token** → **Copy**, and tell Claude it's
    copied.
