@@ -23,9 +23,9 @@ fine from a phone or tablet):
 Claude asks for a name, walks you through creating accounts and API
 tokens, and does the rest: it renames the skeleton, provisions Neon, Fly and
 Cloudflare, configures CI, and verifies production and previews. A custom domain is
-an optional last step. At the end, you create a second environment named
-after the app, for day-to-day sessions on it, and Claude saves narrower
-development tokens there.
+an optional last step. At the end, Claude creates a second environment
+named after the app, with limited network access, for day-to-day sessions
+on it, and saves narrower development tokens there.
 
 The landing page at **https://able.lightbody.net** lives in `site/` and
 deploys with `.github/workflows/site.yml`. New apps don't get either.

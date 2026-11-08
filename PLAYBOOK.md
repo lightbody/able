@@ -42,7 +42,7 @@ section and stays in the new app.
 | | **Setup tokens** (`able-setup`) | **CI tokens** (`<slug>-ci`) | **Dev tokens** (`<slug>-dev`) |
 |---|---|---|---|
 | For | you, Claude: creating the app's infrastructure | GitHub Actions: every deploy | later Claude sessions on this app: building, debugging prod and PR previews, metrics |
-| Saved via | a `request_credential` card, onto the **Able Setup** cloud environment (step 4) | GitHub Actions secrets, pasted by the user (step 6) | a `request_credential` card, onto the **app's own** cloud environment (step 13) |
+| Saved via | a `request_credential` card, onto the **Able Setup** cloud environment (step 4) | GitHub Actions secrets, pasted by the user (step 6) | a `request_credential` card, onto the **app's own** cloud environment (step 14) |
 | Neon | **organization** key (a personal key also works, but reaches every org the user belongs to) | **project-scoped** key for this app's project | **project-scoped** key for this app's project |
 | Fly | **org deploy token** for **this app's own org** (personal access tokens no longer work) | a second org deploy token for the same org (previews create apps) | a third org deploy token for the same org, so it reaches prod and every preview app |
 | Cloudflare | Pages Edit + Account Settings Read (+ Zone DNS Edit and Zone Read for custom domains) | Pages Edit only | Pages Edit, Workers Scripts Edit, Workers Tail Read, Account Analytics Read, Account Settings Read |
@@ -54,10 +54,12 @@ needs, the broad setup tokens live only in the Able Setup environment,
 and each app's day-to-day sessions hold only that app's dev tokens. Each
 set can be expired or revoked without affecting the others or any deploy.
 
-The two cloud environments both have **Full** network access, which the
-user sets up by hand: a running session can't create one, and can't be
-moved onto one. Step 0 checks for **Able Setup**; step 12 hands off to the
-app's own environment, named after the slug.
+There are two cloud environments. **Able Setup** has **Full** network
+access, so the user creates it by hand before starting (a running session
+can't create one, and can't be moved onto one); step 0 checks for it. The
+**app's own** environment, named after the slug, has **limited** network
+access: you create it in step 13 and move this session onto it, then
+collect the dev tokens there in step 14.
 
 On a second or later app, the Neon and Cloudflare setup tokens are usually
 already saved. Fly's isn't reusable: the user creates the new app's Fly org
@@ -128,9 +130,11 @@ You also pick a **region pair** in step 1. The Neon region is the project's
 
 Do this first, before step 1 and before anything else. Two exceptions:
 
-- If the user asked you to do **step 13** (dev tokens) for an app that
-  already exists, skip straight to step 13: it runs on the app's own
-  environment, not on Able Setup, and checks that itself.
+- If the user asked you to set up the **app's own environment and dev
+  tokens** for an app that already exists, skip straight to step 13. If
+  they asked for **step 14** (dev tokens) only, skip to step 14. Both run
+  on the app's own environment, not on Able Setup, and check that
+  themselves.
 - If you have no `get_environment` tool, you aren't in a Claude Code cloud
   session: skip this step.
 
@@ -871,7 +875,7 @@ the domain, and the `pages.dev` address stops working for sign-in.
 4. Sign-in now works only at the custom domain. The `pages.dev` address
    still serves the page, but the backend rejects its API calls.
 
-## Step 12: Wrap up, and hand off to the app's own environment
+## Step 12: Wrap up
 
 The app is live. Tell the user, briefly:
 
@@ -885,69 +889,91 @@ The app is live. Tell the user, briefly:
   title bar → **Edit** → **Network secrets**, then each service's
   dashboard.
 
-Then the last part, which happens in a new session. Explain why:
+Then say there's one last part: moving to the app's own environment and
+making its dev tokens.
 
-- **Able Setup is for setting apps up.** Day-to-day work on this app
-  (building features, debugging production or a PR preview, and later
-  metrics) belongs in an environment of its own, named after the app, with
-  its own `<slug>-dev` tokens. Those reach only this app's Neon project,
-  its own Fly org (prod and every preview app), and its Cloudflare
-  account, so a session on this app can't touch the user's other apps
-  through them.
-- **It needs a new session.** The app's environment gets Full network
-  access, so its preview addresses work, and a running session can't be
-  moved onto an environment with Full network access. The new session
-  starts fresh, but it doesn't need this conversation: everything it needs
-  is in the repo.
+## Step 13: The app's own environment
 
-Give the user these steps:
+Able Setup is for setting apps up. Day-to-day work on this app (building
+features, debugging production or a PR preview, and later metrics)
+belongs in an environment of its own, named after the app, with **limited**
+network access and its own `<slug>-dev` tokens (step 14). Those reach only
+this app's Neon project, its own Fly org and its Cloudflare account, and
+the environment reaches only the hosts this app needs. You create it and
+move this session onto it, so the user approves one card and nothing else
+changes: this conversation carries on.
 
-1. At **claude.ai/code**, on the new-session screen, tap the environment
-   selector (the first control in the row under the message box), then
-   **New environment** at the bottom of the menu.
-2. Name: type the slug, e.g. `chore-chart`.
-3. **Network access** → **Full**. Leave everything else as it is, and tap
-   **Add environment**.
-4. Start a new session with that environment and the `<owner>/<slug>`
-   repo selected, and paste:
+If you came here straight from step 0 for an app that already exists,
+attach its repo with `add_repo` (`access: "push"`) if it isn't already,
+and read `.github/deploy.env`, `CLAUDE.md` and `SECRETS.md` first.
 
-   > Read https://github.com/lightbody/able/blob/main/PLAYBOOK.md and do
-   > step 13 (dev tokens) for this app.
+**Gather the allowed hosts.** All exact names, no wildcards (a session
+can't add those; the user can, in "Done"). That's 12, or 13 with a custom
+domain, under the limit of 20:
 
-Fill in the owner and slug, and give the prompt in a block of its own so
-it's easy to copy. Say that this setup session is finished, and that if
-they'd rather do this later, the same steps work at any time.
+| Hosts | Why |
+|---|---|
+| `console.neon.tech`, `api.fly.io`, `api.machines.dev`, `api.cloudflare.com` | the dev tokens' APIs (saving a token also allows its host, but list them anyway) |
+| `<FLY_BACKEND_APP>.fly.dev` | the production backend |
+| `<pages subdomain>`, e.g. `chore-chart-frontend.pages.dev` | the production frontend's `pages.dev` address. Read `subdomain` from `GET /accounts/<CLOUDFLARE_ACCOUNT_ID>/pages/projects/<CLOUDFLARE_PAGES_PROJECT>` rather than assuming it's the project name. |
+| the custom domain, if any | the production frontend, at `PROD_FRONTEND_ORIGIN` after step 11 |
+| the production Neon endpoint's host, and the same host with `-pooler` after the endpoint ID | HTTPS SQL on the default branch. Read the endpoint's `host` from `GET /projects/<NEON_PROJECT_ID>/endpoints` (the read-write one on `NEON_PROD_BRANCH`). It's a hostname, not a secret; never take it from a connection string. |
+| `neon.com`, `fly.io`, `developers.cloudflare.com`, `workos.com` | each service's docs |
 
-## Step 13: Dev tokens (in the app's own environment)
+**Create it.** Call `get_environment` first. If an environment named
+after the slug is already in `other_cloud_environments`, look at it with
+`get_environment` and its `environment_id`, tell the user, and ask whether
+to use it instead (they'd start a session on it) before proposing another.
+Otherwise say in one or two sentences what you're about to create and why
+(limited network, these hosts, this session moves onto it, and the
+`able-setup` tokens stop being sent from this session), then call
+`create_environment` with:
 
-This step runs in a **new session**, started from step 12. You have no
-memory of the setup. Everything you need is in the app's repo:
-`.github/deploy.env` (`NEON_PROJECT_ID`, `FLY_ORG`, `FLY_BACKEND_APP`,
-`CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_PAGES_PROJECT`,
-`PROD_FRONTEND_ORIGIN`), `CLAUDE.md` and `SECRETS.md`. Read them first.
-The ground rules and "How `request_credential` works", near the top of
-this file, apply here too: read them, then come back to this step.
+- `name`: the slug. `scope`: `"personal"`.
+- `repositories`: `["<owner>/<slug>"]`.
+- `allowed_hosts`: the list above. `allow_package_managers: true`,
+  `allow_mcp_servers: true`.
+- `switch_session: "network_only"`, and `leave_statement` copied exactly
+  from `get_environment`, if it returned one.
+- No environment variables and no setup script.
 
-**Check the environment first.** Call `get_environment`:
+Then:
 
-- **On an environment named after the app, with network type
-  `unrestricted`:** go on.
-- **Same, but its network is limited:** say the app's preview addresses
-  need Full network access, and propose the change with
-  `update_environment` (`network_access: "unrestricted"`). Go on either
-  way.
-- **On `Able Setup`, `Default`, or any other environment:** stop. The dev
-  tokens would be saved on that environment and sent from every session
-  that uses it. Give the user the steps in step 12 to create the app's
-  environment and start a session on it.
+- **Approved and moved:** call `get_environment` again and check the
+  current environment is the new one. Go on to step 14.
+- **Created, but the result says this session didn't move:** don't show
+  any token cards here: they would be saved on Able Setup. Tell the user to
+  start a new session on the new environment, with the app's repo
+  selected, and paste:
+
+  > Read https://github.com/lightbody/able/blob/main/PLAYBOOK.md and do
+  > step 14 (dev tokens) for this app.
+
+  Fill in nothing; give it in a block of its own. Then stop.
+- **Declined:** don't propose it again. Tell the user they can ask for it
+  any time in a session on this app ("set up this app's own environment
+  and dev tokens from the Able playbook"). Then finish: setup is done, and
+  "Done" below is about the app's environment, so skip it.
+
+## Step 14: Dev tokens (on the app's own environment)
+
+If this is a new session, started from step 13, you have no memory of the
+setup: read `.github/deploy.env`, `CLAUDE.md` and `SECRETS.md`, and the
+ground rules and "How `request_credential` works" near the top of this
+file, first.
+
+**Check the environment.** Call `get_environment`. The tokens are saved on
+the environment this session runs in, so it must be the one named after
+the app. If it's `Able Setup`, `Default` or anything else, stop and send
+the user back to step 13.
 
 Its `network_secrets` lists the hosts that already have a credential
 saved. Skip any token that's already there and passes its check below.
 
-Then tell the user, in two lines, that there are three tokens to make,
-each named `<slug>-dev`, one service at a time, each saved in a secure
-card. Do one token at a time, in two turns each (guide turn, then card
-turn), exactly as in step 4.
+Tell the user, in two lines, that there are three tokens to make, each
+named `<slug>-dev`, one service at a time, each saved in a secure card. Do
+one token at a time, in two turns each (guide turn, then card turn),
+exactly as in step 4.
 
 **Neon dev token**
 
@@ -1028,6 +1054,30 @@ Tell the user, briefly:
 
 - that this environment, named after the app, is where to start future
   sessions on it: the `<slug>-dev` tokens let Claude look into production
-  and PR previews directly
+  directly
 - that `SECRETS.md` lists all three kinds of token and how to rotate or
   revoke each, and that revoking the dev tokens never affects deploys
+
+Then, as the last thing they see, **strongly recommend** opening the
+environment up to PR previews. Its allowlist holds exact hosts only, and
+each preview gets new addresses, so until they do this Claude can't reach
+a preview's frontend, backend or database when debugging a PR. Only the
+user can add wildcards. Give the steps, with the values filled in:
+
+1. Tap the **environment name** in the session's title bar, then
+   **Edit**, then **Network access**. (If the app shows **Custom** rather
+   than **Limited**, use that, and keep its box for the default package
+   managers ticked.)
+2. Under **Allowed domains**, add one per line:
+   - `*.<pages subdomain>`, e.g. `*.chore-chart-frontend.pages.dev`:
+     frontend previews
+   - `*.fly.dev`: preview backends, named `<FLY_BACKEND_APP>-pr-<n>.fly.dev`
+   - `*.<region>.aws.neon.tech`, e.g. `*.us-east-1.aws.neon.tech` (the
+     Neon region from step 1, without its `aws-` prefix): each preview's
+     own database endpoint
+3. Save.
+
+Tell them the simpler alternative is to set **Network access** to
+**Full**, at the cost of letting sessions on this app reach any host.
+Either way, if Claude later needs another exact host (a new service or
+docs site), it can propose adding it, and they approve it on a card.

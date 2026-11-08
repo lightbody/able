@@ -10,9 +10,11 @@ This app uses three kinds of API token for each of Neon, Fly and Cloudflare:
 | Lifetime | long-lived; rotate occasionally | optional; can expire or be revoked any time | optional; can expire or be revoked any time |
 | If removed | deploys stop | Claude can't look into this app's infrastructure; deploys keep working | Claude can't set up new apps; deploys keep working |
 
-Both cloud environments have **Full** network access, so Claude can reach
-each app's production and preview addresses. A token is still sent only to
-the host it's saved for.
+**Able Setup** has **Full** network access, so setup can reach every
+service and each new app's addresses. This app's own environment has
+**limited** access: the token hosts, this app's production addresses and
+the services' docs, plus any wildcards you add for PR previews (see below).
+Either way, a token is sent only to the host it's saved for.
 
 Deploys need **only** the three CI tokens. Everything else is either
 fetched from Neon at deploy time or committed in `.github/deploy.env`:
@@ -46,8 +48,13 @@ shown, and the network proxy adds it to Claude's requests to that host.
 
 ## The dev tokens (this app's Claude Code environment)
 
-They live on the cloud environment named after this app. Start sessions
-on this app there, so Claude can look into production and PR previews.
+They live on the cloud environment named after this app, which Claude
+creates at the end of setup. Start sessions on this app there, so Claude
+can look into production. To let it reach PR previews too, add these under
+the environment's **Edit** → **Network access** → **Allowed domains**:
+`*.<pages subdomain>` (frontend previews), `*.fly.dev` (preview backends)
+and `*.<region>.aws.neon.tech` (each preview's database endpoint), or set
+**Network access** to **Full**.
 
 | Host(s) | Token | Scope |
 |---|---|---|

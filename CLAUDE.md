@@ -95,7 +95,7 @@ asserts the SQL and params, like the existing `POST /live/:view` test.
   and Realtime credentials from Neon on every deploy, so never set those on
   Fly by hand.
 - Cloud sessions on this app's own environment (named after the app, with
-  Full network access) have `myapp-dev` API keys for `console.neon.tech`
+  limited network access: see `SECRETS.md`) have `myapp-dev` API keys for `console.neon.tech`
   (project-scoped), `api.fly.io` and `api.machines.dev` (an org deploy
   token for `FLY_ORG`, so prod and every preview app) and
   `api.cloudflare.com` (Pages, Workers, Workers Tail, Account Analytics),
