@@ -5,16 +5,27 @@ A TypeScript app skeleton, plus a playbook that Claude Code follows to turn
 it into a new, fully deployed app: production and per-PR preview
 environments, with sign-in and live data working end to end.
 
-**To start a new app**, open a Claude Code session (claude.ai/code works
-fine from a phone or tablet) and paste:
+**To start a new app** with Claude Code on the web (claude.ai/code works
+fine from a phone or tablet):
+
+1. **Once, before your first app:** create a cloud environment named
+   **Able Setup** with **Full** network access. On the new-session screen,
+   tap the environment selector (the first control under the message box)
+   → **New environment**, type the name, set **Network access** to
+   **Full**, and tap **Add environment**. Setup needs to reach Neon, Fly,
+   Cloudflare and each new app's own addresses, and Claude keeps its setup
+   tokens on this environment, away from your others.
+2. Start a session on **Able Setup** (no repository needed) and paste:
 
 > Read https://github.com/lightbody/able/blob/main/PLAYBOOK.md and follow
 > it to set up a new app for me. Ask me what it's called first.
 
-Claude asks for a name, walks you through creating accounts and three API
+Claude asks for a name, walks you through creating accounts and API
 tokens, and does the rest: it renames the skeleton, provisions Neon, Fly and
-Cloudflare, configures CI, and verifies both environments. A custom domain is
-an optional last step.
+Cloudflare, configures CI, and verifies production and previews. A custom domain is
+an optional last step. At the end, you create a second environment named
+after the app, for day-to-day sessions on it, and Claude saves narrower
+development tokens there.
 
 The landing page at **https://able.lightbody.net** lives in `site/` and
 deploys with `.github/workflows/site.yml`. New apps don't get either.
