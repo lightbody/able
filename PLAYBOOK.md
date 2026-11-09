@@ -34,29 +34,54 @@ instruction you give must work with that.
 6. **Verify, don't assume.** After each provisioning step, check it worked
    with a read-only call before moving on.
 
-## Two kinds of tokens
+## One cloud environment, two kinds of tokens
 
 Read `SECRETS.md` in the template. It is the user-facing version of this
 section and stays in the new app.
 
-| | **Setup tokens** (`able-setup`) | **CI tokens** (`<slug>-ci`) |
+**One environment per app, from the start.** This setup session, and every
+later Claude Code session on the app, runs on a cloud environment named
+after the app's slug and used for nothing else. Step 0 makes sure of that
+before anything else happens. Its tokens reach only this app, and setup
+never changes environment partway through.
+
+**Full network access is strongly recommended.** Setup and later debugging
+reach many hosts, some of them new with every PR preview, and with Full
+nothing is ever blocked. The tokens stay safe either way: the proxy adds
+each one only to requests to its own host, and you never see the values.
+What Full gives up is a limit on where *data* can go: anything a session
+reads (database rows, logs) could in principle be sent to any host, if
+the session were misled by something it read. Users who want that limit
+can use **Limited** network access instead; "Limited network access" at
+the end of this file covers it, and the steps that need extra work for it
+point there.
+
+| | **Claude Code tokens** (`<slug>-claude-code`) | **CI tokens** (`<slug>-ci`) |
 |---|---|---|
-| For | you, Claude: creating and debugging infrastructure | GitHub Actions: every deploy |
-| Saved via | the `request_credential` card, onto this cloud environment | GitHub Actions secrets, pasted by the user |
-| Neon | **organization** key (a personal key also works, but reaches every org the user belongs to) | **project-scoped** key for this app's project |
+| For | you, Claude: setting the app up now, then building and debugging it (production and PR previews) in later sessions | GitHub Actions: every deploy |
+| Saved via | `request_credential` cards, onto the app's own cloud environment | GitHub Actions secrets, pasted by the user (step 6) |
+| Neon | an **organization** key while it creates the project (step 4), then a **project-scoped** key (step 6) | **project-scoped** key for this app's project |
 | Fly | **org deploy token** for **this app's own org** (personal access tokens no longer work) | a second org deploy token for the same org (previews create apps) |
-| Cloudflare | Pages Edit + Account Settings Read (+ Zone DNS Edit and Zone Read for custom domains) | Pages Edit only |
-| Reused across apps | Neon and Cloudflare: yes. Fly: no, each app's org needs its own | no, one set per app |
+| Cloudflare | Pages Edit + Account Settings Read (+ DNS Edit and Zone Read on the custom domain's zone) during setup; narrowed in step 12 to Pages Edit, Account Settings Read and Account Analytics Read (+ DNS Read and Zone Read) | Pages Edit only |
 
-Never put a CI token into a card or a setup token into GitHub. The point
-of the split is that each app's CI holds only what that app needs, while
-the broad setup tokens live only in the Claude environment. The user can
-expire or revoke them without affecting any deploy.
+**Least privilege as you go.** Ask for each token with the permissions the
+coming steps need, no more, and narrow it as soon as they're done: the
+Neon key goes from organization to project-scoped in step 6, and the
+Cloudflare token drops its setup-only permissions in step 12. Narrowing a
+Cloudflare token edits it in place, so its value doesn't change and no new
+card is needed. Replacing the Neon key means a new key, a new card, and
+revoking the old one.
 
-On a second or later app, the Neon and Cloudflare setup tokens are usually
-already saved. Fly's isn't reusable: the user creates the new app's Fly org
-and a Fly setup token for it, which replaces the previous app's token in the
-card, and then the three CI tokens.
+Setup ends with every Claude Code token at the **baseline** in
+`SECRETS.md` ("The baseline"). That table, and the rule in the app's
+`CLAUDE.md` to widen a token only for the task that needs it and then
+return to the baseline, are what carry this approach into every later
+session, since this file is deleted from the app in step 8. If you change
+a token's scope here, change that table to match.
+
+Never put a CI token into a card, or a Claude Code token into GitHub. The
+user can revoke either set without touching the other; revoking the
+Claude Code tokens never affects a deploy.
 
 ## How `request_credential` works
 
@@ -85,7 +110,7 @@ card, and then the three CI tokens.
   prefix (it accepts `Bearer fm2_…`), so the fix is to cut it in the card.
   The card can cover your message, so give this warning in the **guide
   turn**, before the user copies the token, not only in the card turn.
-  See the Fly setup token steps in step 4. (Hopefully the card is fixed
+  See the Fly token steps in step 4. (Hopefully the card is fixed
   some day; if a pasted `FlyV1 …` value saves as is, that's fine too.)
 - If the user declines a card, don't re-ask unless they say so, for example
   "I submitted it wrong, ask again". If they say that, ask again.
@@ -118,9 +143,62 @@ You also pick a **region pair** in step 1. The Neon region is the project's
 
 ---
 
+## Step 0: The app's own cloud environment
+
+Do this first, before anything else. (If you have no `get_environment`
+tool, you aren't in a Claude Code cloud session: skip this step.)
+
+1. **Ask only the app's name now**, step 1's first question, and derive
+   the slug from it as step 1 describes. Confirm the slug in one line. The
+   rest of step 1 comes after this step.
+2. Call `get_environment`. It describes the environment this session runs
+   in.
+
+**This session's environment is named after the slug** (or the user
+confirms it's a new environment made just for this app under another
+name; offer to rename it to the slug with `update_environment`
+`new_name`): this is the app's environment. Look at its
+`network_secrets`. A new environment has none. If it has some for
+`console.neon.tech`, `api.fly.io`, `api.machines.dev` or
+`api.cloudflare.com`, ask whether they're this app's; if not, say step 4's
+cards will replace them. Then check its network:
+
+- **`unrestricted` (Full):** go to step 1.
+- **Limited:** say in one line that Full is recommended and why (nothing
+  gets blocked, during setup or later), and that Limited works too with a
+  little more setup. If they'd rather switch, they change **Network
+  access** to **Full** in the environment's settings (the environment
+  name in the title bar → **Edit**); a new session isn't needed. If they
+  keep Limited, do "Setting up the allowlist" under "Limited network
+  access" at the end of this file now, then go to step 1.
+
+**Anything else** (`Default`, another app's environment, or one shared by
+several projects): don't set up here. Explain briefly why the app gets an
+environment of its own: its tokens reach only this app; this session and
+every later session on the app use it, so setup and later debugging see
+the same access; and nothing changes environment partway through. Then
+give the steps for the recommended setup, with Full network access. The
+user creates it, because a session can't create an environment with Full
+network access or move onto one:
+
+1. At **claude.ai/code**, or the **Code** tab in the Claude app, start a
+   new session, and on the new-session screen tap the environment
+   selector (the first control in the row under the message box), then
+   **New environment** at the bottom of the menu.
+2. Name: type the slug, e.g. `chore-chart`.
+3. **Network access** → **Full**. Leave everything else as it is, and tap
+   **Add environment**.
+4. Start the session on it (no repository is needed yet), and paste the
+   same prompt they used here.
+
+Add one line: if they'd rather limit where the app's sessions can connect,
+you can create a Limited environment for them instead, and move this
+session onto it ("Limited network access" at the end of this file). If
+they ask for that, do it; otherwise stop here.
+
 ## Step 1: Name the app
 
-Ask the user:
+Ask the user (skip the name if step 0 already asked it):
 
 1. **What's the app called?** This is the display name, e.g. "Chore Chart".
 2. **One sentence on what it's for.** This goes into the README and
@@ -129,7 +207,7 @@ Ask the user:
    enough. This picks where the database and backend run.
 4. **Do you want a custom domain, and if so, which one?** For example
    `chore-chart.example.com`. Ask now, not later: the answer decides which
-   permissions the Cloudflare setup token needs in step 4, and creating it
+   permissions the Cloudflare token needs in step 4, and creating it
    with the right ones the first time saves the user a second trip to
    Cloudflare. If they want one, also ask whether the domain's DNS is on
    Cloudflare, in the account they'll use for this app. Only then can
@@ -165,6 +243,9 @@ No Realtime region is in the western Americas yet. Users there still get
 `aws-us-east-1` + `iad`, so say that pages will be a little slower for
 them. Confirm the name, slug, region pair and custom domain (or "none")
 with the user in one line, then continue.
+
+**Limited network only:** now that the slug and region are known, do
+"Wildcard hosts" under "Limited network access" at the end of this file.
 
 ## Step 2: Accounts
 
@@ -208,22 +289,25 @@ and open a PR instead.
 Creating the repo triggers CI on its first commit. The deploy jobs skip
 themselves while `.github/deploy.env` is empty, so the run is harmless.
 
-## Step 4: Setup tokens (only the missing ones)
+## Step 4: Claude Code tokens
 
 First call `get_environment`. Its `network_secrets` lists the hosts that
-already have a saved credential (never the values). Check each service:
+already have a saved credential (never the values). On a new environment
+there are none. If some are saved, check each:
 
-| Service | Saved if these hosts are listed | Check it's a usable setup token |
+| Service | Saved if these hosts are listed | Check it's usable for setup |
 |---|---|---|
 | Neon | `console.neon.tech` | `GET https://console.neon.tech/api/v2/projects` succeeds. A project-scoped key fails with "not allowed outside the project". It can't create the new project, so it must be replaced with an organization key. |
-| Fly | `api.fly.io` **and** `api.machines.dev` | the GraphQL `{ organizations { nodes { slug name type } } }` lists **the org the user chose for this app**. A saved Fly token from an earlier app reaches only that app's org, so on every new app it must be replaced with one for this app's org, unless the user is deliberately reusing that same org. |
+| Fly | `api.fly.io` **and** `api.machines.dev` | the GraphQL `{ organizations { nodes { slug name type } } }` lists **the org the user chose for this app**. A token for any other org must be replaced. |
 | Cloudflare | `api.cloudflare.com` | `GET /client/v4/user/tokens/verify` is `active`, **and** `GET /client/v4/accounts` lists the account |
 
-Tell the user which setup tokens are already in place, and walk them through
-creating only the missing or unusable ones. The Fly one is always needed for a
-new app, and its org has to exist first, so the Fly part starts by creating
-the org. Each one goes **only** into a
-card, never into GitHub.
+Walk the user through creating the missing or unusable ones, each named
+`<slug>-claude-code`. Say once that they're for Claude on this app only:
+for setting it up now and for building and debugging it later, saved on
+this app's environment, and that some get narrowed once setup no longer
+needs their extra permissions. The Fly org has to exist before its token,
+so the Fly part starts by creating the org. Each token goes **only** into
+a card, never into GitHub.
 
 Do one token at a time, in the two turns described in "How
 `request_credential` works". First send the creation steps below and end
@@ -231,11 +315,13 @@ your turn with "copy it, then tell me when you have it copied". Only after
 the user confirms, call `request_credential`. Never show a card in the same
 turn as the creation steps.
 
-**Neon setup token**
+**Neon token (organization, for now)**
 
 This key creates the app's project in step 5, so it has to be an
 **organization** key. A project-scoped key can't create projects. Tell the
-user that, because the key-type choice is easy to miss.
+user that, because the key-type choice is easy to miss, and that in step 6,
+once the project exists, it's replaced by a project-scoped key and
+revoked.
 
 There's no deep link, because the settings URL contains the organization's
 ID. Spell out the navigation, and warn about the trap: the profile menu
@@ -258,7 +344,7 @@ user these steps, in your own words:
 4. Open the **API keys** tab and tap **Create new**.
 5. Choose the **Organization** key type, not **Project-scoped**. Don't
    pick a project.
-6. Name: type `able-setup`. Create the key.
+6. Name: type `<slug>-claude-code`. Create the key.
 7. The key is shown **only once**. Copy it now, and don't copy anything
    else until it's saved in the card. If the dialog closes before you
    copy it, revoke that key and create another.
@@ -276,9 +362,9 @@ If the user belongs to more than one Neon organization, ask which one the
 app's project belongs in before giving the steps, and have them create the
 key there. The key's organization is where you create the project.
 
-**Fly: the app's own org, then its setup token**
+**Fly: the app's own org, then its token**
 
-Fly personal access tokens no longer work for this, so the setup token is an
+Fly personal access tokens no longer work for this, so Claude's token is an
 **org deploy token**, and an org token can only be made for an org that
 already exists. So the user creates this app's own Fly org first, then its
 token. Give every app its own Fly org, so its CI token (also an org token,
@@ -315,7 +401,7 @@ can't create apps.
    the right one before going on.
 3. Tap **Tokens** in that org's menu (not an app's **Tokens**, and not
    the account menu's **Access Tokens**).
-4. Create a token of type **Org Deploy Token**. Name: type `able-setup`. Leave the expiry at
+4. Create a token of type **Org Deploy Token**. Name: type `<slug>-claude-code`. Leave the expiry at
    the default, or pick an end date if they prefer.
 5. The token is shown **only once**. Copy the **whole** value; it's long,
    so use the page's copy button if there is one rather than selecting it.
@@ -341,11 +427,9 @@ chance to read it, because the card can cover the next message.
 **After the user confirms:** say in one line that there are two cards and
 that each may need `FlyV1 ` (6 characters) cut from the start, as above.
 Then call `request_credential` with host
-`api.fly.io`, and after it's saved, with host `api.machines.dev`. If a Fly
-token from an earlier app is already saved, these cards replace it; say
-that Claude then reaches only the new app's Fly org.
+`api.fly.io`, and after it's saved, with host `api.machines.dev`.
 
-**Cloudflare setup token**
+**Cloudflare token**
 
 This is a **user API token** made from a custom template. Warn about two
 traps on that page: the **Global API Key** further down is all-powerful
@@ -361,7 +445,7 @@ the user these steps, in your own words:
    **Global API Key** section.
 2. Tap **Create Token**, then **Start from scratch** (older dashboards:
    scroll to the bottom, **Create Custom Token** → **Get started**).
-3. **Token name:** type `able-setup`.
+3. **Token name:** type `<slug>-claude-code`.
 4. Cloudflare groups permissions into **policies**. Each policy has a
    scope (an account or a zone) and a list of permission groups with
    **Read** and **Edit** checkboxes. Search the list, or open the
@@ -513,7 +597,10 @@ curl -s -X POST "https://api.cloudflare.com/client/v4/accounts/$A/pages/projects
 ```
 
 Use the returned `result.subdomain`. If the name was taken, Cloudflare adds
-a suffix. `PROD_FRONTEND_ORIGIN` is `https://<subdomain>`. Then restrict
+a suffix. `PROD_FRONTEND_ORIGIN` is `https://<subdomain>`.
+
+**Limited network only:** add `<subdomain>` to the allowlist now, as
+"Limited network access" at the end of this file describes. Then restrict
 Realtime on the default branch:
 
 ```bash
@@ -550,14 +637,14 @@ assume the user remembers them from step 4. For each:
 
 These tokens never go into a card.
 
-1. **`NEON_API_KEY`**: the same place as the Neon setup token in step 4.
+1. **`NEON_API_KEY`**: the same place as Claude's Neon key in step 4.
    That's the **organization's** Settings with the project's organization
    active, **not** the profile menu's Settings. Then **API keys → Create
    new**, choose **Project-scoped**, and select the new project. Name: type
    `<slug>-ci`. It's shown only once, so copy it straight away. Repeat
    the navigation steps from step 4; don't assume the user remembers them.
 2. **`FLY_API_TOKEN`**: a second **org deploy token** for **the app's own
-   org**, made the same way as the setup token in step 4 but kept
+   org**, made the same way as Claude's token in step 4 but kept
    separate, so either can be revoked without breaking the other.
    1. Open **https://fly.io/dashboard**.
    2. In the **organization dropdown**, choose the app's own org (step 5).
@@ -566,11 +653,11 @@ These tokens never go into a card.
    3. Tap **Tokens** in that org's menu (not an app's **Tokens**, which
       makes deploy tokens that can't create preview apps).
    4. Create a token of type **Org Deploy Token**, the same type as the
-      `able-setup` token in step 4. Name: type `<slug>-ci`. Choose a long
+      `<slug>-claude-code` token in step 4. Name: type `<slug>-ci`. Choose a long
       expiry, or none if offered, since CI needs it long-term.
    5. Copy the **whole** value. In GitHub, paste it **as is**, including
       `FlyV1 ` at the start. Unlike the card, GitHub needs the prefix.
-3. **`CLOUDFLARE_API_TOKEN`**: the same page as the setup token in step 4,
+3. **`CLOUDFLARE_API_TOKEN`**: the same page as Claude's token in step 4,
    with fewer permissions.
    1. Open **https://dash.cloudflare.com/profile/api-tokens** (My Profile
       → API Tokens, not the Global API Key).
@@ -583,6 +670,25 @@ These tokens never go into a card.
    5. **Create Token** → **Copy**.
 
 You can't read GitHub secrets. The first deploy in step 9 verifies them.
+
+**Then narrow Claude's Neon key.** The project exists, so Claude no longer
+needs an organization key. Replace it with a project-scoped one, the same
+kind as `NEON_API_KEY` but a separate key, in two turns as in step 4:
+
+1. Same place as the CI key: **https://console.neon.tech** → the
+   organization's **Settings** (with the project's organization active in
+   the profile menu's switcher; not the profile menu's own Settings) →
+   **API keys** → **Create new** → **Project-scoped** → the app's project.
+2. Name: type `<slug>-claude-code`. Create it, copy it (it's shown only
+   once), and tell Claude it's copied.
+
+**After the user confirms:** call `request_credential` with host
+`console.neon.tech`; the new key replaces the organization key in the
+card. Check `GET /api/v2/projects/<NEON_PROJECT_ID>` succeeds. Then have
+the user revoke the old key: on the same **API keys** page, the
+`<slug>-claude-code` key whose type is **Organization** (not the new
+project-scoped one), and revoke it. Everything after this step works with
+the project-scoped key.
 
 ## Step 7: WorkOS (sign-in)
 
@@ -773,12 +879,14 @@ close the PR. Closing tears the preview down.
 
 ## Step 11: Custom domain (if chosen in step 1)
 
-Use the domain from step 1. If the user didn't want one, skip to "Done".
+Use the domain from step 1. If the user didn't want one, skip to step 12.
 Before starting, remind them in one line what changes: sign-in moves to
 the domain, and the `pages.dev` address stops working for sign-in.
 
 1. **Attach the domain.**
-   - If the Cloudflare setup token has the zone permissions and the
+   - **Limited network only:** first add `<domain>` to the allowlist
+     ("Limited network access", at the end of this file).
+   - If Claude's Cloudflare token has the zone permissions and the
      domain's DNS is on Cloudflare in the same account, do it yourself:
      - `POST /accounts/$A/pages/projects/<project>/domains` with
        `{"name":"<domain>"}`
@@ -808,16 +916,144 @@ the domain, and the `pages.dev` address stops working for sign-in.
 4. Sign-in now works only at the custom domain. The `pages.dev` address
    still serves the page, but the backend rejects its API calls.
 
+## Step 12: Narrow the Cloudflare token, and wrap up
+
+Setup no longer needs the Cloudflare token's write access to DNS, and
+later debugging wants read access to analytics. Cloudflare edits a token
+in place, so its value doesn't change and there's no card. Give the user
+these steps:
+
+1. Open **https://dash.cloudflare.com/profile/api-tokens**.
+2. On the `<slug>-claude-code` token, tap **⋯ → Edit**.
+3. In the **Account** policy, keep **Cloudflare Pages → Edit** and
+   **Account Settings → Read**, and add **Account Analytics → Read**.
+4. If there's a **Zone** policy (custom domain): change **DNS** from
+   **Edit** to **Read**, and keep **Zone → Read**.
+5. Go on to the summary and save the change. Don't **Roll** the token:
+   that would change its value and need a new card.
+
+Check: `GET /client/v4/user/tokens/verify` is still `active`, and
+`GET /client/v4/accounts/<CLOUDFLARE_ACCOUNT_ID>/pages/projects/<CLOUDFLARE_PAGES_PROJECT>`
+still succeeds.
+
+These are the dashboard names from Cloudflare's list at
+https://developers.cloudflare.com/fundamentals/api/reference/permissions/
+(the API calls the Edit ones "Write"). If the dashboard shows a name
+differently, check that page rather than guessing.
+
 ## Done
 
 Tell the user, briefly:
 
 - the prod URL, the repo, and how previews work
+- that this environment, named after the app, is where to start every
+  future session on it. Its `<slug>-claude-code` tokens let Claude build
+  and debug the app, including looking into production and PR previews
+  in Neon, Fly and Cloudflare. They can add the app's repo to the
+  environment's **Repositories** in its settings, so it's selected by
+  default.
+- that Claude's tokens are now at their baseline (the table in
+  `SECRETS.md`). When a later task needs more, such as working with
+  Cloudflare Workers, Claude will say so, guide them through widening only
+  what that task needs, and then back to the baseline when it's done.
 - that deploys use only the three `<slug>-ci` tokens in GitHub, and that
-  `SECRETS.md` explains how to rotate them
-- that the `able-setup` tokens stay on this cloud environment for
-  debugging, and the Neon and Cloudflare ones for the next app too. The Fly
-  one reaches only this app's org; the next app replaces it. They can revoke them at any time without
-  affecting deploys, by removing them under the environment name in the
-  session title bar → **Edit** → **Network secrets**, and revoking them in
-  each service's dashboard.
+  `SECRETS.md` lists both kinds of token and how to rotate or revoke each.
+  Revoking the Claude Code tokens never affects deploys.
+- **Limited network only:** if any of the three wildcard hosts are still
+  missing (check with `get_environment`), strongly recommend adding them
+  now, with the steps under "Limited network access", so Claude can reach
+  PR previews. Setting **Network access** to **Full** is the simpler
+  alternative.
+
+## An existing app without its own environment
+
+If the user asks to move an app set up by an older version of this
+playbook onto an environment of its own, attach its repo, read
+`.github/deploy.env`, `CLAUDE.md` and `SECRETS.md`, then:
+
+1. Do step 0 with the app's slug. If the user keeps Limited network
+   access, also do everything under "Limited network access" now: the
+   app's hosts all exist already. The Pages subdomain comes from
+   `GET /accounts/<CLOUDFLARE_ACCOUNT_ID>/pages/projects/<CLOUDFLARE_PAGES_PROJECT>`.
+2. Collect the three `<slug>-claude-code` tokens at the baseline in the
+   template's `SECRETS.md`, so nothing needs narrowing later: Neon
+   **project-scoped** (as in step 6's "narrow Claude's Neon key"), Fly
+   **org deploy token** for `FLY_ORG` (as in step 4), and Cloudflare with
+   the permissions step 12 ends with (as in step 4, but ticking those
+   instead). Check each as those steps do.
+3. Bring the app's docs up to date, since an older app won't have the
+   baseline or the rule for widening a token: from the template's
+   versions, update `SECRETS.md`'s Claude Code token sections and the
+   matching token bullets under "Deploys" in `CLAUDE.md` (with `myapp`
+   replaced by the slug), and open a PR.
+4. Tell the user which older tokens on other environments (for example
+   `able-setup` ones on their Default environment) they can now remove and
+   revoke.
+
+## Limited network access
+
+Full network access is the recommendation (see the top of this file).
+This section is for users who choose Limited instead: the app's
+environment then reaches only package registries, MCP servers, and the
+hosts on its allowlist. You can add exact hosts yourself, with
+`update_environment` (the user approves a card each time, and it takes
+effect within seconds). Only the user can add wildcards.
+
+**Creating it for the user.** If step 0 found the session on another
+environment and the user asked for Limited, create it and move this
+session onto it, so this conversation carries on. Say in one or two
+sentences what you're creating (its name, Limited access, the hosts below,
+and that this session moves onto it), then call `create_environment` with
+`name`: the slug, `scope: "personal"`, `allowed_hosts`: the list below,
+`allow_package_managers: true`, `allow_mcp_servers: true`,
+`switch_session: "network_only"`, and `leave_statement` copied exactly from
+`get_environment` if it returned one. No repositories (the repo doesn't
+exist yet), variables or setup script.
+
+- **Approved and moved:** call `get_environment` again to check this
+  session is on the new environment, then go to step 1.
+- **Created, but this session didn't move:** have the user start a new
+  session on it and paste the same prompt. Then stop.
+- **Declined:** don't propose it again. Give the Full steps from step 0
+  instead, and stop.
+
+**Setting up the allowlist.** On an existing Limited environment, add
+whichever of these are missing with one `update_environment` call
+(`add_allowed_hosts`, with `environment_name` and `applies_to` copied
+from `get_environment`), saying first in one line what you're adding and
+why:
+
+| Hosts | Why |
+|---|---|
+| `console.neon.tech`, `api.fly.io`, `api.machines.dev`, `api.cloudflare.com` | the Claude Code tokens' APIs (a card also allows its host, but list them anyway) |
+| `api.workos.com` | step 7's sign-in checks |
+| `neon.com`, `fly.io`, `developers.cloudflare.com`, `workos.com` | each service's docs; step 1 reads `neon.com` |
+
+**Wildcard hosts** (after step 1, once the slug and region are known).
+Have the user add three, and explain in a line each what they unblock:
+
+- `*.<region>.aws.neon.tech`, e.g. `*.us-east-1.aws.neon.tech` (the Neon
+  region without its `aws-` prefix): every Neon branch has its own
+  database host. Step 5 runs SQL and a Realtime test on a scratch branch,
+  and each PR preview gets its own branch.
+- `*.fly.dev`: the production backend (step 9) and each PR preview's
+  backend, `<app>-pr-<n>.fly.dev` (step 10).
+- `*.<slug>-frontend.pages.dev`: each PR preview's frontend (step 10).
+
+Steps: tap the **environment name** in the session's title bar, then
+**Edit**, then **Network access**. Under **Allowed domains**, add the
+three, one per line, filled in for this app, and save. (If the app shows
+**Custom** rather than **Limited**, use that, and keep its box for the
+default package managers ticked.) Check with `get_environment` that all
+three are listed before going on. If they'd rather not add them, say that
+you'll ask to add each exact host as it appears instead (a card each
+time), and that previews can't be checked until their hosts are added.
+
+**Exact hosts as they appear.** Add each with `update_environment`:
+
+- **Step 5:** the Pages project's `<subdomain>` (a wildcard doesn't match
+  the bare name). If it isn't `<slug>-frontend.pages.dev`, also ask the
+  user to change the Pages wildcard to `*.<subdomain>`.
+- **Step 11:** the custom domain.
+- **Any time** a request is refused with "no rule allows host": that
+  exact host, rather than stopping or working around it.

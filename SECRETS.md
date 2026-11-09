@@ -2,13 +2,26 @@
 
 This app uses two kinds of API token for each of Neon, Fly and Cloudflare:
 
-| | **CI tokens** (`<project>-ci`) | **Setup tokens** (`able-setup`) |
+| | **CI tokens** (`<project>-ci`) | **Claude Code tokens** (`<project>-claude-code`) |
 |---|---|---|
-| Used by | GitHub Actions, on every deploy | Claude Code, when setting up or debugging an app |
-| Stored in | this repo's GitHub Actions secrets | the Claude Code cloud environment's **network secrets** |
-| Scope | as narrow as each service allows, for this one app | Neon and Cloudflare: broad enough to set up *any* new app. Fly: the newest app's own org |
+| Used by | GitHub Actions, on every deploy | Claude Code sessions on this app: setting it up, then building and debugging it, including production and PR previews |
+| Stored in | this repo's GitHub Actions secrets | the **network secrets** of this app's own Claude Code cloud environment, named after the app |
+| Scope | as narrow as each service allows, for this one app | this app's Neon project, its own Fly org, and its Cloudflare account, with only the permissions Claude needs |
 | Lifetime | long-lived; rotate occasionally | optional; can expire or be revoked any time |
-| If removed | deploys stop | Claude can't create or debug infrastructure; deploys keep working |
+| If removed | deploys stop | Claude can't look into this app's infrastructure; deploys keep working |
+
+**One cloud environment per app.** Every Claude Code session on this app,
+including the one that set it up, runs on the environment named after it,
+which is used for nothing else. Its tokens never reach another app.
+**Full** network access is recommended: nothing gets blocked, and the
+tokens are still sent only to their own hosts (Claude never sees their
+values). What Full gives up is a limit on where data a session reads, such
+as database rows or logs, could be sent. If you want that limit, use
+**Limited** access: its allowlist holds the token hosts, this app's
+production addresses and the services' docs, plus three wildcards you add
+yourself so Claude can reach PR previews: `*.<region>.aws.neon.tech` (each
+Neon branch's database), `*.fly.dev` (production and preview backends) and
+`*.<pages subdomain>` (preview frontends).
 
 Deploys need **only** the three CI tokens. Everything else is either
 fetched from Neon at deploy time or committed in `.github/deploy.env`:
@@ -31,22 +44,59 @@ Manage them at `https://github.com/<owner>/<repo>/settings/secrets/actions`.
 | `FLY_API_TOKEN` | Fly **organization** token (starts with `FlyV1 `) | this app's own Fly org (`FLY_ORG`) | creates and destroys a Fly app per PR preview. An app-scoped deploy token can't create apps. Because of that, each app gets **its own Fly org**: a linked org billed to your main org if Fly approves it (it reviews these manually), otherwise an org with its own billing. Sharing an org lets this token touch your other apps. |
 | `CLOUDFLARE_API_TOKEN` | Cloudflare API token | `Account` → `Cloudflare Pages` → `Edit`, for one account | uploads deployments and deletes preview deployments. Cloudflare can't narrow this to a single project. |
 
-## The setup tokens (Claude Code environment)
+## The Claude Code tokens (this app's cloud environment)
 
-Find them in the Claude app or on claude.ai. In a Claude Code session, tap
-the **environment name** in the title bar, then **Edit** next to it, then
-**Network secrets**. Older app versions call that section **API
-credentials**. Each entry is a host. The value is never shown, and the
-network proxy adds it to Claude's requests to that host.
+Find them in the Claude app or on claude.ai: in a Claude Code session on
+this app's environment, tap the **environment name** in the title bar, then
+**Edit** next to it, then **Network secrets**. Older app versions call that
+section **API credentials**. Each entry is a host. The value is never
+shown, and the network proxy adds it to Claude's requests to that host.
 
-| Host(s) | Token | Scope |
-|---|---|---|
-| `console.neon.tech` | Neon API key `able-setup` | an **organization** key, so Claude can create and manage each new app's project. A project-scoped key can't create projects. A personal key also works, but it reaches every Neon org you belong to. |
-| `api.fly.io` and `api.machines.dev` | Fly **org deploy token** `able-setup`, saved without any `FlyV1 ` prefix | the app's own Fly org only. Fly personal access tokens no longer work, so each new app replaces this with a token for its own org, and Claude then reaches only that org. |
-| `api.cloudflare.com` | Cloudflare token `able-setup` | an Account policy with `Cloudflare Pages` → `Edit` and `Account Settings` → `Read`. Only if Claude should set up a custom domain, add a Zone policy for that specific zone with `DNS` → `Edit` and `Zone` → `Read`. |
+### The baseline
 
-These are shared by every session and every app that uses this
-environment. Removing them doesn't affect any deploy.
+Setup ends with these, and every widening below comes back to them. Each
+is named `<project>-claude-code`.
+
+| Service | Host(s) | Token | Baseline permissions | What it lets Claude do |
+|---|---|---|---|---|
+| Neon | `console.neon.tech` | API key, **Project-scoped** to this app's project | full access to that one project. Neon has no finer-grained or read-only keys. | inspect and manage branches (including preview branches), Realtime settings, and connection details for HTTPS SQL |
+| Fly | `api.fly.io` and `api.machines.dev` (the same token in both, saved without any `FlyV1 ` prefix) | **Org Deploy Token** for this app's own Fly org (`FLY_ORG`) | deploy and manage apps in that org only. Fly personal access tokens no longer work. | inspect and restart production and every PR preview app |
+| Cloudflare | `api.cloudflare.com` | User API token | **Account** policy for your account: `Cloudflare Pages` → `Edit`, `Account Settings` → `Read`, `Account Analytics` → `Read` | inspect and retry Pages deployments and build logs, read account analytics. Cloudflare can't narrow a token to one project. |
+| Cloudflare, custom domain only | same token | same token | **Zone** policy for that zone only: `DNS` → `Read`, `Zone` → `Read` | inspect the domain's DNS records and zone |
+
+During setup two of them start wider: Neon as an **organization** key, to
+create the project, and Cloudflare with `DNS` → `Edit`, to create the
+custom domain's record. Setup narrows both to the baseline before it
+finishes.
+
+### Widening a token for a task, then back to the baseline
+
+Claude's tokens stay at the baseline between tasks. When a task needs
+more, for example creating or updating a Cloudflare Worker, Claude says so
+before starting, names the exact permission it needs, and guides you
+through adding only that. When the task is done, it guides you back to the
+baseline and checks the narrowing worked. Widening is for one task, not a
+new baseline: if the app comes to rely on something permanently (it now
+runs a Worker that Claude should be able to debug), decide that
+deliberately and update the baseline table above in the same change.
+
+Permission names for Cloudflare are on its list at
+https://developers.cloudflare.com/fundamentals/api/reference/permissions/
+(the API calls the Edit ones "Write").
+
+| Service | Widen | Back to the baseline | Check |
+|---|---|---|---|
+| Cloudflare | https://dash.cloudflare.com/profile/api-tokens → the `<project>-claude-code` token → **⋯ → Edit**. Add the permission to the existing policy (for Workers: `Workers Scripts` → `Edit`, and `Workers Tail` → `Read` for live logs), or add a Zone policy for one specific zone. Save. The value doesn't change, so nothing to paste. Don't **Roll** it. | **⋯ → Edit** again, remove what was added so the token matches the baseline table, and save. | Claude makes a read-only call that the removed permission allowed (for Workers, listing the account's Workers scripts) and expects it to fail with 403. Where no safe read exists, such as Edit narrowed back to Read, you confirm the token's summary shows only the baseline. |
+| Neon | Only for work outside this project, such as creating another project. Create an **Organization** key named `<project>-claude-code` (the organization's **Settings → API keys**, not the profile menu's), copy it, and paste it into the card Claude shows for `console.neon.tech`. | Create a **Project-scoped** key for this project with the same name, paste it into a new card, then revoke the Organization key on the same page. | Claude checks this project is still readable, and that listing all projects now fails ("not allowed outside the project"). |
+| Fly | Rarely needed: the baseline already covers every app in this app's org. Anything outside the org belongs to another app's environment. | — | — |
+
+### Adding a service
+
+When Claude should be able to inspect a new service (observability, say,
+or billing), it gets its own `<project>-claude-code` token on this
+environment, with the narrowest baseline that service allows (read-only
+where it offers that), and a row in the baseline table above. On a
+**Limited** environment, its hosts go on the allowlist too.
 
 ## Rotating a CI token
 
@@ -80,18 +130,22 @@ and copy only one thing at a time.
    Cloudflare's **Roll** already invalidated the old value, so there's
    nothing to revoke after a roll.
 
-## Rotating a setup token
+## Rotating a Claude Code token
 
-1. Create the new token with the setup scope above, named `able-setup`.
-   For Fly that's an org deploy token from the org's **Tokens** page.
-2. In the environment's **Network secrets**, replace the value for that
-   host. For Fly, update both hosts and delete `FlyV1 ` (6 characters,
-   including the space) from the start of the value: the form treats it
-   as a pasted header, shows an error and keeps **Save** greyed out until
-   it's gone. Fly accepts the token without it.
+1. Create the new token in the same place as its CI counterpart (step 1
+   of "Rotating a CI token"), named `<project>-claude-code` and with the
+   scope from the table above. For Fly that's an org deploy token from
+   the org's **Tokens** page. For Cloudflare, **⋯ → Roll** on the existing
+   token gives a new value with the same permissions.
+2. In this app's environment, open **Network secrets** and replace the
+   value for that host. For Fly, update both hosts and delete `FlyV1 ` (6
+   characters, including the space) from the start of the value: the form
+   treats it as a pasted header, shows an error and keeps **Save** greyed
+   out until it's gone. Fly accepts the token without it.
    Alternatively, ask Claude to show the secure card for the host and paste
    it there.
-3. Revoke the old token in the service's dashboard.
+3. Revoke the old token in the service's dashboard (nothing to revoke
+   after a Cloudflare roll).
 
 To remove Claude's infrastructure access entirely, delete the entries from
 **Network secrets** and revoke the tokens. Deploys don't use them.

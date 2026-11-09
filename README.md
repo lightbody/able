@@ -5,16 +5,30 @@ A TypeScript app skeleton, plus a playbook that Claude Code follows to turn
 it into a new, fully deployed app: production and per-PR preview
 environments, with sign-in and live data working end to end.
 
-**To start a new app**, open a Claude Code session (claude.ai/code works
-fine from a phone or tablet) and paste:
+**To start a new app** with Claude Code on the web (claude.ai/code works
+fine from a phone or tablet), give the app a cloud environment of its own,
+named after it, e.g. `chore-chart`. Every session on the app, starting with
+the setup session, runs there, so its tokens never reach your other
+projects. On the new-session screen, tap the environment selector (the
+first control under the message box) → **New environment**, type the name,
+set **Network access** to **Full** (recommended: nothing gets blocked,
+during setup or later), tap **Add environment**, and start the session on
+it (no repository needed). If you'd rather limit where the app's sessions
+can connect, start on any environment instead and ask Claude for a
+**Limited** one: it creates it with the hosts the app needs, and you add
+three wildcard hosts for PR previews.
+
+Then paste:
 
 > Read https://github.com/lightbody/able/blob/main/PLAYBOOK.md and follow
 > it to set up a new app for me. Ask me what it's called first.
 
-Claude asks for a name, walks you through creating accounts and three API
+Claude asks for a name, walks you through creating accounts and API
 tokens, and does the rest: it renames the skeleton, provisions Neon, Fly and
-Cloudflare, configures CI, and verifies both environments. A custom domain is
-an optional last step.
+Cloudflare, configures CI, and verifies production and previews. A custom domain is
+an optional last step. Claude asks for each token with only the
+permissions it needs at the time, and has you narrow them once setup is
+done, so later sessions can debug the app without setup-level access.
 
 The landing page at **https://able.lightbody.net** lives in `site/` and
 deploys with `.github/workflows/site.yml`. New apps don't get either.

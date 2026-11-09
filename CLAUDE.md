@@ -94,16 +94,31 @@ asserts the SQL and params, like the existing `POST /live/:view` test.
   `SECRETS.md` for scopes and rotation. `.github/actions/deploy-backend` pulls the DB URL
   and Realtime credentials from Neon on every deploy, so never set those on
   Fly by hand.
-- Cloud sessions on the owner's environment may have broader `able-setup`
-  API keys for `console.neon.tech`, `api.fly.io`, `api.machines.dev` and
-  `api.cloudflare.com`, injected by the network proxy (separate from the CI
-  tokens, and possibly revoked -- check with a read-only call first; the
-  Fly one is an org token and may be for another app's org). To use the CLIs, set
+- Cloud sessions on this app's own environment (named after the app, Full
+  or Limited network access: see `SECRETS.md`) have `myapp-claude-code`
+  API keys, injected by the network proxy and separate from the CI tokens:
+  `console.neon.tech` (project-scoped), `api.fly.io` and `api.machines.dev`
+  (an org deploy token for `FLY_ORG`, so prod and every preview app) and
+  `api.cloudflare.com` (Pages Edit, Account Settings and Account Analytics
+  Read, plus DNS and Zone Read for a custom domain). They may be missing or
+  revoked, so check with a read-only call first. If a host is refused on a
+  Limited environment, propose adding that exact host rather than working
+  around it. To use the CLIs, set
   the key variable to the placeholder `proxy-injected`, e.g.
   `NEON_API_KEY=proxy-injected npx neon@<NEON_CLI version> ...`,
   `FLY_API_TOKEN=proxy-injected flyctl ...`. Direct Postgres connections
   (port 5432) are blocked from these containers, so use Neon's HTTPS SQL
   endpoint (`@neondatabase/serverless`) if you need to query a branch.
+- **Claude Code tokens stay at their baseline** (the table in `SECRETS.md`,
+  "The baseline"). If a task needs more than that, such as creating or
+  updating a Cloudflare Worker, say so before starting, name the exact
+  permission, and guide the user through widening only that, following
+  `SECRETS.md`, "Widening a token for a task". When the task is done, guide
+  them back to the baseline and check the narrowing took (a read the
+  removed permission allowed should now fail). Never work around a missing
+  permission, for example with a CI token or a broader key, and don't treat
+  a temporary widening as the new baseline: if the app needs it
+  permanently, update the baseline table in the same change, and say so.
 - Never print connection strings or Realtime secrets. When checking
   `neon env pull` output, match on shape (as `deploy-backend` does)
   instead of echoing values.
