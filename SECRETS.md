@@ -12,14 +12,16 @@ This app uses two kinds of API token for each of Neon, Fly and Cloudflare:
 
 **One cloud environment per app.** Every Claude Code session on this app,
 including the one that set it up, runs on the environment named after it,
-which is used for nothing else. Its tokens never reach another app. It has
-either **Full** network access or **Limited** access. With Limited, its
-allowlist holds the token hosts, this app's production addresses and the
-services' docs, plus three wildcards you add yourself so Claude can reach
-PR previews: `*.<region>.aws.neon.tech` (each Neon branch's database),
-`*.fly.dev` (production and preview backends) and `*.<pages subdomain>`
-(preview frontends). Either way, a token is sent only to the host it's
-saved for.
+which is used for nothing else. Its tokens never reach another app.
+**Full** network access is recommended: nothing gets blocked, and the
+tokens are still sent only to their own hosts (Claude never sees their
+values). What Full gives up is a limit on where data a session reads, such
+as database rows or logs, could be sent. If you want that limit, use
+**Limited** access: its allowlist holds the token hosts, this app's
+production addresses and the services' docs, plus three wildcards you add
+yourself so Claude can reach PR previews: `*.<region>.aws.neon.tech` (each
+Neon branch's database), `*.fly.dev` (production and preview backends) and
+`*.<pages subdomain>` (preview frontends).
 
 Deploys need **only** the three CI tokens. Everything else is either
 fetched from Neon at deploy time or committed in `.github/deploy.env`:

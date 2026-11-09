@@ -9,17 +9,14 @@ environments, with sign-in and live data working end to end.
 fine from a phone or tablet), give the app a cloud environment of its own,
 named after it, e.g. `chore-chart`. Every session on the app, starting with
 the setup session, runs there, so its tokens never reach your other
-projects. Either:
-
-- **Full network access:** on the new-session screen, tap the environment
-  selector (the first control under the message box) → **New
-  environment**, type the name, set **Network access** to **Full**, tap
-  **Add environment**, and start the session on it (no repository
-  needed); or
-- **Limited network access:** start a session on any environment. Claude
-  asks the app's name first, offers to create a Limited one with the hosts
-  it needs, and moves the session onto it. You add three wildcard hosts
-  for PR previews when it asks.
+projects. On the new-session screen, tap the environment selector (the
+first control under the message box) → **New environment**, type the name,
+set **Network access** to **Full** (recommended: nothing gets blocked,
+during setup or later), tap **Add environment**, and start the session on
+it (no repository needed). If you'd rather limit where the app's sessions
+can connect, start on any environment instead and ask Claude for a
+**Limited** one: it creates it with the hosts the app needs, and you add
+three wildcard hosts for PR previews.
 
 Then paste:
 

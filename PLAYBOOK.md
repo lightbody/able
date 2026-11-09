@@ -43,9 +43,18 @@ section and stays in the new app.
 later Claude Code session on the app, runs on a cloud environment named
 after the app's slug and used for nothing else. Step 0 makes sure of that
 before anything else happens. Its tokens reach only this app, and setup
-never changes environment partway through. It can have **Full** network
-access (nothing is ever blocked) or **Limited** access; for Limited, step
-0 and step 1 set up its allowlist before any work starts.
+never changes environment partway through.
+
+**Full network access is strongly recommended.** Setup and later debugging
+reach many hosts, some of them new with every PR preview, and with Full
+nothing is ever blocked. The tokens stay safe either way: the proxy adds
+each one only to requests to its own host, and you never see the values.
+What Full gives up is a limit on where *data* can go: anything a session
+reads (database rows, logs) could in principle be sent to any host, if
+the session were misled by something it read. Users who want that limit
+can use **Limited** network access instead; "Limited network access" at
+the end of this file covers it, and the steps that need extra work for it
+point there.
 
 | | **Claude Code tokens** (`<slug>-claude-code`) | **CI tokens** (`<slug>-ci`) |
 |---|---|---|
@@ -136,7 +145,7 @@ tool, you aren't in a Claude Code cloud session: skip this step.)
    the slug from it as step 1 describes. Confirm the slug in one line. The
    rest of step 1 comes after this step.
 2. Call `get_environment`. It describes the environment this session runs
-   in, and its `other_cloud_environments` lists the user's others.
+   in.
 
 **This session's environment is named after the slug** (or the user
 confirms it's a new environment made just for this app under another
@@ -148,64 +157,37 @@ name; offer to rename it to the slug with `update_environment`
 cards will replace them. Then check its network:
 
 - **`unrestricted` (Full):** go to step 1.
-- **Limited:** make sure the allowlist has the hosts in "The allowlist"
-  below. Add any that are missing with one `update_environment` call
-  (`add_allowed_hosts`, with `environment_name` and `applies_to` copied
-  from `get_environment`), saying first in one line what you're adding and
-  why. Then go to step 1.
+- **Limited:** say in one line that Full is recommended and why (nothing
+  gets blocked, during setup or later), and that Limited works too with a
+  little more setup. If they'd rather switch, they change **Network
+  access** to **Full** in the environment's settings (the environment
+  name in the title bar → **Edit**); a new session isn't needed. If they
+  keep Limited, do "Setting up the allowlist" under "Limited network
+  access" at the end of this file now, then go to step 1.
 
 **Anything else** (`Default`, another app's environment, or one shared by
 several projects): don't set up here. Explain briefly why the app gets an
 environment of its own: its tokens reach only this app; this session and
 every later session on the app use it, so setup and later debugging see
 the same access; and nothing changes environment partway through. Then
-offer two choices:
+give the steps for the recommended setup, with Full network access. The
+user creates it, because a session can't create an environment with Full
+network access or move onto one:
 
-- **Full network access.** Simplest: nothing is ever blocked. The user
-  creates it, because a session can't create one or move onto one:
-  1. At **claude.ai/code**, or the **Code** tab in the Claude app, start
-     a new session, and on the new-session screen tap the environment
-     selector (the first control in the row under the message box), then
-     **New environment** at the bottom of the menu.
-  2. Name: type the slug, e.g. `chore-chart`.
-  3. **Network access** → **Full**. Leave everything else as it is, and tap
-     **Add environment**.
-  4. Start the session on it (no repository is needed yet), and paste the
-     same prompt they used here.
+1. At **claude.ai/code**, or the **Code** tab in the Claude app, start a
+   new session, and on the new-session screen tap the environment
+   selector (the first control in the row under the message box), then
+   **New environment** at the bottom of the menu.
+2. Name: type the slug, e.g. `chore-chart`.
+3. **Network access** → **Full**. Leave everything else as it is, and tap
+   **Add environment**.
+4. Start the session on it (no repository is needed yet), and paste the
+   same prompt they used here.
 
-  Then stop.
-- **Limited network access.** Tighter: the environment reaches only the
-  hosts the app needs. You create it and move this session onto it, so
-  this conversation carries on. The user approves one card, and later
-  adds three wildcard hosts that only they can add (step 1). Say in one or
-  two sentences what you're creating (its name, Limited access, the hosts
-  below, and that this session moves onto it), then call
-  `create_environment` with `name`: the slug, `scope: "personal"`,
-  `allowed_hosts`: the list below, `allow_package_managers: true`,
-  `allow_mcp_servers: true`, `switch_session: "network_only"`, and
-  `leave_statement` copied exactly from `get_environment` if it returned
-  one. No repositories (the repo doesn't exist yet), variables or setup
-  script.
-  - **Approved and moved:** call `get_environment` again to check this
-    session is on the new environment, then go to step 1.
-  - **Created, but this session didn't move:** have the user start a new
-    session on it and paste the same prompt. Then stop.
-  - **Declined:** don't propose it again. Offer the Full choice instead;
-    if they don't want that either, stop.
-
-**The allowlist** (Limited only). Exact hosts, all known now:
-
-| Hosts | Why |
-|---|---|
-| `console.neon.tech`, `api.fly.io`, `api.machines.dev`, `api.cloudflare.com` | the Claude Code tokens' APIs (a card also allows its host, but list them anyway) |
-| `api.workos.com` | step 7's sign-in checks |
-| `neon.com`, `fly.io`, `developers.cloudflare.com`, `workos.com` | each service's docs; step 1 reads `neon.com` |
-
-Package registries and MCP servers stay allowed. The rest of the app's
-hosts are either wildcards only the user can add (step 1) or exact hosts
-you add as they're created (steps 5 and 11). If a request is ever refused
-with "no rule allows host" anyway, add that exact host with
-`update_environment`, rather than stopping or working around it.
+Add one line: if they'd rather limit where the app's sessions can connect,
+you can create a Limited environment for them instead, and move this
+session onto it ("Limited network access" at the end of this file). If
+they ask for that, do it; otherwise stop here.
 
 ## Step 1: Name the app
 
@@ -255,30 +237,8 @@ No Realtime region is in the western Americas yet. Users there still get
 them. Confirm the name, slug, region pair and custom domain (or "none")
 with the user in one line, then continue.
 
-**Limited network only: the wildcard hosts.** Now that the slug and region
-are known, have the user add three wildcard hosts to the app's
-environment. Only they can: a session can't add wildcards. Explain, in a
-line each, what they unblock:
-
-- `*.<region>.aws.neon.tech`, e.g. `*.us-east-1.aws.neon.tech` (the Neon
-  region without its `aws-` prefix): every Neon branch has its own
-  database host. Step 5 runs SQL and a Realtime test on a scratch branch,
-  and each PR preview gets its own branch.
-- `*.fly.dev`: the production backend (step 9) and each PR preview's
-  backend, `<app>-pr-<n>.fly.dev` (step 10).
-- `*.<slug>-frontend.pages.dev`: each PR preview's frontend (step 10). If
-  Cloudflare gives the project a different subdomain in step 5, you'll
-  ask them to fix this one.
-
-Steps: tap the **environment name** in the session's title bar, then
-**Edit**, then **Network access**. Under **Allowed domains**, add the three,
-one per line, filled in for this app, and save. (If the app shows
-**Custom** rather than **Limited**, use that, and keep its box for the
-default package managers ticked.) Then they tell you it's done. Check with
-`get_environment` that all three are listed before going on. If they'd
-rather not, say that without them you'll ask to add each exact host as it
-appears (a card each time), and that previews can't be checked until a
-preview's hosts are added.
+**Limited network only:** now that the slug and region are known, do
+"Wildcard hosts" under "Limited network access" at the end of this file.
 
 ## Step 2: Accounts
 
@@ -632,10 +592,8 @@ curl -s -X POST "https://api.cloudflare.com/client/v4/accounts/$A/pages/projects
 Use the returned `result.subdomain`. If the name was taken, Cloudflare adds
 a suffix. `PROD_FRONTEND_ORIGIN` is `https://<subdomain>`.
 
-**Limited network only:** a wildcard doesn't match the bare subdomain, so
-add `<subdomain>` itself to the allowlist with `update_environment` now.
-If the subdomain isn't `<slug>-frontend.pages.dev`, also ask the user to
-change the Pages wildcard from step 1 to `*.<subdomain>`. Then restrict
+**Limited network only:** add `<subdomain>` to the allowlist now, as
+"Limited network access" at the end of this file describes. Then restrict
 Realtime on the default branch:
 
 ```bash
@@ -919,8 +877,8 @@ Before starting, remind them in one line what changes: sign-in moves to
 the domain, and the `pages.dev` address stops working for sign-in.
 
 1. **Attach the domain.**
-   - **Limited network only:** first add `<domain>` to the allowlist with
-     `update_environment`.
+   - **Limited network only:** first add `<domain>` to the allowlist
+     ("Limited network access", at the end of this file).
    - If Claude's Cloudflare token has the zone permissions and the
      domain's DNS is on Cloudflare in the same account, do it yourself:
      - `POST /accounts/$A/pages/projects/<project>/domains` with
@@ -990,10 +948,10 @@ Tell the user, briefly:
 - that deploys use only the three `<slug>-ci` tokens in GitHub, and that
   `SECRETS.md` lists both kinds of token and how to rotate or revoke each.
   Revoking the Claude Code tokens never affects deploys.
-- **Limited network only:** if any of the three wildcard hosts from step 1
-  are still missing (check with `get_environment`), strongly recommend
-  adding them now, with the steps from step 1, so Claude can reach PR
-  previews. Setting **Network access** to **Full** is the simpler
+- **Limited network only:** if any of the three wildcard hosts are still
+  missing (check with `get_environment`), strongly recommend adding them
+  now, with the steps under "Limited network access", so Claude can reach
+  PR previews. Setting **Network access** to **Full** is the simpler
   alternative.
 
 ## An existing app without its own environment
@@ -1002,10 +960,10 @@ If the user asks to move an app set up by an older version of this
 playbook onto an environment of its own, attach its repo, read
 `.github/deploy.env`, `CLAUDE.md` and `SECRETS.md`, then:
 
-1. Do step 0 with the app's slug. For Limited, add the exact production
-   hosts too (`<FLY_BACKEND_APP>.fly.dev`, the Pages subdomain from
-   `GET /accounts/<CLOUDFLARE_ACCOUNT_ID>/pages/projects/<CLOUDFLARE_PAGES_PROJECT>`,
-   and the custom domain if any) and give the wildcard steps from step 1.
+1. Do step 0 with the app's slug. If the user keeps Limited network
+   access, also do everything under "Limited network access" now: the
+   app's hosts all exist already. The Pages subdomain comes from
+   `GET /accounts/<CLOUDFLARE_ACCOUNT_ID>/pages/projects/<CLOUDFLARE_PAGES_PROJECT>`.
 2. Collect the three `<slug>-claude-code` tokens at their final scope, so
    nothing needs narrowing later: Neon **project-scoped** (as in step 6's
    "narrow Claude's Neon key"), Fly **org deploy token** for `FLY_ORG` (as
@@ -1014,3 +972,71 @@ playbook onto an environment of its own, attach its repo, read
 3. Tell the user which older tokens on other environments (for example
    `able-setup` ones on their Default environment) they can now remove and
    revoke.
+
+## Limited network access
+
+Full network access is the recommendation (see the top of this file).
+This section is for users who choose Limited instead: the app's
+environment then reaches only package registries, MCP servers, and the
+hosts on its allowlist. You can add exact hosts yourself, with
+`update_environment` (the user approves a card each time, and it takes
+effect within seconds). Only the user can add wildcards.
+
+**Creating it for the user.** If step 0 found the session on another
+environment and the user asked for Limited, create it and move this
+session onto it, so this conversation carries on. Say in one or two
+sentences what you're creating (its name, Limited access, the hosts below,
+and that this session moves onto it), then call `create_environment` with
+`name`: the slug, `scope: "personal"`, `allowed_hosts`: the list below,
+`allow_package_managers: true`, `allow_mcp_servers: true`,
+`switch_session: "network_only"`, and `leave_statement` copied exactly from
+`get_environment` if it returned one. No repositories (the repo doesn't
+exist yet), variables or setup script.
+
+- **Approved and moved:** call `get_environment` again to check this
+  session is on the new environment, then go to step 1.
+- **Created, but this session didn't move:** have the user start a new
+  session on it and paste the same prompt. Then stop.
+- **Declined:** don't propose it again. Give the Full steps from step 0
+  instead, and stop.
+
+**Setting up the allowlist.** On an existing Limited environment, add
+whichever of these are missing with one `update_environment` call
+(`add_allowed_hosts`, with `environment_name` and `applies_to` copied
+from `get_environment`), saying first in one line what you're adding and
+why:
+
+| Hosts | Why |
+|---|---|
+| `console.neon.tech`, `api.fly.io`, `api.machines.dev`, `api.cloudflare.com` | the Claude Code tokens' APIs (a card also allows its host, but list them anyway) |
+| `api.workos.com` | step 7's sign-in checks |
+| `neon.com`, `fly.io`, `developers.cloudflare.com`, `workos.com` | each service's docs; step 1 reads `neon.com` |
+
+**Wildcard hosts** (after step 1, once the slug and region are known).
+Have the user add three, and explain in a line each what they unblock:
+
+- `*.<region>.aws.neon.tech`, e.g. `*.us-east-1.aws.neon.tech` (the Neon
+  region without its `aws-` prefix): every Neon branch has its own
+  database host. Step 5 runs SQL and a Realtime test on a scratch branch,
+  and each PR preview gets its own branch.
+- `*.fly.dev`: the production backend (step 9) and each PR preview's
+  backend, `<app>-pr-<n>.fly.dev` (step 10).
+- `*.<slug>-frontend.pages.dev`: each PR preview's frontend (step 10).
+
+Steps: tap the **environment name** in the session's title bar, then
+**Edit**, then **Network access**. Under **Allowed domains**, add the
+three, one per line, filled in for this app, and save. (If the app shows
+**Custom** rather than **Limited**, use that, and keep its box for the
+default package managers ticked.) Check with `get_environment` that all
+three are listed before going on. If they'd rather not add them, say that
+you'll ask to add each exact host as it appears instead (a card each
+time), and that previews can't be checked until their hosts are added.
+
+**Exact hosts as they appear.** Add each with `update_environment`:
+
+- **Step 5:** the Pages project's `<subdomain>` (a wildcard doesn't match
+  the bare name). If it isn't `<slug>-frontend.pages.dev`, also ask the
+  user to change the Pages wildcard to `*.<subdomain>`.
+- **Step 11:** the custom domain.
+- **Any time** a request is refused with "no rule allows host": that
+  exact host, rather than stopping or working around it.
