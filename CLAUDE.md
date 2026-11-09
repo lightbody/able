@@ -94,16 +94,16 @@ asserts the SQL and params, like the existing `POST /live/:view` test.
   `SECRETS.md` for scopes and rotation. `.github/actions/deploy-backend` pulls the DB URL
   and Realtime credentials from Neon on every deploy, so never set those on
   Fly by hand.
-- Cloud sessions on this app's own environment (named after the app, with
-  limited network access: see `SECRETS.md`) have `myapp-dev` API keys for `console.neon.tech`
-  (project-scoped), `api.fly.io` and `api.machines.dev` (an org deploy
-  token for `FLY_ORG`, so prod and every preview app) and
-  `api.cloudflare.com` (Pages, Workers, Workers Tail, Account Analytics),
-  injected by the network proxy. They're for building and debugging, and
-  are separate from the CI tokens. Sessions on the owner's `Able Setup`
-  environment have broader `able-setup` keys instead, for setting up apps.
-  Either set may be missing or revoked, so check with a read-only call
-  first (see `SECRETS.md`). To use the CLIs, set
+- Cloud sessions on this app's own environment (named after the app, Full
+  or Limited network access: see `SECRETS.md`) have `myapp-claude-code`
+  API keys, injected by the network proxy and separate from the CI tokens:
+  `console.neon.tech` (project-scoped), `api.fly.io` and `api.machines.dev`
+  (an org deploy token for `FLY_ORG`, so prod and every preview app) and
+  `api.cloudflare.com` (Pages Edit, Account Settings and Account Analytics
+  Read, plus DNS and Zone Read for a custom domain). They may be missing or
+  revoked, so check with a read-only call first. If a host is refused on a
+  Limited environment, propose adding that exact host rather than working
+  around it. To use the CLIs, set
   the key variable to the placeholder `proxy-injected`, e.g.
   `NEON_API_KEY=proxy-injected npx neon@<NEON_CLI version> ...`,
   `FLY_API_TOKEN=proxy-injected flyctl ...`. Direct Postgres connections

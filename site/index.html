@@ -50,8 +50,8 @@
           </button>
         </div>
         <p class="fine">Your agent walks you through creating the accounts and does the rest.
-          Using Claude Code on the web? First create a cloud environment named
-          <strong>Able Setup</strong> with <strong>Full</strong> network access, and start the session there.</p>
+          Using Claude Code on the web? Your agent first gives the app a cloud
+          environment of its own, so its tokens never reach your other projects.</p>
       </div>
     </section>
 
@@ -160,13 +160,11 @@
             <p>A coding agent, plus accounts on GitHub, Neon, Fly.io, Cloudflare and
               WorkOS. Your agent walks you through creating each one and the API tokens
               it needs, one step at a time.</p>
-            <p>With Claude Code on the web, also create a cloud environment named
-              <strong>Able Setup</strong> with <strong>Full</strong> network access before you start,
-              and run the setup session on it. Setup reaches several services and your new
-              app's own addresses, and Claude keeps its setup tokens on that environment,
-              away from your other projects. At the end, Claude creates a second
-              environment just for the new app, with limited network access and narrower
-              tokens for building and debugging it.</p>
+            <p>With Claude Code on the web, every session on your app, starting with
+              setup, runs in a cloud environment named after it. Create it first with Full
+              network access, or let Claude create one with Limited access and the hosts the
+              app needs. Claude asks for each API token with only the permissions it needs
+              at the time, and has you narrow them once setup is done.</p>
           </details>
           <details>
             <summary>Which agents are supported?</summary>

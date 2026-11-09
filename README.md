@@ -6,16 +6,22 @@ it into a new, fully deployed app: production and per-PR preview
 environments, with sign-in and live data working end to end.
 
 **To start a new app** with Claude Code on the web (claude.ai/code works
-fine from a phone or tablet):
+fine from a phone or tablet), give the app a cloud environment of its own,
+named after it, e.g. `chore-chart`. Every session on the app, starting with
+the setup session, runs there, so its tokens never reach your other
+projects. Either:
 
-1. **Once, before your first app:** create a cloud environment named
-   **Able Setup** with **Full** network access. On the new-session screen,
-   tap the environment selector (the first control under the message box)
-   → **New environment**, type the name, set **Network access** to
-   **Full**, and tap **Add environment**. Setup needs to reach Neon, Fly,
-   Cloudflare and each new app's own addresses, and Claude keeps its setup
-   tokens on this environment, away from your others.
-2. Start a session on **Able Setup** (no repository needed) and paste:
+- **Full network access:** on the new-session screen, tap the environment
+  selector (the first control under the message box) → **New
+  environment**, type the name, set **Network access** to **Full**, tap
+  **Add environment**, and start the session on it (no repository
+  needed); or
+- **Limited network access:** start a session on any environment. Claude
+  asks the app's name first, offers to create a Limited one with the hosts
+  it needs, and moves the session onto it. You add three wildcard hosts
+  for PR previews when it asks.
+
+Then paste:
 
 > Read https://github.com/lightbody/able/blob/main/PLAYBOOK.md and follow
 > it to set up a new app for me. Ask me what it's called first.
@@ -23,9 +29,9 @@ fine from a phone or tablet):
 Claude asks for a name, walks you through creating accounts and API
 tokens, and does the rest: it renames the skeleton, provisions Neon, Fly and
 Cloudflare, configures CI, and verifies production and previews. A custom domain is
-an optional last step. At the end, Claude creates a second environment
-named after the app, with limited network access, for day-to-day sessions
-on it, and saves narrower development tokens there.
+an optional last step. Claude asks for each token with only the
+permissions it needs at the time, and has you narrow them once setup is
+done, so later sessions can debug the app without setup-level access.
 
 The landing page at **https://able.lightbody.net** lives in `site/` and
 deploys with `.github/workflows/site.yml`. New apps don't get either.
