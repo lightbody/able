@@ -109,6 +109,16 @@ asserts the SQL and params, like the existing `POST /live/:view` test.
   `FLY_API_TOKEN=proxy-injected flyctl ...`. Direct Postgres connections
   (port 5432) are blocked from these containers, so use Neon's HTTPS SQL
   endpoint (`@neondatabase/serverless`) if you need to query a branch.
+- **Claude Code tokens stay at their baseline** (the table in `SECRETS.md`,
+  "The baseline"). If a task needs more than that, such as creating or
+  updating a Cloudflare Worker, say so before starting, name the exact
+  permission, and guide the user through widening only that, following
+  `SECRETS.md`, "Widening a token for a task". When the task is done, guide
+  them back to the baseline and check the narrowing took (a read the
+  removed permission allowed should now fail). Never work around a missing
+  permission, for example with a CI token or a broader key, and don't treat
+  a temporary widening as the new baseline: if the app needs it
+  permanently, update the baseline table in the same change, and say so.
 - Never print connection strings or Realtime secrets. When checking
   `neon env pull` output, match on shape (as `deploy-backend` does)
   instead of echoing values.

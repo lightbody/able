@@ -72,6 +72,13 @@ Cloudflare token edits it in place, so its value doesn't change and no new
 card is needed. Replacing the Neon key means a new key, a new card, and
 revoking the old one.
 
+Setup ends with every Claude Code token at the **baseline** in
+`SECRETS.md` ("The baseline"). That table, and the rule in the app's
+`CLAUDE.md` to widen a token only for the task that needs it and then
+return to the baseline, are what carry this approach into every later
+session, since this file is deleted from the app in step 8. If you change
+a token's scope here, change that table to match.
+
 Never put a CI token into a card, or a Claude Code token into GitHub. The
 user can revoke either set without touching the other; revoking the
 Claude Code tokens never affects a deploy.
@@ -945,6 +952,10 @@ Tell the user, briefly:
   in Neon, Fly and Cloudflare. They can add the app's repo to the
   environment's **Repositories** in its settings, so it's selected by
   default.
+- that Claude's tokens are now at their baseline (the table in
+  `SECRETS.md`). When a later task needs more, such as working with
+  Cloudflare Workers, Claude will say so, guide them through widening only
+  what that task needs, and then back to the baseline when it's done.
 - that deploys use only the three `<slug>-ci` tokens in GitHub, and that
   `SECRETS.md` lists both kinds of token and how to rotate or revoke each.
   Revoking the Claude Code tokens never affects deploys.
@@ -964,12 +975,18 @@ playbook onto an environment of its own, attach its repo, read
    access, also do everything under "Limited network access" now: the
    app's hosts all exist already. The Pages subdomain comes from
    `GET /accounts/<CLOUDFLARE_ACCOUNT_ID>/pages/projects/<CLOUDFLARE_PAGES_PROJECT>`.
-2. Collect the three `<slug>-claude-code` tokens at their final scope, so
-   nothing needs narrowing later: Neon **project-scoped** (as in step 6's
-   "narrow Claude's Neon key"), Fly **org deploy token** for `FLY_ORG` (as
-   in step 4), and Cloudflare with the permissions step 12 ends with (as in
-   step 4, but ticking those instead). Check each as those steps do.
-3. Tell the user which older tokens on other environments (for example
+2. Collect the three `<slug>-claude-code` tokens at the baseline in the
+   template's `SECRETS.md`, so nothing needs narrowing later: Neon
+   **project-scoped** (as in step 6's "narrow Claude's Neon key"), Fly
+   **org deploy token** for `FLY_ORG` (as in step 4), and Cloudflare with
+   the permissions step 12 ends with (as in step 4, but ticking those
+   instead). Check each as those steps do.
+3. Bring the app's docs up to date, since an older app won't have the
+   baseline or the rule for widening a token: from the template's
+   versions, update `SECRETS.md`'s Claude Code token sections and the
+   matching token bullets under "Deploys" in `CLAUDE.md` (with `myapp`
+   replaced by the slug), and open a PR.
+4. Tell the user which older tokens on other environments (for example
    `able-setup` ones on their Default environment) they can now remove and
    revoke.
 
