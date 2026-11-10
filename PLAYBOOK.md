@@ -44,15 +44,15 @@ instruction you give must work with that.
 
 | Term | Meaning | Where it's used |
 |---|---|---|
-| **App Name** | The app's human-readable name, chosen by the user before the session (it names the Agent Environment) and confirmed in step 0, e.g. "Chore Chart". Spaces and capitals are fine. | the Agent Environment's name; the Fly org (step 4); the Neon project (step 5); the WorkOS project (step 7); the README and `CLAUDE.md` titles and the page itself, in place of `My App` (step 8) |
-| **App Handle** | The app's technical name: lowercase letters, digits and hyphens, derived from the App Name, e.g. `chore-chart`. Wherever a service wants a name without spaces, it's this. | token names (`<App Handle>-claude-code`, `<App Handle>-ci`); the GitHub repo (made before the session; step 3); the Fly backend app (`<github-user>-<App Handle>-backend`) and the Pages project (`<App Handle>-frontend`) (step 5); the npm scope and other code names, in place of `myapp` (step 8) |
+| **App Name** | The app's human-readable name, chosen by the user before the session (it names the Agent Environment) and confirmed in step 0, e.g. "Todoable". Spaces and capitals are fine. | the Agent Environment's name; the Fly org (step 4); the Neon project (step 5); the WorkOS project (step 7); the README and `CLAUDE.md` titles and the page itself, in place of `My App` (step 8) |
+| **App Handle** | The app's technical name: lowercase letters, digits and hyphens, derived from the App Name, e.g. `todoable`. Wherever a service wants a name without spaces, it's this. | token names (`<App Handle>-claude-code`, `<App Handle>-ci`); the GitHub repo (made before the session; step 3); the Fly backend app (`<github-user>-<App Handle>-backend`) and the Pages project (`<App Handle>-frontend`) (step 5); the npm scope and other code names, in place of `myapp` (step 8) |
 | **App Environments** | The places the app itself runs: **Development**, **Preview** and **Production**, described below. | throughout |
 | **Development** | A developer's own copy of the app: `npm run dev` against a personal Neon branch (`dev/<you>`), as the README's "Local development" describes. | after setup |
 | **Preview** | The app deployed for one pull request: Neon branch `preview/pr-<n>`, Fly app `<FLY_BACKEND_APP>-pr-<n>`, and a Pages preview. Created when the PR opens, deleted when it closes. Previews take the place of a shared staging environment. | step 10 |
 | **Production** | The app deployed from `main`: the default Neon branch, `FLY_BACKEND_APP`, and the Pages production deployment at the **Production Origin**. | step 9 |
 | **Production Origin** | Production's frontend address, `PROD_FRONTEND_ORIGIN`: `https://<Pages Subdomain>` until step 11, then `https://<Custom Domain>`. | steps 5, 7, 9, 11 |
 | **Pages Subdomain** | The `<name>.pages.dev` host Cloudflare gives the Pages project, usually `<App Handle>-frontend.pages.dev`. Each Preview's frontend is a subdomain of it. | steps 5, 7, 10 |
-| **Custom Domain** | An optional domain of the user's for Production, e.g. `chore-chart.example.com`. Asked about in step 1, switched on in step 11. | steps 1, 4, 11 |
+| **Custom Domain** | An optional domain of the user's for Production, e.g. `todoable.example.com`. Asked about in step 1, switched on in step 11. | steps 1, 4, 11 |
 | **Region Trio** | The Neon region, the Fly region next to it, and the Grafana Cloud region next to those (used only if the user creates a new Grafana Stack), chosen in step 1. | steps 1, 2, 5, 8 |
 | **Agent Environment** | The Claude Code cloud environment for this app, named with the App Name and used for nothing else. This setup session and every later Claude Code session on the app run on it, and it holds the Claude Code Tokens. | "Before the session", step 0, step 4, and "Limited network access" |
 | **Claude Code Tokens** | Claude's own API tokens for Neon, Fly, Cloudflare and Grafana, each named `<App Handle>-claude-code` and saved on the Agent Environment. | steps 4, 5, 6, 12 |
@@ -194,25 +194,30 @@ these before pasting the prompt, as Able's landing page and README tell
 them. You need them again only to explain a step that step 0 finds
 missing, so reuse the wording:
 
-1. **Pick the App Name**, e.g. "Chore Chart".
-2. **Connect Claude Code to GitHub** at https://claude.ai/connect-github,
-   and install the Claude GitHub App from there.
-3. **Make the app's repo from the template.** Open
-   **https://github.com/lightbody/able/generate**. Owner: their account.
-   Repository name: the App Handle (the App Name in lowercase, with
-   hyphens). Choose **Private**, and tap **Create repository**. If the
-   Claude GitHub App is installed on selected repos only, add the new repo
-   at **https://github.com/apps/claude/installations/select_target**.
-4. **Create the Agent Environment.** At **claude.ai/code**, or the
-   **Code** tab in the Claude app, on the new-session screen tap the
-   environment selector (the first control in the row under the message
-   box), then **New environment** at the bottom of the menu. Name: type
-   the App Name. **Network access** → **Full**. Leave everything else as
-   it is, and tap **Add environment**. (Users who want Limited network
-   access can instead start on any environment and ask you for one:
-   "Limited network access" at the end of this file.)
+1. **Pick the App Name**, e.g. "Todoable".
+2. **Make the app's repo from the template.** On
+   **https://github.com/lightbody/able**, tap **Use this template** →
+   **Create a new repository**. Owner: their account. Repository name:
+   the App Handle (the App Name in lowercase, with hyphens). Choose
+   **Private**, and create it.
+3. **Connect Claude Code to GitHub**, and make sure the Claude GitHub App
+   can see the new repo. This comes after the repo exists, so the new
+   repo is in the list Claude Code offers.
+4. **Create the Agent Environment**: a cloud environment named with the
+   App Name, with **Full** network access. (Users who want Limited can
+   instead start on any environment and ask you for one: "Limited network
+   access" at the end of this file.)
 5. **Start the session** on the Agent Environment, with the app's new
-   repo selected (not `lightbody/able`), and paste the prompt.
+   repo selected, and paste the prompt.
+
+Where you give these steps yourself (step 0), add the detail: GitHub is
+connected at https://claude.ai/connect-github, and a Claude GitHub App
+installed on selected repos only gets the new repo at
+**https://github.com/apps/claude/installations/select_target**. A new
+environment is made on the new-session screen: tap the environment
+selector (the first control in the row under the message box), then
+**New environment**, type the App Name, set **Network access** to
+**Full**, and tap **Add environment**.
 
 With another coding agent, the user makes the repo the same way and runs
 the agent in a clone of it.
@@ -226,16 +231,13 @@ can only be fixed with a new session.
 **The repo.** Look at the working directory's git repo:
 `git remote get-url origin` ends in `<owner>/<repo>` (in a cloud session
 the URL may point at a local proxy, but the path still ends that way). It's
-the app's repo when it's **not** `lightbody/able`, it has `PLAYBOOK.md`,
-and `.github/deploy.env` still has `APP_HANDLE=myapp` and empty Neon,
+the app's repo when it has `PLAYBOOK.md` and `.github/deploy.env` still has `APP_HANDLE=myapp` and empty Neon,
 Fly and Cloudflare values (a fresh copy of the template). Then the repo
 name is the App Handle. Work in this clone from here on.
 
-If there's no repo, the repo is `lightbody/able` itself (the template was
-selected rather than a copy of it), or it's some other repo, don't set up
-there. If its `deploy.env` is already filled in, it's an app that's
+If there's no repo, or it's some other repo, don't set up there. If its `deploy.env` is already filled in, it's an app that's
 already set up: ask what they want. Otherwise give the user "Before the
-session" step 3 (and step 2 if GitHub isn't connected), wait until
+session" step 2 (and step 3 if GitHub isn't connected), wait until
 they've made the repo, then call `add_repo` for it with
 `access: "push"`. If that's refused because the Claude GitHub App can't
 see the new repo, have them add it at
@@ -299,7 +301,7 @@ Step 0 settled the App Name and App Handle. Ask the user:
 2. **Roughly where are you and your users?** A continent or country is
    enough. This picks where the database and backend run.
 3. **Do you want a Custom Domain, and if so, which one?** For example
-   `chore-chart.example.com`. Ask now, not later: the answer decides which
+   `todoable.example.com`. Ask now, not later: the answer decides which
    permissions the Cloudflare token needs in step 4, and creating it
    with the right ones the first time saves the user a second trip to
    Cloudflare. If they want one, also ask whether the domain's DNS is on
@@ -316,7 +318,7 @@ Step 0 settled the App Name and App Handle. Ask the user:
    (one more value, the same two lists as step 7).
 
 The **App Handle** is derived from the App Name: lowercase letters,
-digits and hyphens only, e.g. `chore-chart`. It should be short, since
+digits and hyphens only, e.g. `todoable`. It should be short, since
 longer names are built from it (`<github-user>-<App Handle>-backend`).
 Normally it's the repo's name.
 
@@ -492,7 +494,7 @@ First, offer the org options in this order and wait for the user's pick:
 Steps for the user to create the org (nothing to copy):
 
 1. Open **https://fly.io/organizations/new**.
-2. Name: type the App Name, e.g. `Chore Chart`.
+2. Name: type the App Name, e.g. `Todoable`.
 3. For a linked organization, choose the existing organization to bill
    it to. Otherwise add a payment method for the new org when asked.
 4. Create it, then tell Claude it's done.
@@ -562,7 +564,7 @@ the user these steps, in your own words:
       Nothing else.
    2. Only if they chose a Custom Domain on Cloudflare DNS in step 1:
       **Add new Zone policy.** Scope: `Include` · `Specific zone` · the
-      domain's zone (for `chore-chart.example.com`, that's
+      domain's zone (for `todoable.example.com`, that's
       `example.com`). Under **DNS & Zones**, tick **DNS → Edit** and
       **Zone → Read**. Nothing else. A specific zone is narrower than
       "All zones from an account", so prefer it.
@@ -939,7 +941,7 @@ so check rather than assume.
    default.
 2. Into **Redirect URIs** and **Session → Manage** only:
    `https://*.<Pages Subdomain>`, for example
-   `https://*.chore-chart-frontend.pages.dev`, which covers every PR
+   `https://*.todoable-frontend.pages.dev`, which covers every PR
    Preview. Signing out of a Preview lands on Production,
    because the default sign-out URI is Production's. That's expected.
 

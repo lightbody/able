@@ -44,21 +44,17 @@
         </p>
 
         <ol class="setup">
-          <li><strong>Pick a name for your app,</strong> say "Chore Chart".</li>
-          <li><strong>Connect Claude Code to GitHub</strong> at
-            <a href="https://claude.ai/connect-github">claude.ai/connect-github</a>.</li>
-          <li><strong>Make your app's repo from the template:</strong> open
-            <a href="https://github.com/lightbody/able/generate">github.com/lightbody/able/generate</a>,
-            name it after the app (<code>chore-chart</code>) and make it private.
-            If Claude's GitHub app only sees selected repos,
-            <a href="https://github.com/apps/claude/installations/select_target">add the new one</a>.</li>
-          <li><strong>Give the app a cloud environment of its own.</strong> At
-            <a href="https://claude.ai/code">claude.ai/code</a>, tap the environment
-            selector, then <em>New environment</em>. Name it after the app ("Chore Chart"),
-            set <em>Network access</em> to <em>Full</em>, and add it. Its tokens never reach your
-            other projects.</li>
+          <li><strong>Pick a name for your app,</strong> say "Todoable".</li>
+          <li><strong>Make your app's repo from the
+            <a href="https://github.com/lightbody/able">Able template</a>:</strong>
+            tap <em>Use this template</em>, name it after the app (<code>todoable</code>)
+            and make it private.</li>
+          <li><strong>Connect Claude Code to GitHub,</strong> and make sure Claude's
+            GitHub app can see your new repo.</li>
+          <li><strong>Create a cloud environment for the app</strong> in Claude Code,
+            named after it ("Todoable"), with <em>Full</em> network access.</li>
           <li><strong>Start a session</strong> on that environment, with your new repo
-            selected (not <code>lightbody/able</code>), and paste:</li>
+            selected, and paste:</li>
         </ol>
 
         <div class="prompt">
@@ -204,7 +200,7 @@
               it needs, one step at a time.</p>
             <p>With Claude Code on the web, a session starts from a repo, so you make
               your app's repo from the template first, and a cloud environment of its own,
-              named after the app (say, "Chore Chart"): the steps at the top of this page.
+              named after the app (say, "Todoable"): the steps at the top of this page.
               Every session on your app, starting with setup, runs on that environment.
               Create it with Full network access (recommended), or ask Claude for one with
               Limited access and just the hosts the app needs. Claude asks for each API token with only the permissions it needs

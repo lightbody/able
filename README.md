@@ -11,25 +11,19 @@ a repo and runs on an environment, both chosen before it starts, so they
 can't be part of the playbook itself:
 
 1. **Pick the App Name**, the app's human-readable name, e.g.
-   `Chore Chart`.
-2. **Connect Claude Code to GitHub** at https://claude.ai/connect-github.
-3. **Make the app's repo from this template**: open
-   https://github.com/lightbody/able/generate, name it after the app in
-   lowercase with hyphens (`chore-chart`, the **App Handle**), choose
-   **Private** and tap **Create repository**. If the Claude GitHub App is
-   installed on selected repos only, add the new one at
-   https://github.com/apps/claude/installations/select_target.
-4. **Create the app's Agent Environment**, a cloud environment of its own,
-   so its tokens never reach your other projects. On the new-session
-   screen, tap the environment selector (the first control under the
-   message box) → **New environment**, type the App Name, set **Network
-   access** to **Full** (recommended: nothing gets blocked, during setup
-   or later) and tap **Add environment**. If you'd rather limit where the
-   app's sessions can connect, skip this, start on any environment and
-   ask Claude for a **Limited** one: it creates it with the hosts the app
-   needs, and you add three wildcard hosts for Previews.
-5. **Start a session** on the Agent Environment with the new repo selected
-   (not `lightbody/able`), and paste:
+   `Todoable`.
+2. **Make the app's repo from this template**: on
+   https://github.com/lightbody/able, tap **Use this template** → **Create
+   a new repository**, name it after the app in lowercase with hyphens
+   (`todoable`, the **App Handle**), and choose **Private**.
+3. **Connect Claude Code to GitHub**, and make sure the Claude GitHub App
+   can see the new repo.
+4. **Create the app's Agent Environment**: a cloud environment in Claude
+   Code named with the App Name, with **Full** network access. (For
+   **Limited** access instead, start on any environment and ask Claude to
+   create one.)
+5. **Start a session** on the Agent Environment with the new repo
+   selected, and paste:
 
 > Read https://github.com/lightbody/able/blob/main/PLAYBOOK.md and follow
 > it to set up my new app. I've done the steps before the session: this
