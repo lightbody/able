@@ -49,8 +49,14 @@ below is the subset that stays in new apps, so keep it in step too.
   named "My App" and used for nothing else. It holds the Claude Code Tokens.
 - **Claude Code Tokens** (`myapp-claude-code`) and **CI Tokens**
   (`myapp-ci`) -- Claude's and GitHub Actions' separate API tokens for
-  Neon, Fly and Cloudflare. **Baseline** -- the permissions the Claude Code
-  Tokens keep between tasks. See `SECRETS.md`.
+  Neon, Fly, Cloudflare and (with the grafana module) Grafana Cloud.
+  **Baseline** -- the permissions the Claude Code Tokens keep between
+  tasks. See `SECRETS.md`.
+- **Modules** -- the groups of values in `.github/deploy.env`: required
+  ones (Neon, Fly, Cloudflare, WorkOS) and optional ones that are on only
+  when filled in, such as **grafana** (observability).
+- **Grafana Stack** -- the app's own Grafana Cloud instance,
+  `GRAFANA_STACK_URL`, holding its telemetry.
 
 ## Stack
 
@@ -65,6 +71,8 @@ below is the subset that stays in new apps, so keep it in step too.
 - `shared/` -- `@myapp/shared`, an npm workspace package. Consumed by
   `backend/` (compiled `shared/dist`) and by `frontend/` (via a Vite/tsconfig
   path alias straight to `shared/src`, no build step).
+- Observability (optional) -- OpenTelemetry from the backend and Grafana Faro
+  from the frontend, to the Grafana Stack. See "Observability" below.
 
 This repo is an npm workspaces monorepo (`"workspaces": ["shared", "frontend",
 "backend"]` in the root `package.json`) -- run `npm install` once from the
@@ -111,12 +119,18 @@ asserts the SQL and params, like the existing `POST /live/:view` test.
 ## Deploys
 
 - Non-secret deploy config (Neon project/branch/db, Fly org/app, Cloudflare
-  account/project, prod origin, WorkOS client ID) lives in
-  `.github/deploy.env`. Change it there, not in workflow files. Deploy jobs
-  skip themselves while any value in it is empty
-  (`.github/workflows/deploy-config.yml`).
-- GitHub has only three secrets: `NEON_API_KEY`, `FLY_API_TOKEN` and
-  `CLOUDFLARE_API_TOKEN` -- this app's narrowly scoped CI Tokens. See
+  account/project, prod origin, WorkOS client ID, and optional modules such
+  as grafana) lives in `.github/deploy.env`, grouped into Modules. Change it
+  there, not in workflow files. Deploy jobs skip themselves while a required
+  module has an empty value. An optional module is on only when all its
+  values are filled in (part-filled is off, with a warning).
+  `.github/scripts/deploy-config.sh` is the one reader: workflows load
+  deploy.env with `deploy-config.sh load`, which leaves out modules that are
+  off. To add a module, add a `# @module <name> optional` block and have its
+  code treat empty values as "off".
+- The only GitHub secrets are a few API tokens, this app's narrowly scoped
+  CI Tokens (`NEON_API_KEY`, `FLY_API_TOKEN`, `CLOUDFLARE_API_TOKEN`, plus
+  one per optional module that needs it, such as `GRAFANA_OTLP_TOKEN`). See
   `SECRETS.md` for scopes and rotation. `.github/actions/deploy-backend` pulls the DB URL
   and Realtime credentials from Neon on every deploy, so never set those on
   Fly by hand.
@@ -124,9 +138,11 @@ asserts the SQL and params, like the existing `POST /live/:view` test.
   access: see `SECRETS.md`) have the `myapp-claude-code` Claude Code
   Tokens, injected by the network proxy and separate from the CI Tokens:
   `console.neon.tech` (project-scoped), `api.fly.io` and `api.machines.dev`
-  (an org deploy token for `FLY_ORG`, so Production and every Preview app) and
+  (an org deploy token for `FLY_ORG`, so Production and every Preview app),
   `api.cloudflare.com` (Pages Edit, Account Settings and Account Analytics
-  Read, plus DNS and Zone Read for a custom domain). They may be missing or
+  Read, plus DNS and Zone Read for a custom domain), and with the grafana
+  module, the Grafana Stack's host (a Viewer service account: see
+  "Observability"). They may be missing or
   revoked, so check with a read-only call first. If a host is refused on a
   Limited Agent Environment, propose adding that exact host rather than working
   around it. To use the CLIs, set
@@ -141,13 +157,67 @@ asserts the SQL and params, like the existing `POST /live/:view` test.
   permission, and guide the user through widening only that, following
   `SECRETS.md`, "Widening a token for a task". When the task is done, guide
   them back to the Baseline and check the narrowing took (a read the
-  removed permission allowed should now fail). Never work around a missing
-  permission, for example with a CI token or a broader key, and don't treat
-  a temporary widening as the new Baseline: if the app needs it
-  permanently, update the Baseline table in the same change, and say so.
+  removed permission allowed should now fail; for Grafana, where reads stay
+  allowed, a write aimed at something that doesn't exist should be
+  refused). Never work around a missing permission, for example with a CI
+  token or a broader key, and don't treat a temporary widening as the new
+  Baseline: if the app needs it permanently, update the Baseline table in
+  the same change, and say so.
 - Never print connection strings or Realtime secrets. When checking
   `neon env pull` output, match on shape (as `deploy-backend` does)
   instead of echoing values.
+
+## Observability (Grafana Cloud)
+
+Telemetry is the fifth column next to frontend, backend, database and auth:
+the optional **grafana** module in `.github/deploy.env`, sending everything
+to the app's **Grafana Stack**. It's standard OpenTelemetry, and it's **off
+whenever the module is**: tests, Development and an app without the module
+export nothing.
+
+- **Backend** (`backend/src/telemetry.ts`, preloaded with `node --import`):
+  traces (incoming HTTP, `pg` queries, outgoing `fetch`), metrics (HTTP
+  RED, pg pool, Node runtime, plus the app's own counters in
+  `backend/src/observability.ts`) and logs (every pino line, carrying
+  `trace_id`/`span_id`). These go over OTLP to the stack's gateway, so they
+  land in Tempo, Mimir and Loki. Turned on by `OTEL_EXPORTER_OTLP_ENDPOINT`,
+  which `deploy-backend` sets only when the grafana module is on and the
+  `GRAFANA_OTLP_TOKEN` CI Token exists.
+- **Frontend** (`frontend/src/telemetry.ts`): Grafana Faro sends page
+  loads, Web Vitals, JS errors and `fetch` spans. It adds a `traceparent`
+  header to calls to our own backend, so one trace runs from the browser
+  through Fastify into Postgres. On only when built with
+  `VITE_GRAFANA_FARO_URL`.
+- **Shared resource attributes**, used to filter everything:
+  `service.namespace=<APP_HANDLE>`; `service.name=<APP_HANDLE>-backend` /
+  `<APP_HANDLE>-frontend`; `deployment.environment.name=production` or
+  `pr-<n>` for a Preview; `service.version=<commit sha>`. Spans for
+  signed-in requests carry `user.id` (the opaque WorkOS id).
+
+### Querying it from a session
+
+Use the **`observability` skill** (`.claude/skills/observability/SKILL.md`)
+whenever production or preview behavior matters: bugs, error reports,
+latency, checking your own PR preview, or real usage before a feature. It
+runs Grafana's CLI through `scripts/gcx`, which installs gcx just in time
+and reads the stack from `deploy.env`. The proxy supplies the
+`myapp-claude-code` service account's token (Viewer, its Baseline), so no
+setup is needed and no key appears anywhere. If the grafana module is off,
+there's no telemetry to read: say so rather than guessing.
+
+### Adding telemetry
+
+- Logs: use `req.log` in handlers (keeps the request's trace id) or the
+  pino logger in `main.ts`. Never log tokens, sealed queries, request bodies or
+  emails.
+- Metrics: add instruments to `appMetrics` in `backend/src/observability.ts`.
+  Attribute values must come from small fixed sets (a view name, an
+  outcome), never ids or user input. The free tier caps active series at
+  ~10k.
+- Spans: auto-instrumentation covers HTTP, pg and fetch. For a meaningful
+  in-process step, use `trace.getTracer("myapp-backend").startActiveSpan(...)`.
+- Infra polled by machines (like `/health`) stays out of traces and logs. Add new
+  paths of that kind to `UNTRACED_PATHS` in `telemetry.ts`.
 
 ## Verifying UI changes in this sandbox
 
