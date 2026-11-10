@@ -2,7 +2,7 @@
 
 **For Claude Code.** You are setting up a new app from the Able template
 (https://github.com/lightbody/able) for the user, end to end: a private
-GitHub repo, a production environment, per-PR preview environments, and a
+GitHub repo, a Production environment, a Preview for every PR, and a
 verified sign-in plus live-data round trip in both. Follow this file in
 order. Do as much of the work as possible yourself. The user's part is
 creating accounts and API tokens and a few dashboard settings that have no
@@ -33,20 +33,50 @@ instruction you give must work with that.
    output, say so at once and have it rotated.
 6. **Verify, don't assume.** After each provisioning step, check it worked
    with a read-only call before moving on.
+7. **Use the terms below.** Write them as proper nouns, and use them the
+   same way in everything you tell the user.
 
-## One cloud environment, two kinds of tokens
+## Terms
+
+| Term | Meaning | Where it's used |
+|---|---|---|
+| **App Name** | The app's human-readable name, as the user gives it in step 0 or 1, e.g. "Chore Chart". Spaces and capitals are fine. | the Agent Environment's name; the Fly org (step 4); the Neon project (step 5); the WorkOS project (step 7); the README and `CLAUDE.md` titles and the page itself, in place of `My App` (step 8) |
+| **App Handle** | The app's technical name: lowercase letters, digits and hyphens, derived from the App Name, e.g. `chore-chart`. Wherever a service wants a name without spaces, it's this. | token names (`<App Handle>-claude-code`, `<App Handle>-ci`); the GitHub repo (step 3); the Fly backend app (`<github-user>-<App Handle>-backend`) and the Pages project (`<App Handle>-frontend`) (step 5); the npm scope and other code names, in place of `myapp` (step 8) |
+| **App Environments** | The places the app itself runs: **Development**, **Preview** and **Production**, described below. | throughout |
+| **Development** | A developer's own copy of the app: `npm run dev` against a personal Neon branch (`dev/<you>`), as the README's "Local development" describes. | after setup |
+| **Preview** | The app deployed for one pull request: Neon branch `preview/pr-<n>`, Fly app `<FLY_BACKEND_APP>-pr-<n>`, and a Pages preview. Created when the PR opens, deleted when it closes. Previews take the place of a shared staging environment. | step 10 |
+| **Production** | The app deployed from `main`: the default Neon branch, `FLY_BACKEND_APP`, and the Pages production deployment at the **Production Origin**. | step 9 |
+| **Production Origin** | Production's frontend address, `PROD_FRONTEND_ORIGIN`: `https://<Pages Subdomain>` until step 11, then `https://<Custom Domain>`. | steps 5, 7, 9, 11 |
+| **Pages Subdomain** | The `<name>.pages.dev` host Cloudflare gives the Pages project, usually `<App Handle>-frontend.pages.dev`. Each Preview's frontend is a subdomain of it. | steps 5, 7, 10 |
+| **Custom Domain** | An optional domain of the user's for Production, e.g. `chore-chart.example.com`. Asked about in step 1, switched on in step 11. | steps 1, 4, 11 |
+| **Region Pair** | The Neon region and the Fly region next to it, chosen in step 1. | steps 1, 5, 8 |
+| **Agent Environment** | The Claude Code cloud environment for this app, named with the App Name and used for nothing else. This setup session and every later Claude Code session on the app run on it, and it holds the Claude Code Tokens. | step 0, step 4, and "Limited network access" |
+| **Claude Code Tokens** | Claude's own API tokens for Neon, Fly and Cloudflare, each named `<App Handle>-claude-code` and saved on the Agent Environment. | step 4, step 6, step 12 |
+| **CI Tokens** | GitHub Actions' API tokens for the same three services, each named `<App Handle>-ci` and saved as GitHub secrets. | step 6 |
+| **Baseline** | The permissions the Claude Code Tokens keep between tasks, listed in `SECRETS.md`. | step 12 |
+
+Two words from the services mean something else, so always qualify them:
+
+- **WorkOS environments** (WorkOS's own Production, Staging and
+  Development) aren't App Environments. Production and every Preview
+  sign in against the **WorkOS Production environment** (step 7). Write "WorkOS
+  Production environment", never just "Production", when you mean it.
+- **Fly's org slug** is the identifier Fly gives an org, recorded as
+  `FLY_ORG`. It's derived by Fly, not by you, and isn't the App Handle.
+
+## One Agent Environment, two kinds of tokens
 
 Read `SECRETS.md` in the template. It is the user-facing version of this
 section and stays in the new app.
 
-**One environment per app, from the start.** This setup session, and every
-later Claude Code session on the app, runs on a cloud environment named
-after the app's slug and used for nothing else. Step 0 makes sure of that
-before anything else happens. Its tokens reach only this app, and setup
-never changes environment partway through.
+**One Agent Environment per app, from the start.** This setup session, and
+every later Claude Code session on the app, runs on the Agent Environment,
+named with the App Name and used for nothing else. Step 0 makes sure of
+that before anything else happens. Its tokens reach only this app, and
+setup never changes Agent Environment partway through.
 
 **Full network access is strongly recommended.** Setup and later debugging
-reach many hosts, some of them new with every PR preview, and with Full
+reach many hosts, some of them new with every Preview, and with Full
 nothing is ever blocked. The tokens stay safe either way: the proxy adds
 each one only to requests to its own host, and you never see the values.
 What Full gives up is a limit on where *data* can go: anything a session
@@ -56,13 +86,13 @@ can use **Limited** network access instead; "Limited network access" at
 the end of this file covers it, and the steps that need extra work for it
 point there.
 
-| | **Claude Code tokens** (`<slug>-claude-code`) | **CI tokens** (`<slug>-ci`) |
+| | **Claude Code Tokens** (`<App Handle>-claude-code`) | **CI Tokens** (`<App Handle>-ci`) |
 |---|---|---|
-| For | you, Claude: setting the app up now, then building and debugging it (production and PR previews) in later sessions | GitHub Actions: every deploy |
-| Saved via | `request_credential` cards, onto the app's own cloud environment | GitHub Actions secrets, pasted by the user (step 6) |
+| For | you, Claude: setting the app up now, then building and debugging it (Production and Previews) in later sessions | GitHub Actions: every deploy |
+| Saved via | `request_credential` cards, onto the Agent Environment | GitHub Actions secrets, pasted by the user (step 6) |
 | Neon | an **organization** key while it creates the project (step 4), then a **project-scoped** key (step 6) | **project-scoped** key for this app's project |
-| Fly | **org deploy token** for **this app's own org** (personal access tokens no longer work) | a second org deploy token for the same org (previews create apps) |
-| Cloudflare | Pages Edit + Account Settings Read (+ DNS Edit and Zone Read on the custom domain's zone) during setup; narrowed in step 12 to Pages Edit, Account Settings Read and Account Analytics Read (+ DNS Read and Zone Read) | Pages Edit only |
+| Fly | **org deploy token** for **this app's own org** (personal access tokens no longer work) | a second org deploy token for the same org (Previews create apps) |
+| Cloudflare | Pages Edit + Account Settings Read (+ DNS Edit and Zone Read on the Custom Domain's zone) during setup; narrowed in step 12 to Pages Edit, Account Settings Read and Account Analytics Read (+ DNS Read and Zone Read) | Pages Edit only |
 
 **Least privilege as you go.** Ask for each token with the permissions the
 coming steps need, no more, and narrow it as soon as they're done: the
@@ -72,16 +102,16 @@ Cloudflare token edits it in place, so its value doesn't change and no new
 card is needed. Replacing the Neon key means a new key, a new card, and
 revoking the old one.
 
-Setup ends with every Claude Code token at the **baseline** in
+Setup ends with every Claude Code Token at the **Baseline** in
 `SECRETS.md` ("The baseline"). That table, and the rule in the app's
 `CLAUDE.md` to widen a token only for the task that needs it and then
-return to the baseline, are what carry this approach into every later
+return to the Baseline, are what carry this approach into every later
 session, since this file is deleted from the app in step 8. If you change
 a token's scope here, change that table to match.
 
-Never put a CI token into a card, or a Claude Code token into GitHub. The
+Never put a CI Token into a card, or a Claude Code Token into GitHub. The
 user can revoke either set without touching the other; revoking the
-Claude Code tokens never affects a deploy.
+Claude Code Tokens never affects a deploy.
 
 ## How `request_credential` works
 
@@ -95,8 +125,8 @@ Claude Code tokens never affects a deploy.
      `request_credential`. If they report a problem instead, help with
      that, and don't show the card yet.
 - Call it with the API **host**, a short `display_name` and a `reason`.
-- The value is saved on this session's cloud environment, and every session
-  that uses the environment can use it. The network proxy injects it as
+- The value is saved on the Agent Environment, and every session
+  that uses it can use it. The network proxy injects it as
   `Authorization: Bearer <value>` on requests to that host, and you never
   see it. CLIs and SDKs still want a key variable, so set it to the
   placeholder `proxy-injected`, for example
@@ -127,37 +157,39 @@ Track these as you go. Every one ends up in `.github/deploy.env`:
 | `NEON_PROD_BRANCH` | the project's default branch (API-created projects call it `main`, console-created ones may call it `production`; check it) |
 | `NEON_DB_NAME`, `NEON_DB_ROLE` | Neon API (`neondb` / `neondb_owner` by default) |
 | `NEON_CLI` | `neon@<version>`: the version you pick and check in step 5 |
-| `FLY_ORG` | the slug, as Fly's GraphQL API lists it, of the org the user chose in step 4 (new, linked or reused; step 5) |
-| `FLY_BACKEND_APP` | `<github-user>-<slug>-backend`, checked for availability |
+| `FLY_ORG` | Fly's org slug, as its GraphQL API lists it, for the org the user chose in step 4 (new, linked or reused; step 5) |
+| `FLY_BACKEND_APP` | `<github-user>-<App Handle>-backend`, checked for availability |
 | `CLOUDFLARE_ACCOUNT_ID` | Cloudflare API |
-| `CLOUDFLARE_PAGES_PROJECT` | `<slug>-frontend` |
-| `PROD_FRONTEND_ORIGIN` | `https://<pages subdomain>`, returned when the Pages project is created |
+| `CLOUDFLARE_PAGES_PROJECT` | `<App Handle>-frontend` |
+| `PROD_FRONTEND_ORIGIN` | the Production Origin: `https://<Pages Subdomain>`, returned when the Pages project is created |
 | `WORKOS_CLIENT_ID` | pasted by the user in chat |
 
-Also record the **custom domain** from step 1, if any. It isn't in
+Also record the **Custom Domain** from step 1, if any. It isn't in
 `deploy.env` until step 11, when it replaces `PROD_FRONTEND_ORIGIN`.
 
-You also pick a **region pair** in step 1. The Neon region is the project's
+You also pick a **Region Pair** in step 1. The Neon region is the project's
 `region_id`. The Fly region goes into `primary_region` in
 `fly.backend.toml`, not `deploy.env`.
 
 ---
 
-## Step 0: The app's own cloud environment
+## Step 0: The Agent Environment
 
 Do this first, before anything else. (If you have no `get_environment`
 tool, you aren't in a Claude Code cloud session: skip this step.)
 
-1. **Ask only the app's name now**, step 1's first question, and derive
-   the slug from it as step 1 describes. Confirm the slug in one line. The
-   rest of step 1 comes after this step.
+1. **Ask only the App Name now**, step 1's first question, and derive
+   the App Handle from it as step 1 describes. Confirm both in one line.
+   The rest of step 1 comes after this step.
 2. Call `get_environment`. It describes the environment this session runs
    in.
 
-**This session's environment is named after the slug** (or the user
-confirms it's a new environment made just for this app under another
-name; offer to rename it to the slug with `update_environment`
-`new_name`): this is the app's environment. Look at its
+**This session's environment is named with the App Name** (ignore case;
+an environment named with the App Handle, as older versions of this
+playbook said, counts too), or the user confirms it's a new environment
+made just for this app under another name (offer to rename it to the App
+Name with `update_environment` `new_name`): this is the Agent
+Environment. Look at its
 `network_secrets`. A new environment has none. If it has some for
 `console.neon.tech`, `api.fly.io`, `api.machines.dev` or
 `api.cloudflare.com`, ask whether they're this app's; if not, say step 4's
@@ -172,11 +204,11 @@ cards will replace them. Then check its network:
   keep Limited, do "Setting up the allowlist" under "Limited network
   access" at the end of this file now, then go to step 1.
 
-**Anything else** (`Default`, another app's environment, or one shared by
-several projects): don't set up here. Explain briefly why the app gets an
-environment of its own: its tokens reach only this app; this session and
+**Anything else** (`Default`, another app's Agent Environment, or one
+shared by several projects): don't set up here. Explain briefly why the
+app gets an Agent Environment of its own: its tokens reach only this app; this session and
 every later session on the app use it, so setup and later debugging see
-the same access; and nothing changes environment partway through. Then
+the same access; and nothing changes Agent Environment partway through. Then
 give the steps for the recommended setup, with Full network access. The
 user creates it, because a session can't create an environment with Full
 network access or move onto one:
@@ -185,14 +217,14 @@ network access or move onto one:
    new session, and on the new-session screen tap the environment
    selector (the first control in the row under the message box), then
    **New environment** at the bottom of the menu.
-2. Name: type the slug, e.g. `chore-chart`.
+2. Name: type the App Name, e.g. `Chore Chart`.
 3. **Network access** → **Full**. Leave everything else as it is, and tap
    **Add environment**.
 4. Start the session on it (no repository is needed yet), and paste the
    same prompt they used here.
 
 Add one line: if they'd rather limit where the app's sessions can connect,
-you can create a Limited environment for them instead, and move this
+you can create a Limited Agent Environment for them instead, and move this
 session onto it ("Limited network access" at the end of this file). If
 they ask for that, do it; otherwise stop here.
 
@@ -200,12 +232,12 @@ they ask for that, do it; otherwise stop here.
 
 Ask the user (skip the name if step 0 already asked it):
 
-1. **What's the app called?** This is the display name, e.g. "Chore Chart".
+1. **What's the app called?** This is the App Name, e.g. "Chore Chart".
 2. **One sentence on what it's for.** This goes into the README and
    `CLAUDE.md`.
 3. **Roughly where are you and your users?** A continent or country is
    enough. This picks where the database and backend run.
-4. **Do you want a custom domain, and if so, which one?** For example
+4. **Do you want a Custom Domain, and if so, which one?** For example
    `chore-chart.example.com`. Ask now, not later: the answer decides which
    permissions the Cloudflare token needs in step 4, and creating it
    with the right ones the first time saves the user a second trip to
@@ -216,15 +248,17 @@ Ask the user (skip the name if step 0 already asked it):
    If they want one, tell them in a sentence or two how it goes, so they
    aren't left wondering when it'll come up: the app first goes live on
    its `pages.dev` address, and the domain is switched on **last** (step
-   11), once production and previews are tested, so a domain problem
+   11), once Production and Previews are tested, so a domain problem
    can't be mistaken for anything else. At that point Claude attaches the
    domain and its DNS record in Cloudflare, points the app and the
    database's live-updates setting at it, and the user adds it to WorkOS
    (one more value, the same two lists as step 7).
 
-Derive the **slug**: lowercase, hyphens only, e.g. `chore-chart`.
+Derive the **App Handle** from the App Name: lowercase letters, digits
+and hyphens only, e.g. `chore-chart`. Keep it short, since longer names
+are built from it (`<github-user>-<App Handle>-backend`).
 
-Suggest a **region pair** from the table below. The backend talks to the
+Suggest a **Region Pair** from the table below. The backend talks to the
 database on every request, so the Fly region must sit next to the Neon
 region. Neon Realtime is in beta and available only in the four Neon
 regions below, so the Neon region comes first and the Fly region follows
@@ -241,10 +275,10 @@ it has changed, pair any new region with the nearest Fly region.
 
 No Realtime region is in the western Americas yet. Users there still get
 `aws-us-east-1` + `iad`, so say that pages will be a little slower for
-them. Confirm the name, slug, region pair and custom domain (or "none")
+them. Confirm the App Name, App Handle, Region Pair and Custom Domain (or "none")
 with the user in one line, then continue.
 
-**Limited network only:** now that the slug and region are known, do
+**Limited network only:** now that the App Handle and region are known, do
 "Wildcard hosts" under "Limited network access" at the end of this file.
 
 ## Step 2: Accounts
@@ -264,7 +298,7 @@ links and wait. Signing in with GitHub is fine wherever it's offered.
 on to a create-project form. Tell the user, before they sign up, to skip
 that form or close it: you create the project yourself in step 5, in the
 region from step 1, with Postgres and Realtime set up. If the form can't be
-skipped, have them create it with the display name as the project name and
+skipped, have them create it with the App Name as the project name and
 the Neon region from step 1, and close any connection string without
 copying it. You adopt that project in step 5 instead of creating one.
 
@@ -273,7 +307,7 @@ copying it. You adopt that project in step 5 instead of creating one.
 Have the user:
 
 1. Open **https://github.com/lightbody/able/generate**.
-2. Owner: their account. Repository name: the slug. Choose **Private**.
+2. Owner: their account. Repository name: the App Handle. Choose **Private**.
 3. Tap **Create repository**, then tell you their GitHub username and the
    repo name, if they differ from what you expect.
 
@@ -289,11 +323,11 @@ and open a PR instead.
 Creating the repo triggers CI on its first commit. The deploy jobs skip
 themselves while `.github/deploy.env` is empty, so the run is harmless.
 
-## Step 4: Claude Code tokens
+## Step 4: Claude Code Tokens
 
 First call `get_environment`. Its `network_secrets` lists the hosts that
-already have a saved credential (never the values). On a new environment
-there are none. If some are saved, check each:
+already have a saved credential (never the values). On a new Agent
+Environment there are none. If some are saved, check each:
 
 | Service | Saved if these hosts are listed | Check it's usable for setup |
 |---|---|---|
@@ -302,9 +336,9 @@ there are none. If some are saved, check each:
 | Cloudflare | `api.cloudflare.com` | `GET /client/v4/user/tokens/verify` is `active`, **and** `GET /client/v4/accounts` lists the account |
 
 Walk the user through creating the missing or unusable ones, each named
-`<slug>-claude-code`. Say once that they're for Claude on this app only:
+`<App Handle>-claude-code`. Say once that they're for Claude on this app only:
 for setting it up now and for building and debugging it later, saved on
-this app's environment, and that some get narrowed once setup no longer
+the Agent Environment, and that some get narrowed once setup no longer
 needs their extra permissions. The Fly org has to exist before its token,
 so the Fly part starts by creating the org. Each token goes **only** into
 a card, never into GitHub.
@@ -344,7 +378,7 @@ user these steps, in your own words:
 4. Open the **API keys** tab and tap **Create new**.
 5. Choose the **Organization** key type, not **Project-scoped**. Don't
    pick a project.
-6. Name: type `<slug>-claude-code`. Create the key.
+6. Name: type `<App Handle>-claude-code`. Create the key.
 7. The key is shown **only once**. Copy it now, and don't copy anything
    else until it's saved in the card. If the dialog closes before you
    copy it, revoke that key and create another.
@@ -367,8 +401,8 @@ key there. The key's organization is where you create the project.
 Fly personal access tokens no longer work for this, so Claude's token is an
 **org deploy token**, and an org token can only be made for an org that
 already exists. So the user creates this app's own Fly org first, then its
-token. Give every app its own Fly org, so its CI token (also an org token,
-which previews need in order to create apps) can't reach the user's other
+token. Give every app its own Fly org, so its CI Token (also an org token,
+which Previews need in order to create apps) can't reach the user's other
 apps. Creating an org needs billing, so the user does it in the dashboard,
 at **https://fly.io/organizations/new** (Fly's new organization page).
 
@@ -379,14 +413,14 @@ First, offer the org options in this order and wait for the user's pick:
    refused for hobby projects.
 2. **A new organization with its own billing.** The user adds a payment
    method for it. This is the usual choice.
-3. **Reuse an existing org.** Zero setup, but this app's CI token can then
+3. **Reuse an existing org.** Zero setup, but this app's CI Token can then
    create, deploy and destroy the user's other apps in that org. Say so
    plainly if they pick it, and skip to the token steps.
 
 Steps for the user to create the org (nothing to copy):
 
 1. Open **https://fly.io/organizations/new**.
-2. Name: type the slug, e.g. `chore-chart`.
+2. Name: type the App Name, e.g. `Chore Chart`.
 3. For a linked organization, choose the existing organization to bill
    it to. Otherwise add a payment method for the new org when asked.
 4. Create it, then tell Claude it's done.
@@ -401,7 +435,7 @@ can't create apps.
    the right one before going on.
 3. Tap **Tokens** in that org's menu (not an app's **Tokens**, and not
    the account menu's **Access Tokens**).
-4. Create a token of type **Org Deploy Token**. Name: type `<slug>-claude-code`. Leave the expiry at
+4. Create a token of type **Org Deploy Token**. Name: type `<App Handle>-claude-code`. Leave the expiry at
    the default, or pick an end date if they prefer.
 5. The token is shown **only once**. Copy the **whole** value; it's long,
    so use the page's copy button if there is one rather than selecting it.
@@ -436,7 +470,7 @@ traps on that page: the **Global API Key** further down is all-powerful
 and must not be used, and the ready-made templates (such as "Edit
 Cloudflare Workers") grant the wrong permissions. Use the custom-domain
 answer from step 1, and don't ask again: include the zone permissions
-only if the user wants a custom domain whose DNS is on Cloudflare. Give
+only if the user wants a Custom Domain whose DNS is on Cloudflare. Give
 the user these steps, in your own words:
 
 1. Open **https://dash.cloudflare.com/profile/api-tokens** and sign in.
@@ -445,7 +479,7 @@ the user these steps, in your own words:
    **Global API Key** section.
 2. Tap **Create Token**, then **Start from scratch** (older dashboards:
    scroll to the bottom, **Create Custom Token** → **Get started**).
-3. **Token name:** type `<slug>-claude-code`.
+3. **Token name:** type `<App Handle>-claude-code`.
 4. Cloudflare groups permissions into **policies**. Each policy has a
    scope (an account or a zone) and a list of permission groups with
    **Read** and **Edit** checkboxes. Search the list, or open the
@@ -453,7 +487,7 @@ the user these steps, in your own words:
    1. **Add new Account policy.** Scope: `Include` · their account.
       Tick **Cloudflare Pages → Edit** and **Account Settings → Read**.
       Nothing else.
-   2. Only if they chose a custom domain on Cloudflare DNS in step 1:
+   2. Only if they chose a Custom Domain on Cloudflare DNS in step 1:
       **Add new Zone policy.** Scope: `Include` · `Specific zone` · the
       domain's zone (for `chore-chart.example.com`, that's
       `example.com`). Under **DNS & Zones**, tick **DNS → Edit** and
@@ -497,7 +531,7 @@ that check fails, fall back to the pin.
 
 **Neon: create the project.**
 
-1. Check whether a project with the display name already exists, for
+1. Check whether a project with the App Name already exists, for
    example one the user couldn't skip creating at sign-up. Print only
    non-secret fields:
    ```bash
@@ -512,7 +546,7 @@ that check fails, fall back to the pin.
    ```bash
    curl -s -X POST https://console.neon.tech/api/v2/projects -H "Authorization: Bearer x" \
      -H "Content-Type: application/json" \
-     -d '{"project":{"name":"<display name>","region_id":"<neon region>"}}' \
+     -d '{"project":{"name":"<App Name>","region_id":"<neon region>"}}' \
      | jq '.project | {id, name, region_id, org_id}, (.message // empty)'
    ```
    The org key puts the project in its own organization. Its `id` is
@@ -554,12 +588,14 @@ that check fails, fall back to the pin.
 **Fly: the app's org.** In step 4 the user either created a new org,
 created a linked org, or chose an existing org to reuse. Whichever it
 was, find it yourself in the GraphQL org list below and record its
-`slug`, exactly as GraphQL prints it, as `FLY_ORG`:
+`slug` (Fly's org slug), exactly as GraphQL prints it, as `FLY_ORG`:
 
 - An org deploy token normally sees only its own org, so expect one
   entry. If several are listed, match the org the user picked by its
-  `name`, and confirm it with them in one line rather than guessing.
-- Don't derive the slug from the name. Fly may add a suffix to a new
+  `name` (the App Name, unless they reused an org), and confirm it with
+  them in one line rather than guessing.
+- Don't derive the org slug from the name, and don't assume it's the App
+  Handle. Fly may add a suffix to a new
   org's slug, and some orgs answer to more than one slug: the Machines
   API's app record can show a different slug for the same org than
   GraphQL does. Record the GraphQL one; it's what `flyctl --org` in CI
@@ -575,8 +611,8 @@ curl -s https://api.fly.io/graphql -H "Authorization: Bearer x" -H "Content-Type
   -d '{"query":"{ organizations { nodes { slug name type } } }"}'     # find the app's org -> FLY_ORG
 curl -s -X POST https://api.machines.dev/v1/apps -H "Authorization: Bearer x" \
   -H "Content-Type: application/json" \
-  -d '{"app_name":"<github-user>-<slug>-backend","org_slug":"<FLY_ORG>"}'
-curl -s https://api.machines.dev/v1/apps/<github-user>-<slug>-backend -H "Authorization: Bearer x" \
+  -d '{"app_name":"<github-user>-<App Handle>-backend","org_slug":"<FLY_ORG>"}'
+curl -s https://api.machines.dev/v1/apps/<github-user>-<App Handle>-backend -H "Authorization: Bearer x" \
   | jq '{name, organization}'                                         # check it landed in the right org
 ```
 
@@ -593,7 +629,7 @@ and exit codes when debugging.
 ```bash
 curl -s https://api.cloudflare.com/client/v4/accounts -H "Authorization: Bearer x"   # CLOUDFLARE_ACCOUNT_ID
 curl -s -X POST "https://api.cloudflare.com/client/v4/accounts/$A/pages/projects" -H "Authorization: Bearer x" \
-  -H "Content-Type: application/json" -d '{"name":"<slug>-frontend","production_branch":"main"}'
+  -H "Content-Type: application/json" -d '{"name":"<App Handle>-frontend","production_branch":"main"}'
 ```
 
 Use the returned `result.subdomain`. If the name was taken, Cloudflare adds
@@ -612,12 +648,12 @@ NEON_API_KEY=proxy-injected npx -y neon@$V realtime enable --project-id $P \
 …", and neither the CLI nor the branch API reads the setting back, so
 you can't confirm the allowed origin here. The scratch-branch test in
 the Neon section proves Realtime itself works; the origin is proven only
-by the browser two-tab test in step 9 (and step 11 for a custom domain).
+by the browser two-tab test in step 9 (and step 11 for a Custom Domain).
 If the server checks pass but the page signs in and then shows no
 greetings or doesn't sync, suspect the allowed origin first: re-run this
 command with the exact origin, no trailing slash, and retry.
 
-## Step 6: CI tokens (GitHub secrets only)
+## Step 6: CI Tokens (GitHub secrets only)
 
 The project now exists, so the user can create its narrowly scoped CI
 tokens. Every one goes **only** into GitHub, at:
@@ -641,7 +677,7 @@ These tokens never go into a card.
    That's the **organization's** Settings with the project's organization
    active, **not** the profile menu's Settings. Then **API keys → Create
    new**, choose **Project-scoped**, and select the new project. Name: type
-   `<slug>-ci`. It's shown only once, so copy it straight away. Repeat
+   `<App Handle>-ci`. It's shown only once, so copy it straight away. Repeat
    the navigation steps from step 4; don't assume the user remembers them.
 2. **`FLY_API_TOKEN`**: a second **org deploy token** for **the app's own
    org**, made the same way as Claude's token in step 4 but kept
@@ -649,11 +685,11 @@ These tokens never go into a card.
    1. Open **https://fly.io/dashboard**.
    2. In the **organization dropdown**, choose the app's own org (step 5).
       Check that it's the right one before going on: a token for the
-      wrong org breaks previews or reaches other apps.
+      wrong org breaks Previews or reaches other apps.
    3. Tap **Tokens** in that org's menu (not an app's **Tokens**, which
-      makes deploy tokens that can't create preview apps).
+      makes deploy tokens that can't create Preview apps).
    4. Create a token of type **Org Deploy Token**, the same type as the
-      `<slug>-claude-code` token in step 4. Name: type `<slug>-ci`. Choose a long
+      `<App Handle>-claude-code` token in step 4. Name: type `<App Handle>-ci`. Choose a long
       expiry, or none if offered, since CI needs it long-term.
    5. Copy the **whole** value. In GitHub, paste it **as is**, including
       `FlyV1 ` at the start. Unlike the card, GitHub needs the prefix.
@@ -663,7 +699,7 @@ These tokens never go into a card.
       → API Tokens, not the Global API Key).
    2. **Create Token** → **Start from scratch** (older dashboards:
       bottom of the page, **Create Custom Token** → **Get started**).
-   3. **Token name:** type `<slug>-ci`.
+   3. **Token name:** type `<App Handle>-ci`.
    4. **Add new Account policy.** Scope: `Include` · their account. Tick
       **only Cloudflare Pages → Edit**. No Account Settings and no Zone
       policy.
@@ -679,14 +715,14 @@ kind as `NEON_API_KEY` but a separate key, in two turns as in step 4:
    organization's **Settings** (with the project's organization active in
    the profile menu's switcher; not the profile menu's own Settings) →
    **API keys** → **Create new** → **Project-scoped** → the app's project.
-2. Name: type `<slug>-claude-code`. Create it, copy it (it's shown only
+2. Name: type `<App Handle>-claude-code`. Create it, copy it (it's shown only
    once), and tell Claude it's copied.
 
 **After the user confirms:** call `request_credential` with host
 `console.neon.tech`; the new key replaces the organization key in the
 card. Check `GET /api/v2/projects/<NEON_PROJECT_ID>` succeeds. Then have
 the user revoke the old key: on the same **API keys** page, the
-`<slug>-claude-code` key whose type is **Organization** (not the new
+`<App Handle>-claude-code` key whose type is **Organization** (not the new
 project-scoped one), and revoke it. Everything after this step works with
 the project-scoped key.
 
@@ -697,18 +733,18 @@ WorkOS has no step you can automate here. The user does it in
 words, in three short parts: find the application, add the addresses,
 send the Client ID.
 
-**Only the Production environment.** Tell the user that the app uses
-WorkOS's **Production** environment for everything: production and every
-PR preview sign in against it, sharing one user pool (`WORKOS_CLIENT_ID`
-is the Production client ID). Staging and Development environments
-aren't used, so nothing needs setting up there, and a Client ID from
+**Only the WorkOS Production environment.** Tell the user that the app
+uses WorkOS's **Production** environment for everything: Production and
+every Preview sign in against it, sharing one user pool (`WORKOS_CLIENT_ID`
+is the Production client ID). WorkOS's Staging and Development
+environments aren't used, so nothing needs setting up there, and a Client ID from
 them won't work.
 
 **Part 1: find the application.**
 
 1. Open **https://dashboard.workos.com** and sign in.
 2. Make sure there's a **Project** for this app. If the dashboard asks
-   to create one, name it after the app (the display name). The
+   to create one, name it with the App Name. The
    application lives inside the project.
 3. Switch to the **Production** environment with the environment
    switcher at the top left.
@@ -721,7 +757,7 @@ them won't work.
 page:
 
 - **Redirects** tab → **Redirect URIs**: both addresses below.
-- **Redirects** tab → **Sign-out URIs**: the production address only.
+- **Redirects** tab → **Sign-out URIs**: the Production Origin only.
   The app's **Sign out** button doesn't name a return address, so WorkOS
   sends the user to the default sign-out URI. With none set, signing out
   ends on WorkOS's `app-homepage-url-not-found` error page.
@@ -737,7 +773,7 @@ Then, one address at a time, copied from your message, with **no
 trailing slash**: copy it, add it everywhere it goes and save each, and
 only then copy the next one. After saving, have the user look at each
 saved entry: if it ends in `/`, edit it and delete the slash. This
-applies to **every** entry, the production address as much as the
+applies to **every** entry, the Production Origin as much as the
 wildcard: WorkOS compares the redirect URI as an exact string, the app
 sends the bare origin (`window.location.origin`, which has no trailing
 slash), and an entry ending in `/` fails sign-in with
@@ -747,16 +783,16 @@ so check rather than assume.
 1. `<PROD_FRONTEND_ORIGIN>`: into **Redirect URIs**, **Sign-out URIs**
    and **Session → Manage**. Add it to Redirect URIs **first**: WorkOS
    makes the first one the **default**, and the default must be the
-   production address, never the preview wildcard. If another entry is
+   Production Origin, never the Preview wildcard. If another entry is
    marked default, in either list, tell the user to make this one the
    default.
 2. Into **Redirect URIs** and **Session → Manage** only:
-   `https://*.<pages subdomain>`, for example
+   `https://*.<Pages Subdomain>`, for example
    `https://*.chore-chart-frontend.pages.dev`, which covers every PR
-   preview. Signing out of a preview lands on the production site,
-   because the default sign-out URI is production's. That's expected.
+   Preview. Signing out of a Preview lands on Production,
+   because the default sign-out URI is Production's. That's expected.
 
-   Don't add the custom domain here yet, even if the user chose one. It's
+   Don't add the Custom Domain here yet, even if the user chose one. It's
    added in step 11, and only works once the app has moved to it.
 
 **Part 3: the Client ID.** Last, because it's another copy: on the same
@@ -764,15 +800,15 @@ Application details page, near the top, the Client ID (`client_…`) is
 shown in grey text. Tapping it copies it. Have the user paste it in
 chat. It isn't a secret.
 
-**Verify** each redirect without signing in. Probe both the prod origin
-and an invented preview origin such as `https://pr-test.<pages subdomain>`:
+**Verify** each redirect without signing in. Probe both the Production Origin
+and an invented Preview origin such as `https://pr-test.<Pages Subdomain>`:
 
 ```bash
 curl -s -o /dev/null -w "%{redirect_url}\n" "https://api.workos.com/user_management/authorize?client_id=$CID&redirect_uri=$(python3 -c 'import urllib.parse,sys;print(urllib.parse.quote(sys.argv[1],safe=""))' "$ORIGIN")&response_type=code&provider=authkit"
 ```
 
 A redirect to `error.workos.com/redirect-uri-invalid` means the origin isn't
-registered. The usual culprit is a trailing `/` on that entry, prod or
+registered. The usual culprit is a trailing `/` on that entry, Production or
 wildcard alike: WorkOS matches exactly, and the app sends the bare
 origin. If the origin with a trailing `/` (`$ORIGIN/`) passes but the
 version without it fails, that's the cause: have the user edit that
@@ -788,8 +824,9 @@ In the cloned repo:
 
 1. **Rename the placeholders** in every tracked file, including
    `package-lock.json`:
-   - `My App` → display name
-   - `myapp` → slug. This covers the package names, `@myapp/shared` → `@<slug>/shared`,
+   - `My App` → App Name
+   - `myapp` → App Handle. This covers the package names, `@myapp/shared` → `@<App Handle>/shared`,
+     the token names in `SECRETS.md` and `CLAUDE.md` (`myapp-ci`, `myapp-claude-code`),
      the Pages project and the Fly app placeholder.
    - In `fly.backend.toml`, set `app = "<FLY_BACKEND_APP>"` and
      `primary_region = "<Fly region from step 1>"`. Previews deploy from
@@ -802,7 +839,7 @@ In the cloned repo:
 3. **Docs:**
    - `README.md`: delete everything from `<!-- able:template-start` through
      `<!-- able:template-end -->`, and the blank line after it, so the
-     file starts with `# <Name>`. Under the title, put the user's
+     file starts with `# <App Name>`. Under the title, put the user's
      one-sentence description in place of the template text.
    - `CLAUDE.md`: delete everything from `<!-- able:template-start` through
      `<!-- able:template-end -->`, and the blank line after it, the same as
@@ -822,17 +859,17 @@ In the cloned repo:
      `.claude/hooks/session-start.sh` starts one, so run it with
      `CLAUDE_CODE_REMOTE=true CLAUDE_PROJECT_DIR=$PWD` if it hasn't run.
    - `npm run build --workspace=frontend`
-6. `git grep -n -i -E "myapp|my app"` must find nothing except `@<slug>/`
+6. `git grep -n -i -E "myapp|my app"` must find nothing except `@<App Handle>/`
    lookalikes you've checked. Then commit everything as one commit,
-   "Set up <Name>", and push to `main`.
+   "Set up <App Name>", and push to `main`.
 
 ## Step 9: Production comes up
 
 The push to `main` runs `backend.yml`, which tests and then deploys to Fly
 against the default Neon branch, running migrations on boot. It also runs
 `frontend.yml`, which deploys Pages production. **This is the first use of
-the CI tokens.** A failure at a Neon, Fly or Cloudflare step usually means
-a CI token was pasted into the wrong secret or has the wrong scope, so
+the CI Tokens.** A failure at a Neon, Fly or Cloudflare step usually means
+a CI Token was pasted into the wrong secret or has the wrong scope, so
 check the job log for which call failed.
 
 Watch the runs with the GitHub tools, read failed job logs, fix, and push.
@@ -847,11 +884,11 @@ Then verify:
   SQL.
 
 Then ask the user to open `PROD_FRONTEND_ORIGIN` in **two tabs**, sign in,
-see "Hello, <Name>!", add a greeting in one tab, and watch it appear in the
+see "Hello, <App Name>!", add a greeting in one tab, and watch it appear in the
 other.
 
-If the user chose a custom domain, remind them in one line that it's not
-forgotten: it's switched on in step 11, after previews.
+If the user chose a Custom Domain, remind them in one line that it's not
+forgotten: it's switched on in step 11, after Previews.
 
 ## Step 10: Previews come up
 
@@ -871,13 +908,13 @@ to its activity.
   and the user may choose either. `preview.yml` creates Neon branch `preview/pr-<n>`, enables
 Realtime on it with origin `*`, deploys `<FLY_BACKEND_APP>-pr-<n>`, and
 comments the URLs. `frontend.yml` deploys a Pages preview at
-`https://<branch-alias>.<pages subdomain>`.
+`https://<branch-alias>.<Pages Subdomain>`.
 
-Run the same server-side checks against the preview, then have the user do
-the two-tab test on the preview URL from the PR comment. Then merge or
-close the PR. Closing tears the preview down.
+Run the same server-side checks against the Preview, then have the user do
+the two-tab test on the Preview URL from the PR comment. Then merge or
+close the PR. Closing tears the Preview down.
 
-## Step 11: Custom domain (if chosen in step 1)
+## Step 11: Custom Domain (if chosen in step 1)
 
 Use the domain from step 1. If the user didn't want one, skip to step 12.
 Before starting, remind them in one line what changes: sign-in moves to
@@ -891,9 +928,9 @@ the domain, and the `pages.dev` address stops working for sign-in.
      - `POST /accounts/$A/pages/projects/<project>/domains` with
        `{"name":"<domain>"}`
      - find the zone with `GET /zones?name=<apex>`
-     - create a proxied CNAME, `<domain>` → `<pages subdomain>`, with
+     - create a proxied CNAME, `<domain>` → `<Pages Subdomain>`, with
        `POST /zones/<zone id>/dns_records`
-   - Otherwise the user does it: **Workers & Pages → `<slug>-frontend` →
+   - Otherwise the user does it: **Workers & Pages → `<App Handle>-frontend` →
      Custom domains → Set up a custom domain**, types the domain, and taps
      **Activate**. If the DNS isn't on Cloudflare, they add the CNAME it
      shows at their DNS host.
@@ -906,14 +943,14 @@ the domain, and the `pages.dev` address stops working for sign-in.
    the app's **Application details**), add `https://<domain>`, as in step
    7: under **Redirects → Redirect URIs**, **Redirects → Sign-out URIs**
    and **Session → Manage**. Have them make it the **default** in both
-   Redirect URIs and Sign-out URIs, since it's now the production
-   address. As in step 7, it goes in with no trailing slash, and they
+   Redirect URIs and Sign-out URIs, since it's now the Production
+   Origin. As in step 7, it goes in with no trailing slash, and they
    check each saved entry for one. Then have them sign in at the domain and tap **Sign out**:
    it should land back on the app. Tell them to leave the `pages.dev` entries in
-   place: the wildcard one still serves every PR preview. You verify it
+   place: the wildcard one still serves every Preview. You verify it
    with the authorize probe, and wait for the redeploy from item 2 before
    checking CORS from the new origin.
-4. Sign-in now works only at the custom domain. The `pages.dev` address
+4. Sign-in now works only at the Custom Domain. The `pages.dev` address
    still serves the page, but the backend rejects its API calls.
 
 ## Step 12: Narrow the Cloudflare token, and wrap up
@@ -924,10 +961,10 @@ in place, so its value doesn't change and there's no card. Give the user
 these steps:
 
 1. Open **https://dash.cloudflare.com/profile/api-tokens**.
-2. On the `<slug>-claude-code` token, tap **⋯ → Edit**.
+2. On the `<App Handle>-claude-code` token, tap **⋯ → Edit**.
 3. In the **Account** policy, keep **Cloudflare Pages → Edit** and
    **Account Settings → Read**, and add **Account Analytics → Read**.
-4. If there's a **Zone** policy (custom domain): change **DNS** from
+4. If there's a **Zone** policy (Custom Domain): change **DNS** from
    **Edit** to **Read**, and keep **Zone → Read**.
 5. Go on to the summary and save the change. Don't **Roll** the token:
    that would change its value and need a new card.
@@ -945,47 +982,48 @@ differently, check that page rather than guessing.
 
 Tell the user, briefly:
 
-- the prod URL, the repo, and how previews work
-- that this environment, named after the app, is where to start every
-  future session on it. Its `<slug>-claude-code` tokens let Claude build
-  and debug the app, including looking into production and PR previews
+- the Production Origin, the repo, and how Previews work
+- that this Agent Environment, named with the App Name, is where to start
+  every future session on it. Its `<App Handle>-claude-code` tokens let Claude build
+  and debug the app, including looking into Production and Previews
   in Neon, Fly and Cloudflare. They can add the app's repo to the
-  environment's **Repositories** in its settings, so it's selected by
+  Agent Environment's **Repositories** in its settings, so it's selected by
   default.
-- that Claude's tokens are now at their baseline (the table in
+- that Claude's tokens are now at their Baseline (the table in
   `SECRETS.md`). When a later task needs more, such as working with
   Cloudflare Workers, Claude will say so, guide them through widening only
-  what that task needs, and then back to the baseline when it's done.
-- that deploys use only the three `<slug>-ci` tokens in GitHub, and that
+  what that task needs, and then back to the Baseline when it's done.
+- that deploys use only the three `<App Handle>-ci` tokens in GitHub, and that
   `SECRETS.md` lists both kinds of token and how to rotate or revoke each.
-  Revoking the Claude Code tokens never affects deploys.
+  Revoking the Claude Code Tokens never affects deploys.
 - **Limited network only:** if any of the three wildcard hosts are still
   missing (check with `get_environment`), strongly recommend adding them
   now, with the steps under "Limited network access", so Claude can reach
-  PR previews. Setting **Network access** to **Full** is the simpler
+  Previews. Setting **Network access** to **Full** is the simpler
   alternative.
 
-## An existing app without its own environment
+## An existing app without its own Agent Environment
 
 If the user asks to move an app set up by an older version of this
-playbook onto an environment of its own, attach its repo, read
+playbook onto an Agent Environment of its own, attach its repo, read
 `.github/deploy.env`, `CLAUDE.md` and `SECRETS.md`, then:
 
-1. Do step 0 with the app's slug. If the user keeps Limited network
+1. Do step 0 with the app's App Name. Its App Handle is the repo name. If the user keeps Limited network
    access, also do everything under "Limited network access" now: the
    app's hosts all exist already. The Pages subdomain comes from
    `GET /accounts/<CLOUDFLARE_ACCOUNT_ID>/pages/projects/<CLOUDFLARE_PAGES_PROJECT>`.
-2. Collect the three `<slug>-claude-code` tokens at the baseline in the
+2. Collect the three `<App Handle>-claude-code` tokens at the Baseline in the
    template's `SECRETS.md`, so nothing needs narrowing later: Neon
    **project-scoped** (as in step 6's "narrow Claude's Neon key"), Fly
    **org deploy token** for `FLY_ORG` (as in step 4), and Cloudflare with
    the permissions step 12 ends with (as in step 4, but ticking those
    instead). Check each as those steps do.
 3. Bring the app's docs up to date, since an older app won't have the
-   baseline or the rule for widening a token: from the template's
-   versions, update `SECRETS.md`'s Claude Code token sections and the
-   matching token bullets under "Deploys" in `CLAUDE.md` (with `myapp`
-   replaced by the slug), and open a PR.
+   Baseline or the rule for widening a token: from the template's
+   versions, update `SECRETS.md`'s Claude Code Token sections, and in
+   `CLAUDE.md` the "Terms" section and the matching token bullets under
+   "Deploys" (with `My App` replaced by the App Name and `myapp` by the
+   App Handle), and open a PR.
 4. Tell the user which older tokens on other environments (for example
    `able-setup` ones on their Default environment) they can now remove and
    revoke.
@@ -993,8 +1031,8 @@ playbook onto an environment of its own, attach its repo, read
 ## Limited network access
 
 Full network access is the recommendation (see the top of this file).
-This section is for users who choose Limited instead: the app's
-environment then reaches only package registries, MCP servers, and the
+This section is for users who choose Limited instead: the Agent
+Environment then reaches only package registries, MCP servers, and the
 hosts on its allowlist. You can add exact hosts yourself, with
 `update_environment` (the user approves a card each time, and it takes
 effect within seconds). Only the user can add wildcards.
@@ -1004,20 +1042,20 @@ environment and the user asked for Limited, create it and move this
 session onto it, so this conversation carries on. Say in one or two
 sentences what you're creating (its name, Limited access, the hosts below,
 and that this session moves onto it), then call `create_environment` with
-`name`: the slug, `scope: "personal"`, `allowed_hosts`: the list below,
+`name`: the App Name, `scope: "personal"`, `allowed_hosts`: the list below,
 `allow_package_managers: true`, `allow_mcp_servers: true`,
 `switch_session: "network_only"`, and `leave_statement` copied exactly from
 `get_environment` if it returned one. No repositories (the repo doesn't
 exist yet), variables or setup script.
 
 - **Approved and moved:** call `get_environment` again to check this
-  session is on the new environment, then go to step 1.
+  session is on the new Agent Environment, then go to step 1.
 - **Created, but this session didn't move:** have the user start a new
   session on it and paste the same prompt. Then stop.
 - **Declined:** don't propose it again. Give the Full steps from step 0
   instead, and stop.
 
-**Setting up the allowlist.** On an existing Limited environment, add
+**Setting up the allowlist.** On an existing Limited Agent Environment, add
 whichever of these are missing with one `update_environment` call
 (`add_allowed_hosts`, with `environment_name` and `applies_to` copied
 from `get_environment`), saying first in one line what you're adding and
@@ -1025,20 +1063,20 @@ why:
 
 | Hosts | Why |
 |---|---|
-| `console.neon.tech`, `api.fly.io`, `api.machines.dev`, `api.cloudflare.com` | the Claude Code tokens' APIs (a card also allows its host, but list them anyway) |
+| `console.neon.tech`, `api.fly.io`, `api.machines.dev`, `api.cloudflare.com` | the Claude Code Tokens' APIs (a card also allows its host, but list them anyway) |
 | `api.workos.com` | step 7's sign-in checks |
 | `neon.com`, `fly.io`, `developers.cloudflare.com`, `workos.com` | each service's docs; step 1 reads `neon.com` |
 
-**Wildcard hosts** (after step 1, once the slug and region are known).
+**Wildcard hosts** (after step 1, once the App Handle and region are known).
 Have the user add three, and explain in a line each what they unblock:
 
 - `*.<region>.aws.neon.tech`, e.g. `*.us-east-1.aws.neon.tech` (the Neon
   region without its `aws-` prefix): every Neon branch has its own
   database host. Step 5 runs SQL and a Realtime test on a scratch branch,
-  and each PR preview gets its own branch.
-- `*.fly.dev`: the production backend (step 9) and each PR preview's
+  and each Preview gets its own branch.
+- `*.fly.dev`: the Production backend (step 9) and each Preview's
   backend, `<app>-pr-<n>.fly.dev` (step 10).
-- `*.<slug>-frontend.pages.dev`: each PR preview's frontend (step 10).
+- `*.<Pages Subdomain>`, usually `*.<App Handle>-frontend.pages.dev`: each Preview's frontend (step 10).
 
 Steps: tap the **environment name** in the session's title bar, then
 **Edit**, then **Network access**. Under **Allowed domains**, add the
@@ -1047,13 +1085,13 @@ three, one per line, filled in for this app, and save. (If the app shows
 default package managers ticked.) Check with `get_environment` that all
 three are listed before going on. If they'd rather not add them, say that
 you'll ask to add each exact host as it appears instead (a card each
-time), and that previews can't be checked until their hosts are added.
+time), and that Previews can't be checked until their hosts are added.
 
 **Exact hosts as they appear.** Add each with `update_environment`:
 
-- **Step 5:** the Pages project's `<subdomain>` (a wildcard doesn't match
-  the bare name). If it isn't `<slug>-frontend.pages.dev`, also ask the
+- **Step 5:** the Pages Subdomain (a wildcard doesn't match the bare
+  name). If it isn't `<App Handle>-frontend.pages.dev`, also ask the
   user to change the Pages wildcard to `*.<subdomain>`.
-- **Step 11:** the custom domain.
+- **Step 11:** the Custom Domain.
 - **Any time** a request is refused with "no rule allows host": that
   exact host, rather than stopping or working around it.

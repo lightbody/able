@@ -2,31 +2,32 @@
 # Able
 
 A TypeScript app skeleton, plus a playbook that Claude Code follows to turn
-it into a new, fully deployed app: production and per-PR preview
-environments, with sign-in and live data working end to end.
+it into a new, fully deployed app: a Production environment and a Preview
+for every pull request, with sign-in and live data working end to end.
 
 **To start a new app** with Claude Code on the web (claude.ai/code works
 fine from a phone or tablet), give the app a cloud environment of its own,
-named after it, e.g. `chore-chart`. Every session on the app, starting with
-the setup session, runs there, so its tokens never reach your other
-projects. On the new-session screen, tap the environment selector (the
-first control under the message box) → **New environment**, type the name,
-set **Network access** to **Full** (recommended: nothing gets blocked,
-during setup or later), tap **Add environment**, and start the session on
-it (no repository needed). If you'd rather limit where the app's sessions
-can connect, start on any environment instead and ask Claude for a
-**Limited** one: it creates it with the hosts the app needs, and you add
-three wildcard hosts for PR previews.
+its **Agent Environment**, named with the app's human-readable name, e.g.
+`Chore Chart`. Every session on the app, starting with the setup session,
+runs there, so its tokens never reach your other projects. On the
+new-session screen, tap the environment selector (the first control under
+the message box) → **New environment**, type the name, set **Network
+access** to **Full** (recommended: nothing gets blocked, during setup or
+later), tap **Add environment**, and start the session on it (no
+repository needed). If you'd rather limit where the app's sessions can
+connect, start on any environment instead and ask Claude for a **Limited**
+one: it creates it with the hosts the app needs, and you add three
+wildcard hosts for Previews.
 
 Then paste:
 
 > Read https://github.com/lightbody/able/blob/main/PLAYBOOK.md and follow
 > it to set up a new app for me. Ask me what it's called first.
 
-Claude asks for a name, walks you through creating accounts and API
+Claude asks for the app's name, walks you through creating accounts and API
 tokens, and does the rest: it renames the skeleton, provisions Neon, Fly and
-Cloudflare, configures CI, and verifies production and previews. A custom domain is
-an optional last step. Claude asks for each token with only the
+Cloudflare, configures CI, and verifies Production and Previews. A custom
+domain is an optional last step. Claude asks for each token with only the
 permissions it needs at the time, and has you narrow them once setup is
 done, so later sessions can debug the app without setup-level access.
 
@@ -34,7 +35,9 @@ The landing page at **https://able.lightbody.net** lives in `site/` and
 deploys with `.github/workflows/site.yml`. New apps don't get either.
 
 Everything below describes the app that results, with `My App` / `myapp`
-as placeholder names.
+as placeholder names. `PLAYBOOK.md` opens with a glossary ("Terms") of the
+names it uses: the App Name, the App Handle, the App Environments
+(Development, Preview, Production) and the Agent Environment.
 
 ---
 <!-- able:template-end -->
@@ -92,7 +95,8 @@ docker-compose.yml   Postgres for backend tests
 
 ## Local development
 
-Neon Realtime only runs on Neon -- there's no local live query engine -- so
+This is the **Development** environment, alongside **Preview** (one per
+PR) and **Production** (deployed from `main`). Neon Realtime only runs on Neon -- there's no local live query engine -- so
 local dev runs against your own Neon branch rather than a local Postgres. You
 need the [Neon CLI](https://neon.com/docs/cli) (`npm i -g neon`, then
 `neon login`).
@@ -166,8 +170,9 @@ One-time state outside the repo (set up by PLAYBOOK.md):
 - **Cloudflare Pages** -- a direct-upload project, `CLOUDFLARE_PAGES_PROJECT`,
   with production branch `main`.
 - **Fly** -- nothing. The deploy action creates apps on demand in `FLY_ORG`.
-- **WorkOS** (Production environment only: prod and every PR preview share
-  it; Staging and Development aren't used) -- on the application's
+- **WorkOS** (its Production environment only: Production and every
+  Preview share it; WorkOS's Staging and Development environments aren't
+  used) -- on the application's
   **Redirects** tab, Redirect URIs (the prod origin is the default) and
   Sign-out URIs (just the prod origin, as the default: the app's sign-out
   names no return address; the other four address settings stay empty),
@@ -189,6 +194,6 @@ and add it to the WorkOS Redirect URIs and Sign-out URIs (as the default in
 both) and CORS origins. Sign-in and API calls
 work only from `PROD_FRONTEND_ORIGIN`.
 
-Every pull request gets an isolated preview stack: a Realtime-enabled Neon
+Every pull request gets an isolated Preview: a Realtime-enabled Neon
 branch, a dedicated backend Fly app and a Pages preview. It's torn down when
 the PR closes.
