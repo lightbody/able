@@ -49,11 +49,11 @@ instruction you give must work with that.
 | **Production Origin** | Production's frontend address, `PROD_FRONTEND_ORIGIN`: `https://<Pages Subdomain>` until step 11, then `https://<Custom Domain>`. | steps 5, 7, 9, 11 |
 | **Pages Subdomain** | The `<name>.pages.dev` host Cloudflare gives the Pages project, usually `<App Handle>-frontend.pages.dev`. Each Preview's frontend is a subdomain of it. | steps 5, 7, 10 |
 | **Custom Domain** | An optional domain of the user's for Production, e.g. `chore-chart.example.com`. Asked about in step 1, switched on in step 11. | steps 1, 4, 11 |
-| **Region Trio** | The Neon region, the Fly region next to it, and the Grafana Cloud region next to those (for the Grafana Stack), chosen in step 1. | steps 1, 2, 5, 8 |
+| **Region Trio** | The Neon region, the Fly region next to it, and the Grafana Cloud region next to those (used only if the user creates a new Grafana Stack), chosen in step 1. | steps 1, 2, 5, 8 |
 | **Agent Environment** | The Claude Code cloud environment for this app, named with the App Name and used for nothing else. This setup session and every later Claude Code session on the app run on it, and it holds the Claude Code Tokens. | step 0, step 4, and "Limited network access" |
 | **Claude Code Tokens** | Claude's own API tokens for Neon, Fly, Cloudflare and Grafana, each named `<App Handle>-claude-code` and saved on the Agent Environment. | steps 4, 5, 6, 12 |
 | **CI Tokens** | GitHub Actions' API tokens for the same services, each named `<App Handle>-ci` and saved as GitHub secrets. | step 6 |
-| **Observability** | The app's telemetry (traces, metrics and logs from the backend, real-user data from the frontend) in its **Grafana Stack**: the app's own Grafana Cloud instance, `GRAFANA_STACK_URL`. | steps 2, 4, 5, 6, 9, 10 |
+| **Observability** | The app's telemetry (traces, metrics and logs from the backend, real-user data from the frontend) in a **Grafana Stack**: a Grafana Cloud instance, `GRAFANA_STACK_URL`, usually shared by all of the user's apps. Each app's telemetry is labelled with its App Handle. | steps 2, 4, 5, 6, 9, 10 |
 | **Baseline** | The permissions the Claude Code Tokens keep between tasks, listed in `SECRETS.md`. | step 12 |
 
 Two words from the services mean something else, so always qualify them:
@@ -175,9 +175,9 @@ Also record the **Custom Domain** from step 1, if any. It isn't in
 
 You also pick a **Region Trio** in step 1. The Neon region is the project's
 `region_id`. The Fly region goes into `primary_region` in
-`fly.backend.toml`, not `deploy.env`. The Grafana Cloud region is where the
-user creates the Grafana Stack in step 2; it shows up in
-`GRAFANA_OTLP_ENDPOINT`.
+`fly.backend.toml`, not `deploy.env`. The Grafana Cloud region matters only
+if the user creates a new Grafana Stack in step 2; whichever stack the app
+uses, its region shows up in `GRAFANA_OTLP_ENDPOINT`.
 
 ---
 
@@ -268,9 +268,10 @@ are built from it (`<github-user>-<App Handle>-backend`).
 
 Suggest a **Region Trio** from the table below. The backend talks to the
 database on every request, so the Fly region must sit next to the Neon
-region. The Grafana Stack goes next to them too: telemetry is sent in the
-background, so distance doesn't slow the app, but queries are quicker and
-the data stays where the app runs. A stack's region can't be changed later. Neon Realtime is in beta and available only in the four Neon
+region. If the user will create a new Grafana Stack, suggest the Grafana
+Cloud region next to them; an existing stack is fine wherever it is,
+since telemetry is sent in the background and distance doesn't slow the
+app. Neon Realtime is in beta and available only in the four Neon
 regions below, so the Neon region comes first and the Fly region follows
 it. Before you suggest one, check the current list at
 https://neon.com/docs/realtime/overview#which-regions-is-it-enabled-in. If
@@ -283,9 +284,8 @@ it has changed, pair any new region with the nearest Fly region.
 | Europe, the Middle East or Africa | `aws-eu-central-1` (Frankfurt) | `fra` (Frankfurt) | an EU region |
 | Asia or Oceania | `aws-ap-southeast-1` (Singapore) | `sin` (Singapore) | an Asia-Pacific region, Singapore if offered |
 
-Grafana's region picker lists its regions by name; pick the one in that
-area. Don't let it default: Grafana's sign-up picks a region for the user
-unless they choose one (a stack created that way can land in US West).
+For a new stack, Grafana's region picker lists its regions by name: pick
+the one in that area rather than leaving the default.
 
 No Realtime region is in the western Americas yet. Users there still get
 `aws-us-east-1` + `iad`, so say that pages will be a little slower for
@@ -309,12 +309,13 @@ links and wait. Signing in with GitHub is fine wherever it's offered.
 | WorkOS | sign-in (AuthKit) | https://dashboard.workos.com |
 | Grafana Cloud | Observability: traces, logs and metrics | https://grafana.com (**Create free account**) |
 
-**New Grafana Cloud accounts: the stack is created at sign-up.** Grafana's
-sign-up asks for a stack name and region as part of creating the account.
-Before they sign up, tell the user to type the App Handle as the stack name
-(if it's taken, a short variant) and to pick the Grafana Cloud region from
-the Region Trio, not the default. Users with an account already add a new
-stack (grafana.com → **My Account**) with the same name and region. Either
+**Grafana Cloud: one Grafana Stack for all of the user's apps is the
+norm.** Each app's telemetry is labelled with its App Handle, so apps
+sharing a stack stay apart. If the user already has a stack, use it. If
+they're new to Grafana Cloud, sign-up creates their first stack: any name
+they like works (it becomes `<name>.grafana.net`, so something general,
+such as their own name, suits a stack they'll reuse), and they pick the
+Grafana Cloud region from the Region Trio rather than the default. Either
 way, ask for the stack's URL, `https://<stack slug>.grafana.net`: it's
 `GRAFANA_STACK_URL`, and isn't a secret, so chat is fine. Check that
 `GET <url>/api/health` answers. **Limited network only:** add the stack's
@@ -710,11 +711,6 @@ curl -s $STACK/api/datasources/uid/grafanacloud-prom -H "Authorization: Bearer x
 #   e.g. https://prometheus-prod-67-prod-us-east-0-…  ->  the region is prod-us-east-0
 #   GRAFANA_OTLP_ENDPOINT=https://otlp-gateway-<region>.grafana.net/otlp
 ```
-
-Check the region is the Grafana Cloud region from the Region Trio. If it
-isn't, say so plainly: a stack can't move regions, so the choice is to
-keep it (the app works either way) or create a new stack, redo the
-Grafana token in step 4, and derive these again.
 
 **Grafana: the Faro app** (frontend telemetry). Create it now that the
 Pages Subdomain is known. It takes one more role for this task only
@@ -1171,7 +1167,8 @@ a PR (`git diff` the app against Able's `main` for
 `observability/`, plus the Grafana values in `deploy.env`). Then do the
 Grafana parts of this playbook in order: the Grafana Stack (step 2), Claude's
 Grafana token (step 4), "Grafana" in step 5, `GRAFANA_OTLP_TOKEN` (step 6),
-and the telemetry checks in step 9. Use the app's own regions for the stack.
+and the telemetry checks in step 9. Use the user's existing Grafana Stack if
+they have one.
 
 ## Limited network access
 

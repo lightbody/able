@@ -42,7 +42,7 @@ If it fails, report the failure. Don't guess at production behavior.
 
 Grafana Cloud stacks name their built-in datasources `grafanacloud-logs`
 (Loki), `grafanacloud-traces` (Tempo) and `grafanacloud-prom` (Mimir).
-`fly-prometheus`, if the app has it (README "Observability"), is Fly's own
+`myapp-fly-prometheus`, if the app has it (README "Observability"), is Fly's own
 platform metrics for the app's Fly org. Use it for things the app can't see about
 itself: machine memory/CPU, restarts, and requests Fly's edge handled,
 including ones that never reached the app.
@@ -51,8 +51,14 @@ and use the UID it shows.
 
 ## Labels on everything
 
+The Grafana Stack is usually shared with the user's other apps, so always
+narrow to this one: `service_namespace="myapp"` (or a `service_name`) in
+Loki and Prometheus, `resource.service.namespace="myapp"` (or a
+`resource.service.name`) in TraceQL. The recipes below all do.
+
 | Attribute | Loki label / TraceQL | Values |
 |---|---|---|
+| `service.namespace` | `service_namespace` / `resource.service.namespace` | `myapp` (the App Handle) |
 | `service.name` | `service_name` / `resource.service.name` | `myapp-backend`, `myapp-frontend` |
 | `deployment.environment.name` | `deployment_environment_name` / `resource.deployment.environment.name` | `production`, `pr-<n>` (a PR preview) |
 | `service.version` | `service_version` / `resource.service.version` | the deployed commit SHA |
@@ -82,10 +88,10 @@ scripts/gcx traces query -d grafanacloud-traces \
 scripts/gcx traces get -d grafanacloud-traces <trace_id> --since 24h --llm -o json
 
 # Everything one user did (e.g. from a bug report)
-scripts/gcx traces query -d grafanacloud-traces '{span.user.id="user_..."}' --since 24h
+scripts/gcx traces query -d grafanacloud-traces '{resource.service.namespace="myapp" && span.user.id="user_..."}' --since 24h
 
 # A PR preview: same queries, with environment pr-<n>
-scripts/gcx logs query -d grafanacloud-logs '{deployment_environment_name="pr-12"}' --since 2h
+scripts/gcx logs query -d grafanacloud-logs '{service_namespace="myapp", deployment_environment_name="pr-12"}' --since 2h
 
 # p95 latency and error rate by route
 scripts/gcx metrics query -d grafanacloud-prom \
@@ -94,13 +100,13 @@ scripts/gcx metrics query -d grafanacloud-prom \
   'sum by (http_route) (rate(http_server_request_duration_seconds_count{job="myapp/myapp-backend", http_response_status_code=~"5.."}[5m]))' --since 6h
 
 # Fly's view: edge responses by status, machine memory (app label = Fly app name)
-scripts/gcx metrics query -d fly-prometheus \
+scripts/gcx metrics query -d myapp-fly-prometheus \
   'sum by (app, status) (increase(fly_edge_http_responses_count[1h]))' --since 24h
-scripts/gcx metrics query -d fly-prometheus \
+scripts/gcx metrics query -d myapp-fly-prometheus \
   'max by (app) (max_over_time(fly_instance_memory_mem_total[1h]))' --since 24h
 
 # App counters: live-query renewals (≈ active viewers) and writes
-scripts/gcx metrics query -d grafanacloud-prom 'sum by (view) (rate(app_live_seals_total[5m]))' --since 6h
+scripts/gcx metrics query -d grafanacloud-prom 'sum by (view) (rate(app_live_seals_total{job="myapp/myapp-backend"}[5m]))' --since 6h
 ```
 
 Trace *search* (`traces query`) lags ingestion by a few minutes, but

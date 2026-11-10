@@ -7,7 +7,7 @@ Grafana Cloud:
 |---|---|---|
 | Used by | GitHub Actions, on every deploy | Claude Code sessions on this app: setting it up, then building and debugging it, including Production and Previews |
 | Stored in | this repo's GitHub Actions secrets | the **network secrets** of this app's **Agent Environment** (its own Claude Code cloud environment, named with the App Name) |
-| Scope | as narrow as each service allows, for this one app | this app's Neon project, its own Fly org, its Cloudflare account and its Grafana Stack, with only the permissions Claude needs |
+| Scope | as narrow as each service allows, for this one app | this app's Neon project, its own Fly org, its Cloudflare account and the Grafana Stack it reports to, with only the permissions Claude needs |
 | Lifetime | long-lived; rotate occasionally | optional; can expire or be revoked any time |
 | If removed | deploys stop | Claude can't look into this app's infrastructure; deploys keep working |
 
@@ -70,7 +70,7 @@ is named `myapp-claude-code`.
 | Fly | `api.fly.io` and `api.machines.dev` (the same token in both, saved without any `FlyV1 ` prefix) | **Org Deploy Token** for this app's own Fly org (`FLY_ORG`) | deploy and manage apps in that org only. Fly personal access tokens no longer work. | inspect and restart Production and every Preview app |
 | Cloudflare | `api.cloudflare.com` | User API token | **Account** policy for your account: `Cloudflare Pages` → `Edit`, `Account Settings` → `Read`, `Account Analytics` → `Read` | inspect and retry Pages deployments and build logs, read account analytics. Cloudflare can't narrow a token to one project. |
 | Cloudflare, custom domain only | same token | same token | **Zone** policy for that zone only: `DNS` → `Read`, `Zone` → `Read` | inspect the domain's DNS records and zone |
-| Grafana | the Grafana Stack's host (`GRAFANA_STACK_URL`, e.g. `myapp.grafana.net`), saved as `Bearer` | token of the Grafana Stack's **service account** `myapp-claude-code` (**Administration → Users and access → Service accounts**) | basic role **Viewer**, nothing added. Viewer also brings `grafana-kowalski-app.sourcemaps:write` from Frontend Observability's own defaults (uploading source maps; harmless) | query logs, traces and metrics with `scripts/gcx` (the `observability` skill) |
+| Grafana | the Grafana Stack's host (from `GRAFANA_STACK_URL`, `<stack slug>.grafana.net`), saved as `Bearer` | token of the Grafana Stack's **service account** `myapp-claude-code` (**Administration → Users and access → Service accounts**) | basic role **Viewer**, nothing added. Viewer also brings `grafana-kowalski-app.sourcemaps:write` from Frontend Observability's own defaults (uploading source maps; harmless) | query logs, traces and metrics with `scripts/gcx` (the `observability` skill) |
 
 During setup two of them start wider: Neon as an **organization** key, to
 create the project, and Cloudflare with `DNS` → `Edit`, to create the
@@ -118,7 +118,7 @@ Code Token, and lives only in that service. List each one here.
 
 | Token | Held by | Scope | Rotate |
 |---|---|---|---|
-| `myapp-grafana-fly-metrics` (only if the app has Grafana's optional **Fly** data source, README "Observability") | the Grafana Stack's **Fly** data source (`fly-prometheus`), in its encrypted HTTP header | a Fly **Org Deploy Token** for `FLY_ORG`. Fly's dashboard can't make read-only tokens (only `fly tokens create readonly` with a `fly auth login` session can), so it's wider than it needs to be. Through Grafana it reaches only `api.fly.io/prometheus/<FLY_ORG>/`. | Fly → the org's **Tokens** → new Org Deploy Token → Grafana **Connections → Data sources → Fly** → paste it as the `Authorization` value (`FlyV1 fm2_…`, one `FlyV1`) → **Save & test** → delete the old token in Fly |
+| `myapp-grafana-fly-metrics` (only if the app has Grafana's optional **Fly** data source, README "Observability") | the Grafana Stack's **My App: Fly** data source (`myapp-fly-prometheus`), in its encrypted HTTP header | a Fly **Org Deploy Token** for `FLY_ORG`. Fly's dashboard can't make read-only tokens (only `fly tokens create readonly` with a `fly auth login` session can), so it's wider than it needs to be. Through Grafana it reaches only `api.fly.io/prometheus/<FLY_ORG>/`. | Fly → the org's **Tokens** → new Org Deploy Token → Grafana **Connections → Data sources → My App: Fly** → paste it as the `Authorization` value (`FlyV1 fm2_…`, one `FlyV1`) → **Save & test** → delete the old token in Fly |
 
 The Faro collector URL (`GRAFANA_FARO_URL` in `.github/deploy.env`) isn't a
 secret: it ships in the frontend bundle.

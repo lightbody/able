@@ -208,8 +208,10 @@ the PR closes.
 
 ## Observability
 
-The app sends traces, metrics and logs to its own **Grafana Stack**
-(Grafana Cloud; the free tier is enough to start). Everything is plain
+The app sends traces, metrics and logs to a **Grafana Stack** (Grafana
+Cloud; the free tier is enough to start). One stack can serve all your
+apps: each app's telemetry is labelled with its App Handle
+(`service.namespace`). Everything is plain
 OpenTelemetry; Development and tests send nothing.
 
 | Source | What | How it gets there |
@@ -224,8 +226,8 @@ telemetry is easy to pick out. Claude Code sessions query it with
 `scripts/gcx` (Grafana's CLI) through the `observability` skill, using a
 read-only Claude Code Token; `CLAUDE.md` "Observability" has the details.
 
-PLAYBOOK.md sets this up for a new app: the Grafana Stack (in the region
-next to the app's Neon and Fly regions), the Faro app
+PLAYBOOK.md sets this up for a new app: the Grafana Stack (an existing
+one, or a new one), the Faro app
 (`observability/faro-app.yaml`), the Grafana values in `deploy.env`, the
 `GRAFANA_OTLP_TOKEN` CI Token and Claude's read-only service account.
 
@@ -233,13 +235,14 @@ next to the app's Neon and Fly regions), the Faro app
 `https://api.fly.io/prometheus/<FLY_ORG>/`. To see them next to the app's
 own:
 
-1. Claude creates a Prometheus data source named **Fly** (uid
-   `fly-prometheus`) without a secret. For this, its Grafana service
+1. Claude creates a Prometheus data source named **My App: Fly** (uid
+   `myapp-fly-prometheus`, one per app, since each app has its own Fly
+   org) without a secret. For this, its Grafana service
    account is widened for the task to **Data sources → Writer**
    (SECRETS.md, "Widening a token for a task").
 2. In the Fly dashboard → the app's org → **Tokens**, create an Org Deploy
    Token named `myapp-grafana-fly-metrics`.
-3. In Grafana → **Connections → Data sources → Fly** → **HTTP headers**,
+3. In Grafana → **Connections → Data sources → My App: Fly** → **HTTP headers**,
    paste it as the `Authorization` value (`FlyV1 fm2_…`, exactly one
    `FlyV1`), then **Save & test**.
 4. Back to the Baseline: remove the Writer role, **and** remove the service

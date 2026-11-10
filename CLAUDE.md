@@ -51,8 +51,10 @@ below is the subset that stays in new apps, so keep it in step too.
   (`myapp-ci`) -- Claude's and GitHub Actions' separate API tokens for
   Neon, Fly, Cloudflare and Grafana Cloud. **Baseline** -- the
   permissions the Claude Code Tokens keep between tasks. See `SECRETS.md`.
-- **Grafana Stack** -- the app's own Grafana Cloud instance,
-  `GRAFANA_STACK_URL`, holding its telemetry.
+- **Grafana Stack** -- the Grafana Cloud instance the app sends its
+  telemetry to, `GRAFANA_STACK_URL`. One stack usually serves several
+  apps; each app's telemetry carries its own `service.namespace` (the App
+  Handle).
 
 ## Stack
 
@@ -160,7 +162,7 @@ asserts the SQL and params, like the existing `POST /live/:view` test.
 ## Observability (Grafana Cloud)
 
 Telemetry is the fifth column next to frontend, backend, database and auth,
-sending everything to the app's **Grafana Stack**. It's standard
+sending everything to the **Grafana Stack**. It's standard
 OpenTelemetry, and it's **off wherever its config is missing**: tests and
 Development export nothing.
 
@@ -202,7 +204,7 @@ empty, say so rather than guessing at Production behavior.
 - Metrics: add instruments to `appMetrics` in `backend/src/observability.ts`.
   Attribute values must come from small fixed sets (a view name, an
   outcome), never ids or user input. The free tier caps active series at
-  ~10k.
+  ~10k for the whole Grafana Stack, across every app that uses it.
 - Spans: auto-instrumentation covers HTTP, pg and fetch. For a meaningful
   in-process step, use `trace.getTracer("myapp-backend").startActiveSpan(...)`.
 - Infra polled by machines (like `/health`) stays out of traces and logs. Add new
