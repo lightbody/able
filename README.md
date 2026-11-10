@@ -26,8 +26,8 @@ can't be part of the playbook itself:
    selected, and paste:
 
 > Read https://github.com/lightbody/able/blob/main/PLAYBOOK.md and follow
-> it to set up my new app. App Name: "Todoable". App Handle: todoable.
-> I've made the todoable repo from the Able template and a cloud
+> it to set up my new app. App Name: "Todoable". App Handle: `todoable`.
+> I've made the `todoable` repo from the Able template and a cloud
 > environment named "Todoable", and this session should be on both. Check
 > that first.
 
