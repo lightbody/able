@@ -219,7 +219,7 @@ App is installed on selected repos only, the new repo is added at
 environment is made on the new-session screen: tap the environment
 selector (the first control in the row under the message box), then
 **New environment**, type the App Name, set **Network access** to
-**Full**, and tap **Add environment**.
+**Full**, and tap **Create environment** (**Add environment** in some versions of the app).
 
 With another coding agent, the user makes the repo the same way and runs
 the agent in a clone of it.
