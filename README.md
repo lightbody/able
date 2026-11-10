@@ -15,8 +15,9 @@ can't be part of the playbook itself:
    **App Handle**. (https://able.lightbody.net does this for you, and fills
    in the steps and the prompt.)
 2. **Make the app's repo from this template** at
-   https://github.com/lightbody/able/generate. For the repository name,
-   use the App Handle (`todoable`).
+   https://github.com/new?template_owner=lightbody&template_name=able&owner=@me&visibility=private&name=todoable
+   (change `name=` to your App Handle). The repository name must be the
+   App Handle.
 3. **Connect GitHub to Claude Code.**
 4. **Create the app's Agent Environment**: a cloud environment in Claude
    Code named with the App Name, with **Full** network access. (For

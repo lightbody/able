@@ -50,8 +50,8 @@
               autocomplete="off" autocapitalize="words" spellcheck="false" maxlength="40">
           </li>
           <li><strong>Make its repo from the
-            <a href="https://github.com/lightbody/able/generate">Able template</a>.</strong>
-            Name the repository <code data-handle>todoable</code>.</li>
+            <a id="generate-link" href="https://github.com/new?template_owner=lightbody&amp;template_name=able&amp;owner=%40me&amp;name=todoable&amp;visibility=private">Able template</a>.</strong>
+            Name it <code data-handle>todoable</code>: the link fills that in.</li>
           <li><strong>Connect GitHub to Claude Code.</strong></li>
           <li><strong>Create a cloud environment</strong> in Claude Code named
             "<span data-name>Todoable</span>", with <em>Full</em> network access.</li>
@@ -262,6 +262,10 @@
         var handle = handleOf(name) || 'my-app';
         document.querySelectorAll('[data-name]').forEach(function (el) { el.textContent = name; });
         document.querySelectorAll('[data-handle]').forEach(function (el) { el.textContent = handle; });
+        var link = document.getElementById('generate-link');
+        var url = new URL(link.href);
+        url.searchParams.set('name', handle);
+        link.href = url.toString();
       };
       input.addEventListener('input', update);
       update();

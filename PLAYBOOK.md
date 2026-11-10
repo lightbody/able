@@ -197,9 +197,12 @@ missing, so reuse the wording:
 1. **Name the app**, e.g. "Todoable". Able's landing page derives the
    App Handle from it (`todoable`), uses both in the steps below, and puts
    them in the prompt.
-2. **Make the app's repo from the template** at
-   **https://github.com/lightbody/able/generate**. Repository name: the
-   App Handle (`todoable`). Public or private is up to the user.
+2. **Make the app's repo from the template.** The landing page links to
+   `https://github.com/new?template_owner=lightbody&template_name=able&owner=@me&visibility=private&name=<App Handle>`,
+   which fills in the form: the user's own account, Private, and the App
+   Handle as the repository name. They can change any of it; public or
+   private is up to them, but the name must stay the App Handle. When you
+   give this step, build the same link with their App Handle.
 3. **Connect GitHub to Claude Code.** This comes after the repo exists,
    so the new repo is in the list Claude Code offers.
 4. **Create the Agent Environment**: a cloud environment named with the
