@@ -22,7 +22,10 @@ the template and playbook actually do.
 The `lightbody.net` zone makes browsers cache static files for a day
 (`index.html` is always revalidated), so `site.yml` appends `?v=<commit>` to
 the `styles.css` and `favicon.svg` links at deploy time. Add any new asset
-file to that step's `sed` pattern, or it can go stale after a deploy.
+file to that step's `sed` pattern, or it can go stale after a deploy. The
+setup wizard's screenshots, `site/screens/<step>-<device>.png`, are loaded
+by script and versioned through the `data-asset-version` attribute that
+the same step fills in, so new ones need no change there.
 
 ## Terms (template repo only)
 

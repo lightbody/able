@@ -52,7 +52,11 @@ jobs:
         run: |
           v="${GITHUB_SHA::8}"
           sed -i -E "s/(href=\"(styles\.css|favicon\.svg))\"/\1?v=$v\"/g" site/index.html
+          # The setup wizard's screenshots (screens/*.png) are loaded by script,
+          # which appends this version to their URLs.
+          sed -i -E "s/data-asset-version=\"\"/data-asset-version=\"$v\"/" site/index.html
           grep -q "styles.css?v=$v" site/index.html
+          grep -q "data-asset-version=\"$v\"" site/index.html
 
       - name: Deploy to Cloudflare Pages
         id: deploy

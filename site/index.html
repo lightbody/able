@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-asset-version="">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -15,7 +15,6 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
-  <script>document.documentElement.classList.add('js');</script>
 </head>
 <body>
   <header class="nav">
@@ -45,58 +44,130 @@
         </p>
 
         <div class="wizard" id="wizard">
-          <section class="wizard-step is-active" data-step="1">
-            <p class="step-count">Step 1 of 5</p>
-            <form class="name-form" id="name-form">
-              <label class="step-text" for="app-name">Name your app.</label>
-              <input class="app-name" id="app-name" type="text" value="Todoable"
-                autocomplete="off" autocapitalize="words" spellcheck="false" maxlength="40">
-              <div class="step-nav">
-                <button class="btn btn-primary" type="submit">Next</button>
+          <!-- Screenshots load from screens/<step>-<device>.png, e.g. screens/repo-mobile.png
+               (steps: repo, github, environment, session; devices: mobile, tablet, desktop).
+               A missing file shows a labelled placeholder instead. -->
+          <ol class="stepper" aria-label="Setup steps">
+            <li><button type="button" data-goto="1"><span class="dot">1</span><span class="label">Name</span></button></li>
+            <li><button type="button" data-goto="2"><span class="dot">2</span><span class="label">Device</span></button></li>
+            <li><button type="button" data-goto="3"><span class="dot">3</span><span class="label">Repo</span></button></li>
+            <li><button type="button" data-goto="4"><span class="dot">4</span><span class="label">GitHub</span></button></li>
+            <li><button type="button" data-goto="5"><span class="dot">5</span><span class="label">Environment</span></button></li>
+            <li><button type="button" data-goto="6"><span class="dot">6</span><span class="label">Session</span></button></li>
+            <li><button type="button" data-goto="7"><span class="dot">7</span><span class="label">Prompt</span></button></li>
+          </ol>
+
+          <form class="wizard-step" data-step="1" id="name-form">
+            <div class="step-body">
+              <div class="step-main">
+                <label class="step-text" for="app-name">Name your app.</label>
+                <input class="app-name" id="app-name" type="text" value="Todoable"
+                  autocomplete="off" autocapitalize="words" spellcheck="false" maxlength="40">
               </div>
-            </form>
-          </section>
+            </div>
+            <div class="step-nav">
+              <button class="btn btn-primary" type="submit">Next</button>
+            </div>
+          </form>
 
-          <section class="wizard-step" data-step="2">
-            <p class="step-count">Step 2 of 5</p>
-            <p class="step-text" tabindex="-1">Make its repo from the
-              <a id="generate-link" href="https://github.com/new?template_owner=lightbody&amp;template_name=able&amp;owner=%40me&amp;name=todoable&amp;visibility=private">Able template</a>.
-              Name it <code data-handle>todoable</code>.</p>
+          <section class="wizard-step" data-step="2" hidden>
+            <div class="step-body">
+              <div class="step-main">
+                <p class="step-text" tabindex="-1">What are you setting up on?</p>
+                <p class="step-hint">So the screenshots match what you see.</p>
+                <div class="devices" role="radiogroup" aria-label="Device">
+                  <button type="button" role="radio" data-device="mobile">Mobile</button>
+                  <button type="button" role="radio" data-device="tablet">Tablet</button>
+                  <button type="button" role="radio" data-device="desktop">Desktop</button>
+                </div>
+              </div>
+            </div>
             <div class="step-nav">
               <button class="btn btn-ghost" type="button" data-back>Back</button>
               <button class="btn btn-primary" type="button" data-next>Next</button>
             </div>
           </section>
 
-          <section class="wizard-step" data-step="3">
-            <p class="step-count">Step 3 of 5</p>
-            <p class="step-text" tabindex="-1">Connect GitHub to Claude Code.</p>
+          <section class="wizard-step" data-step="3" hidden>
+            <div class="step-body">
+              <div class="step-main">
+                <p class="step-text" tabindex="-1">Make its repo from the
+                  <a id="generate-link" href="https://github.com/new?template_owner=lightbody&amp;template_name=able&amp;owner=%40me&amp;name=todoable&amp;visibility=private">Able template</a>.
+                  Name it <code data-handle>todoable</code>.</p>
+              </div>
+              <figure class="shot" data-shot="repo">
+                <img alt="" hidden>
+                <figcaption class="shot-placeholder"></figcaption>
+              </figure>
+            </div>
             <div class="step-nav">
               <button class="btn btn-ghost" type="button" data-back>Back</button>
               <button class="btn btn-primary" type="button" data-next>Next</button>
             </div>
           </section>
 
-          <section class="wizard-step" data-step="4">
-            <p class="step-count">Step 4 of 5</p>
-            <p class="step-text" tabindex="-1">In Claude Code, create a cloud environment
-              named "<span data-name>Todoable</span>", with <em>Full</em> network access.</p>
+          <section class="wizard-step" data-step="4" hidden>
+            <div class="step-body">
+              <div class="step-main">
+                <p class="step-text" tabindex="-1">Connect GitHub to Claude Code.</p>
+              </div>
+              <figure class="shot" data-shot="github">
+                <img alt="" hidden>
+                <figcaption class="shot-placeholder"></figcaption>
+              </figure>
+            </div>
             <div class="step-nav">
               <button class="btn btn-ghost" type="button" data-back>Back</button>
               <button class="btn btn-primary" type="button" data-next>Next</button>
             </div>
           </section>
 
-          <section class="wizard-step" data-step="5">
-            <p class="step-count">Step 5 of 5</p>
-            <p class="step-text" tabindex="-1">Start a session on "<span data-name>Todoable</span>",
-              with the <code data-handle>todoable</code> repo selected, and paste this:</p>
-            <div class="prompt">
-              <p class="prompt-label">Paste this into Claude Code</p>
-              <p class="prompt-body" id="prompt-text">Read https://github.com/lightbody/able/blob/main/PLAYBOOK.md and follow it to set up my new app. App Name: "<span data-name>Todoable</span>". App Handle: `<span data-handle>todoable</span>`. I've made the `<span data-handle>todoable</span>` repo from the Able template and a cloud environment named "<span data-name>Todoable</span>", and this session should be on both. Check that first.</p>
-              <button class="btn btn-primary copy" type="button" data-copy="#prompt-text">
-                <span class="copy-label">Copy prompt</span>
-              </button>
+          <section class="wizard-step" data-step="5" hidden>
+            <div class="step-body">
+              <div class="step-main">
+                <p class="step-text" tabindex="-1">In Claude Code, create a cloud environment
+                  named "<span data-name>Todoable</span>", with <em>Full</em> network access.</p>
+              </div>
+              <figure class="shot" data-shot="environment">
+                <img alt="" hidden>
+                <figcaption class="shot-placeholder"></figcaption>
+              </figure>
+            </div>
+            <div class="step-nav">
+              <button class="btn btn-ghost" type="button" data-back>Back</button>
+              <button class="btn btn-primary" type="button" data-next>Next</button>
+            </div>
+          </section>
+
+          <section class="wizard-step" data-step="6" hidden>
+            <div class="step-body">
+              <div class="step-main">
+                <p class="step-text" tabindex="-1">Start a session on "<span data-name>Todoable</span>",
+                  with the <code data-handle>todoable</code> repo selected.</p>
+              </div>
+              <figure class="shot" data-shot="session">
+                <img alt="" hidden>
+                <figcaption class="shot-placeholder"></figcaption>
+              </figure>
+            </div>
+            <div class="step-nav">
+              <button class="btn btn-ghost" type="button" data-back>Back</button>
+              <button class="btn btn-primary" type="button" data-next>Next</button>
+            </div>
+          </section>
+
+          <section class="wizard-step" data-step="7" hidden>
+            <div class="step-body">
+              <div class="step-main">
+                <p class="step-text" tabindex="-1">Paste this into the session:</p>
+                <div class="prompt">
+                  <p class="prompt-label">Your setup prompt</p>
+                  <p class="prompt-body" id="prompt-text">Read https://github.com/lightbody/able/blob/main/PLAYBOOK.md and follow it to set up my new app. App Name: "<span data-name>Todoable</span>". App Handle: `<span data-handle>todoable</span>`. I've made the `<span data-handle>todoable</span>` repo from the Able template and a cloud environment named "<span data-name>Todoable</span>", and this session should be on both. Check that first.</p>
+                  <button class="btn btn-primary copy" type="button" data-copy="#prompt-text">
+                    <span class="copy-label">Copy prompt</span>
+                  </button>
+                </div>
+              </div>
             </div>
             <div class="step-nav">
               <button class="btn btn-ghost" type="button" data-back>Back</button>
@@ -286,10 +357,22 @@
 
   <script>
     (function () {
-      var steps = Array.prototype.slice.call(document.querySelectorAll('.wizard-step'));
+      var wizard = document.getElementById('wizard');
+      var steps = Array.prototype.slice.call(wizard.querySelectorAll('.wizard-step'));
+      var tabs = Array.prototype.slice.call(wizard.querySelectorAll('[data-goto]'));
       var input = document.getElementById('app-name');
       var link = document.getElementById('generate-link');
-      var current = 1;
+      var assetVersion = document.documentElement.getAttribute('data-asset-version');
+      var labels = { mobile: 'Mobile', tablet: 'Tablet', desktop: 'Desktop' };
+      var current = 1, reached = 1, device;
+
+      var detectDevice = function () {
+        var ua = navigator.userAgent;
+        var touchMac = /Macintosh/.test(ua) && navigator.maxTouchPoints > 1;
+        if (/iPad|Tablet|PlayBook|Silk/i.test(ua) || touchMac || (/Android/i.test(ua) && !/Mobile/i.test(ua))) return 'tablet';
+        if ((navigator.userAgentData && navigator.userAgentData.mobile) || /Mobi|iPhone|iPod|Android/i.test(ua)) return 'mobile';
+        return 'desktop';
+      };
       var handleOf = function (name) {
         return name.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
           .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
@@ -297,34 +380,75 @@
       var applyName = function () {
         var name = input.value.replace(/\s+/g, ' ').trim() || 'Todoable';
         var handle = handleOf(name) || 'my-app';
-        document.querySelectorAll('[data-name]').forEach(function (el) { el.textContent = name; });
-        document.querySelectorAll('[data-handle]').forEach(function (el) { el.textContent = handle; });
+        wizard.querySelectorAll('[data-name]').forEach(function (el) { el.textContent = name; });
+        wizard.querySelectorAll('[data-handle]').forEach(function (el) { el.textContent = handle; });
         var url = new URL(link.href);
         url.searchParams.set('name', handle);
         link.href = url.toString();
       };
+      var setDevice = function (d) {
+        device = d;
+        wizard.dataset.device = d;
+        wizard.querySelectorAll('[data-device]').forEach(function (b) {
+          b.setAttribute('aria-checked', String(b.dataset.device === d));
+        });
+        wizard.querySelectorAll('.shot').forEach(function (fig) {
+          var step = fig.dataset.shot, img = fig.querySelector('img');
+          var src = 'screens/' + step + '-' + d + '.png' + (assetVersion ? '?v=' + assetVersion : '');
+          var label = step.charAt(0).toUpperCase() + step.slice(1);
+          fig.querySelector('.shot-placeholder').innerHTML =
+            '<strong>Screenshot</strong><span>' + label + ' &middot; ' + labels[d] + '</span><code>screens/' + step + '-' + d + '.png</code>';
+          fig.classList.remove('has-image');
+          img.hidden = true;
+          img.onload = function () { img.hidden = false; fig.classList.add('has-image'); };
+          img.onerror = function () { img.hidden = true; fig.classList.remove('has-image'); };
+          img.alt = label + ' step, on ' + labels[d].toLowerCase();
+          img.src = src;
+        });
+      };
       var show = function (n, focus) {
         current = n;
-        steps.forEach(function (el) { el.classList.toggle('is-active', Number(el.dataset.step) === n); });
+        reached = Math.max(reached, n);
+        steps.forEach(function (el) { el.hidden = Number(el.dataset.step) !== n; });
+        tabs.forEach(function (t) {
+          var i = Number(t.dataset.goto);
+          t.parentNode.classList.toggle('is-current', i === n);
+          t.parentNode.classList.toggle('is-done', i < n);
+          t.disabled = i > reached;
+          if (i === n) t.setAttribute('aria-current', 'step'); else t.removeAttribute('aria-current');
+        });
         if (!focus) return;
         var target = n === 1 ? input : steps[n - 1].querySelector('.step-text');
         target.focus({ preventScroll: true });
       };
+
       document.getElementById('name-form').addEventListener('submit', function (e) {
         e.preventDefault();
         applyName();
         show(2, true);
       });
-      document.querySelectorAll('[data-next]').forEach(function (b) {
+      wizard.querySelectorAll('[data-next]').forEach(function (b) {
         b.addEventListener('click', function () { show(current + 1, true); });
       });
-      document.querySelectorAll('[data-back]').forEach(function (b) {
+      wizard.querySelectorAll('[data-back]').forEach(function (b) {
         b.addEventListener('click', function () { show(current - 1, true); });
+      });
+      wizard.querySelectorAll('[data-device]').forEach(function (b) {
+        b.addEventListener('click', function () { setDevice(b.dataset.device); });
+      });
+      tabs.forEach(function (t) {
+        t.addEventListener('click', function () {
+          if (current === 1) applyName();
+          show(Number(t.dataset.goto), true);
+        });
       });
       document.querySelectorAll('[data-start]').forEach(function (b) {
         b.addEventListener('click', function () { show(1, false); setTimeout(function () { input.focus(); }, 300); });
       });
+
       applyName();
+      setDevice(detectDevice());
+      show(1, false);
     })();
 
     document.querySelectorAll('[data-copy]').forEach(function (btn) {
