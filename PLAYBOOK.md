@@ -94,14 +94,15 @@ point there.
 | Neon | an **organization** key while it creates the project (step 4), then a **project-scoped** key (step 6) | **project-scoped** key for this app's project |
 | Fly | **org deploy token** for **this app's own org** (personal access tokens no longer work) | a second org deploy token for the same org (Previews create apps) |
 | Cloudflare | Pages Edit + Account Settings Read (+ DNS Edit and Zone Read on the Custom Domain's zone) during setup; narrowed in step 12 to Pages Edit, Account Settings Read and Account Analytics Read (+ DNS Read and Zone Read) | Pages Edit only |
-| Grafana | a Viewer service account `<App Handle>-claude-code` on the Grafana Stack (step 4), widened only while creating the Faro app (step 5) | `GRAFANA_OTLP_TOKEN`, write-only telemetry ingest |
+| Grafana | a service account `<App Handle>-claude-code` on the Grafana Stack: **Viewer** plus **Frontend Observability → Editor** while it creates the Faro app (step 4), narrowed to Viewer in step 5 | `GRAFANA_OTLP_TOKEN`, write-only telemetry ingest |
 
 **Least privilege as you go.** Ask for each token with the permissions the
 coming steps need, no more, and narrow it as soon as they're done: the
-Neon key goes from organization to project-scoped in step 6, and the
+Neon key goes from organization to project-scoped in step 6, the Grafana
+service account drops its Frontend Observability role in step 5, and the
 Cloudflare token drops its setup-only permissions in step 12. Narrowing a
-Cloudflare token edits it in place, so its value doesn't change and no new
-card is needed. Replacing the Neon key means a new key, a new card, and
+Cloudflare token or a Grafana service account edits it in place, so its
+value doesn't change and no new card is needed. Replacing the Neon key means a new key, a new card, and
 revoking the old one.
 
 Setup ends with every Claude Code Token at the **Baseline** in
@@ -361,7 +362,7 @@ Environment there are none. If some are saved, check each:
 | Neon | `console.neon.tech` | `GET https://console.neon.tech/api/v2/projects` succeeds. A project-scoped key fails with "not allowed outside the project". It can't create the new project, so it must be replaced with an organization key. |
 | Fly | `api.fly.io` **and** `api.machines.dev` | the GraphQL `{ organizations { nodes { slug name type } } }` lists **the org the user chose for this app**. A token for any other org must be replaced. |
 | Cloudflare | `api.cloudflare.com` | `GET /client/v4/user/tokens/verify` is `active`, **and** `GET /client/v4/accounts` lists the account |
-| Grafana | the Grafana Stack's host from step 2 | `GET <stack>/api/user` shows a service-account login (`sa-…`), **and** `GET <stack>/api/datasources` lists `grafanacloud-logs`, `grafanacloud-traces` and `grafanacloud-prom` |
+| Grafana | the Grafana Stack's host from step 2 | `GET <stack>/api/user` shows a service-account login (`sa-…`), `GET <stack>/api/datasources` lists `grafanacloud-logs`, `grafanacloud-traces` and `grafanacloud-prom`, **and** `GET <stack>/api/access-control/user/permissions` includes `grafana-kowalski-app.apps:write` (the Frontend Observability role step 5 needs). If only that's missing, the token is fine: have the user add the role (step 3 of the Grafana steps below), no new card. |
 
 Walk the user through creating the missing or unusable ones, each named
 `<App Handle>-claude-code`. Say once that they're for Claude on this app only:
@@ -542,21 +543,26 @@ card; if they no longer have it, **Roll** gives a new value to copy.
 If the token has a Zone policy, also check
 `GET /client/v4/zones?name=<apex>` lists the zone, in the same account.
 
-**Grafana token** (Viewer: already its Baseline)
+**Grafana token** (Viewer, plus one setup role until step 5)
 
-A service account on the Grafana Stack from step 2, with the **Viewer**
-role, so Claude can read the app's telemetry but change nothing. Step 5
-widens it briefly for one task. Give the user these steps:
+A service account on the Grafana Stack from step 2. Its Baseline is
+**Viewer**: Claude can read the app's telemetry but change nothing. Step 5
+also creates the app's Faro app, which needs **Frontend Observability →
+Editor**, so add that now too; step 5 removes it as soon as the app
+exists. Tell the user that in one line, then give these steps:
 
 1. Open `https://<stack slug>.grafana.net/org/serviceaccounts`
    (**Administration → Users and access → Service accounts**) and tap
    **Add service account**. You're creating it; it doesn't exist yet.
 2. **Display name:** type `<App Handle>-claude-code`. **Role:** **Viewer**.
    Tap **Create**.
-3. On its page, tap **Add service account token**. Name: type
-   `<App Handle>-claude-code`. **No expiration** is fine for a read-only
-   token. Tap **Generate token**.
-4. It's shown **only once**. Copy the `glsa_…` value and tell Claude it's
+3. On its page, open the **Role** picker, keep **Viewer**, and add
+   **Frontend Observability → Editor**. (The basic **Editor** role isn't
+   enough.) Save.
+4. Still on its page, tap **Add service account token**. Name: type
+   `<App Handle>-claude-code`. **No expiration** is fine: after step 5 it
+   only reads. Tap **Generate token**.
+5. It's shown **only once**. Copy the `glsa_…` value and tell Claude it's
    copied.
 
 **After the user confirms:** call `request_credential` with the stack's
@@ -713,17 +719,8 @@ curl -s $STACK/api/datasources/uid/grafanacloud-prom -H "Authorization: Bearer x
 ```
 
 **Grafana: the Faro app** (frontend telemetry). Create it now that the
-Pages Subdomain is known. It takes one more role for this task only
-(`SECRETS.md`, "Widening a token for a task"). Give the user these steps,
-with nothing to copy:
-
-1. On the Grafana Stack's **Service accounts** page, open
-   `<App Handle>-claude-code`.
-2. In its **Role** picker, keep **Viewer** and add **Frontend
-   Observability → Editor**. (The basic **Editor** role isn't enough.)
-   Save, and tell Claude.
-
-Then set `corsOrigins` in `observability/faro-app.yaml` to the Production
+Pages Subdomain is known, with the Frontend Observability role step 4
+added. Set `corsOrigins` in `observability/faro-app.yaml` to the Production
 Origin and `https://*.<Pages Subdomain>`. Add the Custom Domain too, if
 the user chose one; allowing it early is harmless. Run
 `scripts/gcx frontend apps create -f observability/faro-app.yaml` (step 8
@@ -732,8 +729,10 @@ gives `collectEndpointURL` and `appKey`; `GRAFANA_FARO_URL` is
 `<collectEndpointURL>/<appKey>`. The key isn't a secret: it ships in the
 bundle.
 
-Then straight back to the Baseline. Have the user remove **Frontend
-Observability → Editor** in the same picker, leaving **Viewer**. Check:
+Then narrow the Grafana token to its Baseline straight away, with nothing
+to copy: have the user open `<App Handle>-claude-code` on the Grafana
+Stack's **Service accounts** page and remove **Frontend Observability →
+Editor** in its **Role** picker, leaving **Viewer**. Check:
 `scripts/gcx frontend apps update <slug-id> -f observability/faro-app.yaml`
 (the whole, unchanged spec, so it changes nothing even if allowed) must now
 fail with `missing grafana-kowalski-app.apps:write`. Don't test with any

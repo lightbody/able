@@ -72,10 +72,11 @@ is named `myapp-claude-code`.
 | Cloudflare, custom domain only | same token | same token | **Zone** policy for that zone only: `DNS` → `Read`, `Zone` → `Read` | inspect the domain's DNS records and zone |
 | Grafana | the Grafana Stack's host (from `GRAFANA_STACK_URL`, `<stack slug>.grafana.net`), saved as `Bearer` | token of the Grafana Stack's **service account** `myapp-claude-code` (**Administration → Users and access → Service accounts**) | basic role **Viewer**, nothing added. Viewer also brings `grafana-kowalski-app.sourcemaps:write` from Frontend Observability's own defaults (uploading source maps; harmless) | query logs, traces and metrics with `scripts/gcx` (the `observability` skill) |
 
-During setup two of them start wider: Neon as an **organization** key, to
-create the project, and Cloudflare with `DNS` → `Edit`, to create the
-Custom Domain's record. Setup narrows both to the Baseline before it
-finishes.
+During setup three of them start wider: Neon as an **organization** key,
+to create the project; Grafana with **Frontend Observability → Editor**
+added, to create the Faro app; and Cloudflare with `DNS` → `Edit`, to
+create the Custom Domain's record. Setup narrows each to the Baseline as
+soon as it's done with it, and in any case before it finishes.
 
 ### Widening a token for a task, then back to the baseline
 
