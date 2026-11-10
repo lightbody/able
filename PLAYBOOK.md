@@ -46,16 +46,15 @@ instruction you give must work with that.
 | **Development** | A developer's own copy of the app: `npm run dev` against a personal Neon branch (`dev/<you>`), as the README's "Local development" describes. | after setup |
 | **Preview** | The app deployed for one pull request: Neon branch `preview/pr-<n>`, Fly app `<FLY_BACKEND_APP>-pr-<n>`, and a Pages preview. Created when the PR opens, deleted when it closes. Previews take the place of a shared staging environment. | step 10 |
 | **Production** | The app deployed from `main`: the default Neon branch, `FLY_BACKEND_APP`, and the Pages production deployment at the **Production Origin**. | step 9 |
-| **Production Origin** | Production's frontend address, `PROD_FRONTEND_ORIGIN`: `https://<Pages Subdomain>` until step 12, then `https://<Custom Domain>`. | steps 5, 7, 9, 12 |
+| **Production Origin** | Production's frontend address, `PROD_FRONTEND_ORIGIN`: `https://<Pages Subdomain>` until step 11, then `https://<Custom Domain>`. | steps 5, 7, 9, 11 |
 | **Pages Subdomain** | The `<name>.pages.dev` host Cloudflare gives the Pages project, usually `<App Handle>-frontend.pages.dev`. Each Preview's frontend is a subdomain of it. | steps 5, 7, 10 |
-| **Custom Domain** | An optional domain of the user's for Production, e.g. `chore-chart.example.com`. Asked about in step 1, switched on in step 12. | steps 1, 4, 12 |
-| **Region Trio** | The Neon region, the Fly region next to it, and the Grafana Cloud region next to those (for the Grafana Stack), chosen in step 1. | steps 1, 5, 8, 11 |
+| **Custom Domain** | An optional domain of the user's for Production, e.g. `chore-chart.example.com`. Asked about in step 1, switched on in step 11. | steps 1, 4, 11 |
+| **Region Trio** | The Neon region, the Fly region next to it, and the Grafana Cloud region next to those (for the Grafana Stack), chosen in step 1. | steps 1, 2, 5, 8 |
 | **Agent Environment** | The Claude Code cloud environment for this app, named with the App Name and used for nothing else. This setup session and every later Claude Code session on the app run on it, and it holds the Claude Code Tokens. | step 0, step 4, and "Limited network access" |
-| **Claude Code Tokens** | Claude's own API tokens for Neon, Fly and Cloudflare, and for Grafana with Observability, each named `<App Handle>-claude-code` and saved on the Agent Environment. | step 4, step 6, step 11, step 13 |
-| **CI Tokens** | GitHub Actions' API tokens for the same services, each named `<App Handle>-ci` and saved as GitHub secrets. | step 6, step 11 |
-| **Modules** | The groups of values in `.github/deploy.env`, each marked `# @module <name> required` or `optional`. Deploys wait for every required one; an optional one is on only when all its values are filled in. **Observability** is the optional `grafana` module. | steps 8, 11 |
-| **Observability** | The app's telemetry (traces, metrics and logs from the backend, real-user data from the frontend) in its **Grafana Stack**: the app's own Grafana Cloud instance, `GRAFANA_STACK_URL`. Optional, but recommended. | steps 1, 2, 11 |
-| **Baseline** | The permissions the Claude Code Tokens keep between tasks, listed in `SECRETS.md`. | step 13 |
+| **Claude Code Tokens** | Claude's own API tokens for Neon, Fly, Cloudflare and Grafana, each named `<App Handle>-claude-code` and saved on the Agent Environment. | steps 4, 5, 6, 12 |
+| **CI Tokens** | GitHub Actions' API tokens for the same services, each named `<App Handle>-ci` and saved as GitHub secrets. | step 6 |
+| **Observability** | The app's telemetry (traces, metrics and logs from the backend, real-user data from the frontend) in its **Grafana Stack**: the app's own Grafana Cloud instance, `GRAFANA_STACK_URL`. | steps 2, 4, 5, 6, 9, 10 |
+| **Baseline** | The permissions the Claude Code Tokens keep between tasks, listed in `SECRETS.md`. | step 12 |
 
 Two words from the services mean something else, so always qualify them:
 
@@ -94,13 +93,13 @@ point there.
 | Saved via | `request_credential` cards, onto the Agent Environment | GitHub Actions secrets, pasted by the user (step 6) |
 | Neon | an **organization** key while it creates the project (step 4), then a **project-scoped** key (step 6) | **project-scoped** key for this app's project |
 | Fly | **org deploy token** for **this app's own org** (personal access tokens no longer work) | a second org deploy token for the same org (Previews create apps) |
-| Cloudflare | Pages Edit + Account Settings Read (+ DNS Edit and Zone Read on the Custom Domain's zone) during setup; narrowed in step 13 to Pages Edit, Account Settings Read and Account Analytics Read (+ DNS Read and Zone Read) | Pages Edit only |
-| Grafana (Observability) | a Viewer service account `<App Handle>-claude-code` on the Grafana Stack, widened only for creating the Faro app (step 11) | `GRAFANA_OTLP_TOKEN`, write-only telemetry ingest (step 11) |
+| Cloudflare | Pages Edit + Account Settings Read (+ DNS Edit and Zone Read on the Custom Domain's zone) during setup; narrowed in step 12 to Pages Edit, Account Settings Read and Account Analytics Read (+ DNS Read and Zone Read) | Pages Edit only |
+| Grafana | a Viewer service account `<App Handle>-claude-code` on the Grafana Stack (step 4), widened only while creating the Faro app (step 5) | `GRAFANA_OTLP_TOKEN`, write-only telemetry ingest |
 
 **Least privilege as you go.** Ask for each token with the permissions the
 coming steps need, no more, and narrow it as soon as they're done: the
 Neon key goes from organization to project-scoped in step 6, and the
-Cloudflare token drops its setup-only permissions in step 13. Narrowing a
+Cloudflare token drops its setup-only permissions in step 12. Narrowing a
 Cloudflare token edits it in place, so its value doesn't change and no new
 card is needed. Replacing the Neon key means a new key, a new card, and
 revoking the old one.
@@ -167,17 +166,17 @@ Track these as you go. Every one ends up in `.github/deploy.env`:
 | `PROD_FRONTEND_ORIGIN` | the Production Origin: `https://<Pages Subdomain>`, returned when the Pages project is created |
 | `WORKOS_CLIENT_ID` | pasted by the user in chat |
 | `APP_HANDLE` | the App Handle (step 8's rename sets it) |
-| `GRAFANA_STACK_URL` | Observability only (step 11): `https://<stack slug>.grafana.net`, from the user in chat |
-| `GRAFANA_OTLP_INSTANCE_ID`, `GRAFANA_OTLP_ENDPOINT` | Observability only: derived from the Grafana Stack in step 11 |
-| `GRAFANA_FARO_URL` | Observability only: the Faro app you create in step 11 |
+| `GRAFANA_STACK_URL` | `https://<stack slug>.grafana.net`, from the user in chat (step 2) |
+| `GRAFANA_OTLP_INSTANCE_ID`, `GRAFANA_OTLP_ENDPOINT` | derived from the Grafana Stack (step 5) |
+| `GRAFANA_FARO_URL` | the Faro app you create in step 5 |
 
 Also record the **Custom Domain** from step 1, if any. It isn't in
-`deploy.env` until step 12, when it replaces `PROD_FRONTEND_ORIGIN`.
+`deploy.env` until step 11, when it replaces `PROD_FRONTEND_ORIGIN`.
 
 You also pick a **Region Trio** in step 1. The Neon region is the project's
 `region_id`. The Fly region goes into `primary_region` in
 `fly.backend.toml`, not `deploy.env`. The Grafana Cloud region is where the
-user creates the Grafana Stack in step 11; it shows up in
+user creates the Grafana Stack in step 2; it shows up in
 `GRAFANA_OTLP_ENDPOINT`.
 
 ---
@@ -252,22 +251,16 @@ Ask the user (skip the name if step 0 already asked it):
    with the right ones the first time saves the user a second trip to
    Cloudflare. If they want one, also ask whether the domain's DNS is on
    Cloudflare, in the account they'll use for this app. Only then can
-   Claude set it up; otherwise the user attaches it by hand in step 12.
+   Claude set it up; otherwise the user attaches it by hand in step 11.
 
    If they want one, tell them in a sentence or two how it goes, so they
    aren't left wondering when it'll come up: the app first goes live on
    its `pages.dev` address, and the domain is switched on **last** (step
-   12), once Production and Previews are tested, so a domain problem
+   11), once Production and Previews are tested, so a domain problem
    can't be mistaken for anything else. At that point Claude attaches the
    domain and its DNS record in Cloudflare, points the app and the
    database's live-updates setting at it, and the user adds it to WorkOS
    (one more value, the same two lists as step 7).
-
-5. **Do you want Observability?** Recommended, and on unless they say no:
-   the app sends its traces, logs and metrics to a free Grafana Cloud
-   account, so later sessions can see what Production and Previews actually
-   do when building features and fixing bugs. It's set up in step 11, after
-   Previews work. Without it, the app still deploys; it can be added later.
 
 Derive the **App Handle** from the App Name: lowercase letters, digits
 and hyphens only, e.g. `chore-chart`. Keep it short, since longer names
@@ -296,9 +289,8 @@ unless they choose one (a stack created that way can land in US West).
 
 No Realtime region is in the western Americas yet. Users there still get
 `aws-us-east-1` + `iad`, so say that pages will be a little slower for
-them. Confirm the App Name, App Handle, Region Trio, Custom Domain (or
-"none") and Observability (yes or no) with the user in one line, then
-continue.
+them. Confirm the App Name, App Handle, Region Trio and Custom Domain (or
+"none") with the user in one line, then continue.
 
 **Limited network only:** now that the App Handle and region are known, do
 "Wildcard hosts" under "Limited network access" at the end of this file.
@@ -315,14 +307,18 @@ links and wait. Signing in with GitHub is fine wherever it's offered.
 | Fly.io | backend hosting (asks for a payment method) | https://fly.io/app/sign-up |
 | Cloudflare | frontend hosting (Pages) | https://dash.cloudflare.com/sign-up |
 | WorkOS | sign-in (AuthKit) | https://dashboard.workos.com |
-| Grafana Cloud (Observability only) | traces, logs and metrics | https://grafana.com (**Create free account**) |
+| Grafana Cloud | Observability: traces, logs and metrics | https://grafana.com (**Create free account**) |
 
 **New Grafana Cloud accounts: the stack is created at sign-up.** Grafana's
 sign-up asks for a stack name and region as part of creating the account.
 Before they sign up, tell the user to type the App Handle as the stack name
 (if it's taken, a short variant) and to pick the Grafana Cloud region from
-the Region Trio, not the default. That stack becomes the app's Grafana
-Stack in step 11. Users with an account already make a new stack there.
+the Region Trio, not the default. Users with an account already add a new
+stack (grafana.com → **My Account**) with the same name and region. Either
+way, ask for the stack's URL, `https://<stack slug>.grafana.net`: it's
+`GRAFANA_STACK_URL`, and isn't a secret, so chat is fine. Check that
+`GET <url>/api/health` answers. **Limited network only:** add the stack's
+host to the allowlist first.
 
 **New Neon accounts: don't create a project.** Neon's sign-up usually goes
 on to a create-project form. Tell the user, before they sign up, to skip
@@ -364,6 +360,7 @@ Environment there are none. If some are saved, check each:
 | Neon | `console.neon.tech` | `GET https://console.neon.tech/api/v2/projects` succeeds. A project-scoped key fails with "not allowed outside the project". It can't create the new project, so it must be replaced with an organization key. |
 | Fly | `api.fly.io` **and** `api.machines.dev` | the GraphQL `{ organizations { nodes { slug name type } } }` lists **the org the user chose for this app**. A token for any other org must be replaced. |
 | Cloudflare | `api.cloudflare.com` | `GET /client/v4/user/tokens/verify` is `active`, **and** `GET /client/v4/accounts` lists the account |
+| Grafana | the Grafana Stack's host from step 2 | `GET <stack>/api/user` shows a service-account login (`sa-…`), **and** `GET <stack>/api/datasources` lists `grafanacloud-logs`, `grafanacloud-traces` and `grafanacloud-prom` |
 
 Walk the user through creating the missing or unusable ones, each named
 `<App Handle>-claude-code`. Say once that they're for Claude on this app only:
@@ -544,6 +541,26 @@ card; if they no longer have it, **Roll** gives a new value to copy.
 If the token has a Zone policy, also check
 `GET /client/v4/zones?name=<apex>` lists the zone, in the same account.
 
+**Grafana token** (Viewer: already its Baseline)
+
+A service account on the Grafana Stack from step 2, with the **Viewer**
+role, so Claude can read the app's telemetry but change nothing. Step 5
+widens it briefly for one task. Give the user these steps:
+
+1. Open `https://<stack slug>.grafana.net/org/serviceaccounts`
+   (**Administration → Users and access → Service accounts**) and tap
+   **Add service account**. You're creating it; it doesn't exist yet.
+2. **Display name:** type `<App Handle>-claude-code`. **Role:** **Viewer**.
+   Tap **Create**.
+3. On its page, tap **Add service account token**. Name: type
+   `<App Handle>-claude-code`. **No expiration** is fine for a read-only
+   token. Tap **Generate token**.
+4. It's shown **only once**. Copy the `glsa_…` value and tell Claude it's
+   copied.
+
+**After the user confirms:** call `request_credential` with the stack's
+host (`<stack slug>.grafana.net`). They paste the token into the card.
+
 Re-run the checks in the table for each new token.
 
 ## Step 5: Provision (you)
@@ -678,10 +695,53 @@ NEON_API_KEY=proxy-injected npx -y neon@$V realtime enable --project-id $P \
 …", and neither the CLI nor the branch API reads the setting back, so
 you can't confirm the allowed origin here. The scratch-branch test in
 the Neon section proves Realtime itself works; the origin is proven only
-by the browser two-tab test in step 9 (and step 12 for a Custom Domain).
+by the browser two-tab test in step 9 (and step 11 for a Custom Domain).
 If the server checks pass but the page signs in and then shows no
 greetings or doesn't sync, suspect the allowed origin first: re-run this
 command with the exact origin, no trailing slash, and retry.
+
+**Grafana: the OTLP endpoint and instance ID.** Derive them; don't ask
+the user. Both come from the Grafana Stack, through Claude's token:
+
+```bash
+STACK=https://<stack slug>.grafana.net
+curl -s $STACK/bootdata -H "Authorization: Bearer x" | jq -r '.settings.openFeatureContext.stackId'   # GRAFANA_OTLP_INSTANCE_ID
+curl -s $STACK/api/datasources/uid/grafanacloud-prom -H "Authorization: Bearer x" | jq -r .url
+#   e.g. https://prometheus-prod-67-prod-us-east-0-…  ->  the region is prod-us-east-0
+#   GRAFANA_OTLP_ENDPOINT=https://otlp-gateway-<region>.grafana.net/otlp
+```
+
+Check the region is the Grafana Cloud region from the Region Trio. If it
+isn't, say so plainly: a stack can't move regions, so the choice is to
+keep it (the app works either way) or create a new stack, redo the
+Grafana token in step 4, and derive these again.
+
+**Grafana: the Faro app** (frontend telemetry). Create it now that the
+Pages Subdomain is known. It takes one more role for this task only
+(`SECRETS.md`, "Widening a token for a task"). Give the user these steps,
+with nothing to copy:
+
+1. On the Grafana Stack's **Service accounts** page, open
+   `<App Handle>-claude-code`.
+2. In its **Role** picker, keep **Viewer** and add **Frontend
+   Observability → Editor**. (The basic **Editor** role isn't enough.)
+   Save, and tell Claude.
+
+Then set `corsOrigins` in `observability/faro-app.yaml` to the Production
+Origin and `https://*.<Pages Subdomain>`. Add the Custom Domain too, if
+the user chose one; allowing it early is harmless. Run
+`scripts/gcx frontend apps create -f observability/faro-app.yaml` (step 8
+commits the file). `scripts/gcx frontend apps get <App Handle>-frontend -o json`
+gives `collectEndpointURL` and `appKey`; `GRAFANA_FARO_URL` is
+`<collectEndpointURL>/<appKey>`. The key isn't a secret: it ships in the
+bundle.
+
+Then straight back to the Baseline. Have the user remove **Frontend
+Observability → Editor** in the same picker, leaving **Viewer**. Check:
+`scripts/gcx frontend apps update <slug-id> -f observability/faro-app.yaml`
+(the whole, unchanged spec, so it changes nothing even if allowed) must now
+fail with `missing grafana-kowalski-app.apps:write`. Don't test with any
+other update.
 
 ## Step 6: CI Tokens (GitHub secrets only)
 
@@ -734,6 +794,16 @@ These tokens never go into a card.
       **only Cloudflare Pages → Edit**. No Account Settings and no Zone
       policy.
    5. **Create Token** → **Copy**.
+4. **`GRAFANA_OTLP_TOKEN`**: write-only, so the backend can send telemetry
+   to the Grafana Stack.
+   1. Open grafana.com → **My Account** → the stack's **OpenTelemetry**
+      tile → **Configure**.
+   2. Under **Password / API Token**, tap **Generate now**. Name: type
+      `<App Handle>-ci`. Leave the scopes as they are: they're preset and
+      write-only.
+   3. Copy the token (it starts with `glc_`). Ignore any ready-made
+      `Authorization: Basic …` or `OTEL_…` snippets on that page: the
+      deploy builds the header itself.
 
 You can't read GitHub secrets. The first deploy in step 9 verifies them.
 
@@ -823,7 +893,7 @@ so check rather than assume.
    because the default sign-out URI is Production's. That's expected.
 
    Don't add the Custom Domain here yet, even if the user chose one. It's
-   added in step 12, and only works once the app has moved to it.
+   added in step 11, and only works once the app has moved to it.
 
 **Part 3: the Client ID.** Last, because it's another copy: on the same
 Application details page, near the top, the Client ID (`client_…`) is
@@ -864,10 +934,8 @@ In the cloned repo:
 
    Leave `app_test` alone. It's the local test database, named so it never
    needs renaming.
-2. **Fill in `.github/deploy.env`.** Every value of the required modules,
-   from the table above. Set `NEON_CLI` to `neon@$V`, the version you
-   checked in step 5. Leave the optional `grafana` module empty: step 11
-   fills it in once Previews work.
+2. **Fill in `.github/deploy.env`.** Every value from the table above. Set
+   `NEON_CLI` to `neon@$V`, the version you checked in step 5.
 3. **Docs:**
    - `README.md`: delete everything from `<!-- able:template-start` through
      `<!-- able:template-end -->`, and the blank line after it, so the
@@ -919,8 +987,22 @@ Then ask the user to open `PROD_FRONTEND_ORIGIN` in **two tabs**, sign in,
 see "Hello, <App Name>!", add a greeting in one tab, and watch it appear in the
 other.
 
+Then check Observability, with the `observability` skill:
+
+- **Logs:** `production` backend lines for those requests, each with a
+  `trace_id` (the first lines can take a few seconds). If there are none,
+  look for a "Telemetry is off" warning in the backend deploy's log: it
+  means `GRAFANA_OTLP_TOKEN` is missing or wrong.
+- **Traces:** `scripts/gcx traces get <trace_id>` for the
+  `POST /greetings` request shows the browser's `POST`, the backend's
+  `POST /greetings` and its Postgres `INSERT`, in one trace.
+- **Metrics,** after up to a minute (they're exported every 60s):
+  `http_server_request_duration_seconds_count` for that route.
+- **Frontend:** Faro events (`session_start`, page load, Web Vitals) under
+  `service_name="<App Handle>-frontend"`.
+
 If the user chose a Custom Domain, remind them in one line that it's not
-forgotten: it's switched on in step 12, after Previews.
+forgotten: it's switched on in step 11, after Previews.
 
 ## Step 10: Previews come up
 
@@ -943,129 +1025,14 @@ comments the URLs. `frontend.yml` deploys a Pages preview at
 `https://<branch-alias>.<Pages Subdomain>`.
 
 Run the same server-side checks against the Preview, then have the user do
-the two-tab test on the Preview URL from the PR comment. Then merge or
+the two-tab test on the Preview URL from the PR comment. Check that its
+telemetry arrives too, labelled `deployment_environment_name="pr-<n>"`
+(the PR comment's Telemetry row links to the Grafana Stack). Then merge or
 close the PR. Closing tears the Preview down.
 
-## Step 11: Observability (if chosen in step 1)
+## Step 11: Custom Domain (if chosen in step 1)
 
-If the user said no in step 1, leave the `grafana` module empty, say in one
-line that it can be added any time (step 11 of this playbook, on the app's
-Agent Environment), and skip to step 12. Otherwise, it's set up now that
-Production and Previews work, so a telemetry problem can't be mistaken for
-anything else. Do it in this order, one part at a time.
-
-**1. The Grafana Stack.** If step 2 created it at sign-up, ask for its URL.
-Otherwise, have the user create one at grafana.com → **My Account** → the
-option to add a stack: name it the App Handle (or a short variant if it's
-taken) and pick the Grafana Cloud region from the Region Trio. Either way,
-they tell you the stack's URL, `https://<stack slug>.grafana.net`. It isn't
-a secret, so chat is fine. Check that `GET <url>/api/health` answers.
-**Limited network only:** add the stack's host to the allowlist first.
-
-**2. Claude's Grafana token** (a Claude Code Token, at its Baseline:
-Viewer). Two turns, as in step 4. Guide turn:
-
-1. Open `https://<stack slug>.grafana.net/org/serviceaccounts`
-   (**Administration → Users and access → Service accounts**) and tap
-   **Add service account**. You're creating it; it doesn't exist yet.
-2. **Display name:** type `<App Handle>-claude-code`. **Role:** **Viewer**.
-   Tap **Create**.
-3. On its page, tap **Add service account token**. Name: type
-   `<App Handle>-claude-code`. **No expiration** is fine for a read-only
-   token. Tap **Generate token**.
-4. It's shown **only once**. Copy the `glsa_…` value and tell Claude it's
-   copied.
-
-**After the user confirms:** call `request_credential` with the stack's
-host (`<stack slug>.grafana.net`). Then check: `GET /api/user` with a dummy
-bearer shows a service-account login (`sa-…`), and `GET /api/datasources`
-lists `grafanacloud-logs`, `grafanacloud-traces` and `grafanacloud-prom`.
-
-**3. The OTLP endpoint and instance ID: derive them, don't ask.** Both
-come from the stack, through Claude's token:
-
-```bash
-STACK=https://<stack slug>.grafana.net
-curl -s $STACK/bootdata -H "Authorization: Bearer x" | jq -r '.settings.openFeatureContext.stackId'   # GRAFANA_OTLP_INSTANCE_ID
-curl -s $STACK/api/datasources/uid/grafanacloud-prom -H "Authorization: Bearer x" | jq -r .url
-#   e.g. https://prometheus-prod-67-prod-us-east-0-…  ->  the region is prod-us-east-0
-#   GRAFANA_OTLP_ENDPOINT=https://otlp-gateway-<region>.grafana.net/otlp
-```
-
-Check the region is the one from the Region Trio. If it isn't, say so
-plainly: a stack can't move regions, so the choice is to keep it (the app
-works either way) or create a new stack and repeat this step.
-
-**4. The Faro app** (frontend telemetry). Claude creates it by command, which
-needs one role for this task only (`SECRETS.md`, "Widening a token for a
-task"). Give the user these steps, with nothing to copy:
-
-1. On the same **Service accounts** page, open `<App Handle>-claude-code`.
-2. In its **Role** picker, keep **Viewer** and add **Frontend
-   Observability → Editor**. (The basic **Editor** role isn't enough.)
-   Save, and tell Claude.
-
-Then set `corsOrigins` in `observability/faro-app.yaml` to the Production
-Origin and `https://*.<Pages Subdomain>` (add the Custom Domain too if the
-user chose one; allowing it early is harmless), commit it, and run
-`scripts/gcx frontend apps create -f observability/faro-app.yaml`.
-`scripts/gcx frontend apps get <App Handle>-frontend -o json` gives
-`collectEndpointURL` and `appKey`: `GRAFANA_FARO_URL` is
-`<collectEndpointURL>/<appKey>`. The key isn't a secret: it ships in the
-bundle.
-
-Then straight back to the Baseline. Have the user remove **Frontend
-Observability → Editor** from the role picker, leaving **Viewer**. Check:
-`scripts/gcx frontend apps update <slug-id> -f observability/faro-app.yaml`
-(the whole, unchanged spec, so it changes nothing even if allowed) must now
-fail with `missing grafana-kowalski-app.apps:write`. Don't test with any
-other update.
-
-**5. The OTLP CI Token**, into GitHub only, as in step 6 (type the name,
-copy only the token):
-
-1. Open the repo's **Settings → Secrets and variables → Actions → New
-   repository secret**, and type the name `GRAFANA_OTLP_TOKEN`.
-2. In another tab: grafana.com → **My Account** → the stack's
-   **OpenTelemetry** tile → **Configure**. Under **Password / API Token**,
-   tap **Generate now**, name it `<App Handle>-ci`, and leave the scopes
-   as they are (they're preset and write-only). Copy the token (it starts
-   with `glc_`). Ignore any ready-made `Authorization: Basic …` or `OTEL_…`
-   snippets on that page: the deploy builds the header itself.
-3. Paste it as the secret's value, tap **Add secret**, and tell Claude.
-
-**6. Turn it on.** Fill in the `grafana` module in `.github/deploy.env`
-(`GRAFANA_STACK_URL`, `GRAFANA_OTLP_ENDPOINT`, `GRAFANA_OTLP_INSTANCE_ID`,
-`GRAFANA_FARO_URL`) and push to `main`. That redeploys the backend and the
-frontend. Check the backend job's log: there's no "Telemetry is off"
-notice, and `deploy-config.sh` didn't warn that the module is only partly
-filled in.
-
-**7. Verify.** Ask the user to open the Production Origin, sign in and add
-a greeting. Then, with the `observability` skill:
-
-- **Logs:** `production` backend lines for those requests, each with a
-  `trace_id` (the first lines can take a few seconds).
-- **Traces:** `scripts/gcx traces get <trace_id>` for the `POST /greetings`
-  request shows the browser's `POST`, the backend's `POST /greetings` and
-  its Postgres `INSERT`, in one trace.
-- **Metrics,** after up to a minute (they're exported every 60s):
-  `http_server_request_duration_seconds_count` for that route.
-- **Frontend:** Faro events (`session_start`, page load, Web Vitals) under
-  `service_name="<App Handle>-frontend"`.
-
-Previews send telemetry too, labelled `deployment_environment_name="pr-<n>"`;
-the next PR will show it.
-
-**8. Optional: Fly's metrics in Grafana.** Offer it in one line (machine
-CPU, memory and restarts, and Fly's edge view of requests). If the user
-wants it, follow README "Observability" ("Fly's metrics"): it needs the
-**Data sources → Writer** role for the task, and a Fly org token that the
-user pastes into Grafana, never into a card.
-
-## Step 12: Custom Domain (if chosen in step 1)
-
-Use the domain from step 1. If the user didn't want one, skip to step 13.
+Use the domain from step 1. If the user didn't want one, skip to step 12.
 Before starting, remind them in one line what changes: sign-in moves to
 the domain, and the `pages.dev` address stops working for sign-in.
 
@@ -1102,14 +1069,14 @@ the domain, and the `pages.dev` address stops working for sign-in.
 4. Sign-in now works only at the Custom Domain. The `pages.dev` address
    still serves the page, but the backend rejects its API calls.
 
-With Observability, the Custom Domain should already be in
-`observability/faro-app.yaml`'s `corsOrigins` (step 11). If it isn't, add it
-and update the Faro app, widening for that task as step 11 did (Frontend
+The Custom Domain should already be in
+`observability/faro-app.yaml`'s `corsOrigins` (step 5). If it isn't, add it
+and update the Faro app, widening for that task as step 5 did (Frontend
 Observability → Editor, then back to the Baseline and check). Until then,
 the browser's telemetry from the Custom Domain is refused; the app itself
 is unaffected.
 
-## Step 13: Narrow the Cloudflare token, and wrap up
+## Step 12: Narrow the Cloudflare token, and wrap up
 
 Setup no longer needs the Cloudflare token's write access to DNS, and
 later debugging wants read access to analytics. Cloudflare edits a token
@@ -1142,12 +1109,16 @@ Tell the user, briefly:
 - that this Agent Environment, named with the App Name, is where to start
   every future session on it. Its `<App Handle>-claude-code` tokens let Claude build
   and debug the app, including looking into Production and Previews
-  in Neon, Fly and Cloudflare. They can add the app's repo to the
+  in Neon, Fly, Cloudflare and Grafana. They can add the app's repo to the
   Agent Environment's **Repositories** in its settings, so it's selected by
   default.
-- with Observability: where to see it (the Grafana Stack's URL), and that
+- where to see the app's telemetry (the Grafana Stack's URL), and that
   later sessions read it through the `observability` skill to build
-  features and fix bugs. Without it: that it can be added any time.
+  features and fix bugs. Offer, in one line, Fly's own metrics (machine
+  CPU, memory and restarts, and Fly's edge view of requests) in Grafana as
+  well. If the user wants them, follow README "Observability" ("Fly's
+  metrics"): it needs the **Data sources → Writer** role for the task, and
+  a Fly org token that the user pastes into Grafana, never into a card.
 - that Claude's tokens are now at their Baseline (the table in
   `SECRETS.md`). When a later task needs more, such as working with
   Cloudflare Workers, Claude will say so, guide them through widening only
@@ -1176,7 +1147,7 @@ playbook onto an Agent Environment of its own, attach its repo, read
    template's `SECRETS.md`, so nothing needs narrowing later: Neon
    **project-scoped** (as in step 6's "narrow Claude's Neon key"), Fly
    **org deploy token** for `FLY_ORG` (as in step 4), and Cloudflare with
-   the permissions step 13 ends with (as in step 4, but ticking those
+   the permissions step 12 ends with (as in step 4, but ticking those
    instead). Check each as those steps do.
 3. Bring the app's docs up to date, since an older app won't have the
    Baseline or the rule for widening a token: from the template's
@@ -1191,14 +1162,16 @@ playbook onto an Agent Environment of its own, attach its repo, read
 
 ## Adding Observability to an existing app
 
-If the user asks to add Observability to an app set up without it, attach
-its repo and read `.github/deploy.env`, `CLAUDE.md` and `SECRETS.md`. If
-the app predates the `grafana` module, first bring in the template's
-observability code and docs (`git diff` the app against Able's `main` for
-`backend/src/telemetry.ts`, `frontend/src/telemetry.ts`, the workflows,
-`.github/scripts/deploy-config.sh`, `scripts/gcx`,
-`.claude/skills/observability/` and `observability/`), as a PR. Then
-follow step 11, using the app's own Region Trio for the stack.
+If the user asks to add Observability to an app set up before it was part
+of Able, attach its repo and read `.github/deploy.env`, `CLAUDE.md` and
+`SECRETS.md`. First bring in the template's observability code and docs as
+a PR (`git diff` the app against Able's `main` for
+`backend/src/telemetry.ts`, `frontend/src/telemetry.ts`, the workflows and
+`deploy-backend`, `scripts/gcx`, `.claude/skills/observability/` and
+`observability/`, plus the Grafana values in `deploy.env`). Then do the
+Grafana parts of this playbook in order: the Grafana Stack (step 2), Claude's
+Grafana token (step 4), "Grafana" in step 5, `GRAFANA_OTLP_TOKEN` (step 6),
+and the telemetry checks in step 9. Use the app's own regions for the stack.
 
 ## Limited network access
 
@@ -1238,7 +1211,7 @@ why:
 | `console.neon.tech`, `api.fly.io`, `api.machines.dev`, `api.cloudflare.com` | the Claude Code Tokens' APIs (a card also allows its host, but list them anyway) |
 | `api.workos.com` | step 7's sign-in checks |
 | `neon.com`, `fly.io`, `developers.cloudflare.com`, `workos.com` | each service's docs; step 1 reads `neon.com` |
-| `github.com`, `release-assets.githubusercontent.com` | with Observability: `scripts/gcx` downloads Grafana's CLI from GitHub releases on first use |
+| `github.com`, `release-assets.githubusercontent.com` | `scripts/gcx` downloads Grafana's CLI from GitHub releases on first use |
 
 **Wildcard hosts** (after step 1, once the App Handle and region are known).
 Have the user add three, and explain in a line each what they unblock:
@@ -1265,7 +1238,7 @@ time), and that Previews can't be checked until their hosts are added.
 - **Step 5:** the Pages Subdomain (a wildcard doesn't match the bare
   name). If it isn't `<App Handle>-frontend.pages.dev`, also ask the
   user to change the Pages wildcard to `*.<subdomain>`.
-- **Step 11:** the Grafana Stack's host (`<stack slug>.grafana.net`).
-- **Step 12:** the Custom Domain.
+- **Step 2:** the Grafana Stack's host (`<stack slug>.grafana.net`).
+- **Step 11:** the Custom Domain.
 - **Any time** a request is refused with "no rule allows host": that
   exact host, rather than stopping or working around it.

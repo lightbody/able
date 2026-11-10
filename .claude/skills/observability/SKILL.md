@@ -29,8 +29,9 @@ If it fails, report the failure. Don't guess at production behavior.
   `curl -sS -H "Authorization: Bearer proxy-injected" $GRAFANA_STACK_URL/api/user`:
   it should show a service-account login (`sa-…`) and no admin.
 - **Queries succeed but return nothing:** check the time range, and whether
-  telemetry is flowing at all (the Grafana module in `.github/deploy.env`
-  and the `GRAFANA_OTLP_TOKEN` secret; README "Observability"). An empty
+  telemetry is flowing at all (the Grafana values in `.github/deploy.env`,
+  and the deploy log has no "Telemetry is off" warning; README
+  "Observability"). An empty
   result isn't evidence that a bug didn't happen. Metrics export every 60s,
   so activity from the last minute may not be there yet. Logs and traces
   arrive within seconds.

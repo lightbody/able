@@ -1,8 +1,7 @@
 # Secrets: what exists, where it lives, how to rotate it
 
-This app uses two kinds of API token for each of Neon, Fly and Cloudflare,
-and for Grafana Cloud when the optional **grafana** module (observability)
-is on:
+This app uses two kinds of API token for each of Neon, Fly, Cloudflare and
+Grafana Cloud:
 
 | | **CI Tokens** (`myapp-ci`) | **Claude Code Tokens** (`myapp-claude-code`) |
 |---|---|---|
@@ -24,14 +23,13 @@ as database rows or logs, could be sent. If you want that limit, use
 Production addresses and the services' docs, plus three wildcards you add
 yourself so Claude can reach Previews: `*.<region>.aws.neon.tech` (each
 Neon branch's database), `*.fly.dev` (Production and Preview backends) and
-`*.<Pages Subdomain>` (Preview frontends). With the grafana module it also
+`*.<Pages Subdomain>` (Preview frontends). For observability it also
 needs the Grafana Stack's host, and `github.com` plus
 `release-assets.githubusercontent.com`, from which `scripts/gcx` installs
 Grafana's CLI the first time a session uses it.
 
-Deploys need **only** the CI Tokens: one each for Neon, Fly and Cloudflare,
-plus one per optional module that needs it (`GRAFANA_OTLP_TOKEN` for
-grafana). Everything else is either
+Deploys need **only** the CI Tokens, one each for Neon, Fly, Cloudflare and
+Grafana. Everything else is either
 fetched from Neon at deploy time or committed in `.github/deploy.env`:
 
 - On every backend deploy, `.github/actions/deploy-backend` uses
@@ -51,7 +49,7 @@ Manage them at `https://github.com/<owner>/<repo>/settings/secrets/actions`.
 | `NEON_API_KEY` | Neon API key | **project-scoped** to this app's project | creates and deletes Preview branches, enables Realtime on them, reads their credentials |
 | `FLY_API_TOKEN` | Fly **organization** token (starts with `FlyV1 `) | this app's own Fly org (`FLY_ORG`) | creates and destroys a Fly app per Preview. An app-scoped deploy token can't create apps. Because of that, each app gets **its own Fly org**: a linked org billed to your main org if Fly approves it (it reviews these manually), otherwise an org with its own billing. Sharing an org lets this token touch your other apps. |
 | `CLOUDFLARE_API_TOKEN` | Cloudflare API token | `Account` → `Cloudflare Pages` → `Edit`, for one account | uploads deployments and deletes Preview deployments. Cloudflare can't narrow this to a single project. |
-| `GRAFANA_OTLP_TOKEN` (grafana module) | Grafana Cloud access policy token | write-only: `metrics:write`, `logs:write`, `traces:write` (preset; Grafana doesn't let you pick) | `deploy-backend` turns it into the backend's OTLP `Authorization` header (Basic `GRAFANA_OTLP_INSTANCE_ID:token`), stored as the Fly secret `OTEL_EXPORTER_OTLP_HEADERS`, for Production and every Preview. It can't read anything back. Without it, deploys still run, with telemetry off. |
+| `GRAFANA_OTLP_TOKEN` | Grafana Cloud access policy token | write-only: `metrics:write`, `logs:write`, `traces:write` (preset; Grafana doesn't let you pick) | `deploy-backend` turns it into the backend's OTLP `Authorization` header (Basic `GRAFANA_OTLP_INSTANCE_ID:token`), stored as the Fly secret `OTEL_EXPORTER_OTLP_HEADERS`, for Production and every Preview. It can't read anything back. Without it, deploys still run, with telemetry off and a warning. |
 
 ## The Claude Code Tokens (the Agent Environment)
 
@@ -72,7 +70,7 @@ is named `myapp-claude-code`.
 | Fly | `api.fly.io` and `api.machines.dev` (the same token in both, saved without any `FlyV1 ` prefix) | **Org Deploy Token** for this app's own Fly org (`FLY_ORG`) | deploy and manage apps in that org only. Fly personal access tokens no longer work. | inspect and restart Production and every Preview app |
 | Cloudflare | `api.cloudflare.com` | User API token | **Account** policy for your account: `Cloudflare Pages` → `Edit`, `Account Settings` → `Read`, `Account Analytics` → `Read` | inspect and retry Pages deployments and build logs, read account analytics. Cloudflare can't narrow a token to one project. |
 | Cloudflare, custom domain only | same token | same token | **Zone** policy for that zone only: `DNS` → `Read`, `Zone` → `Read` | inspect the domain's DNS records and zone |
-| Grafana (grafana module) | the Grafana Stack's host (`GRAFANA_STACK_URL`, e.g. `myapp.grafana.net`), saved as `Bearer` | token of the Grafana Stack's **service account** `myapp-claude-code` (**Administration → Users and access → Service accounts**) | basic role **Viewer**, nothing added. Viewer also brings `grafana-kowalski-app.sourcemaps:write` from Frontend Observability's own defaults (uploading source maps; harmless) | query logs, traces and metrics with `scripts/gcx` (the `observability` skill) |
+| Grafana | the Grafana Stack's host (`GRAFANA_STACK_URL`, e.g. `myapp.grafana.net`), saved as `Bearer` | token of the Grafana Stack's **service account** `myapp-claude-code` (**Administration → Users and access → Service accounts**) | basic role **Viewer**, nothing added. Viewer also brings `grafana-kowalski-app.sourcemaps:write` from Frontend Observability's own defaults (uploading source maps; harmless) | query logs, traces and metrics with `scripts/gcx` (the `observability` skill) |
 
 During setup two of them start wider: Neon as an **organization** key, to
 create the project, and Cloudflare with `DNS` → `Edit`, to create the

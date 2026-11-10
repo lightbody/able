@@ -79,9 +79,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Load deploy config
-        # Values of every module that's on (optional modules that are off,
-        # or only partly filled in, aren't loaded), plus DEPLOY_MODULES.
-        run: .github/scripts/deploy-config.sh load >> "$GITHUB_ENV"
+        run: grep -Ev '^\s*(#|$)' .github/deploy.env >> "$GITHUB_ENV"
 
       - name: Deploy backend
         uses: ./.github/actions/deploy-backend

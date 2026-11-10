@@ -90,7 +90,7 @@
           <li><strong>Production on day one.</strong> Merge to <code>main</code> and it deploys.</li>
           <li><strong>A preview for every pull request,</strong> with its own database branch. It's deleted when the PR closes.</li>
           <li><strong>Sign-in and live data already working</strong>, so you start on features, not plumbing.</li>
-          <li><strong>Observability built in (optional).</strong> Traces, logs and metrics in Grafana Cloud, from the browser to the database, that your agent can query too.</li>
+          <li><strong>Observability built in.</strong> Traces, logs and metrics in Grafana Cloud, from the browser to the database, that your agent can query too.</li>
         </ul>
       </div>
     </section>
@@ -104,8 +104,8 @@
             <p>TypeScript everywhere: a React + Vite frontend, a Fastify backend and
               Postgres. It's one npm workspaces monorepo with a <code>shared</code>
               package that both sides import. GitHub Actions runs the tests and deploys
-              production and previews. Optionally, OpenTelemetry sends traces, logs and
-              metrics to Grafana Cloud.</p>
+              production and previews, and OpenTelemetry sends traces, logs and metrics
+              to Grafana Cloud.</p>
           </details>
           <details>
             <summary>Why TypeScript?</summary>
@@ -160,8 +160,8 @@
           </details>
           <details>
             <summary>What do I need to get started?</summary>
-            <p>A coding agent, plus accounts on GitHub, Neon, Fly.io, Cloudflare and
-              WorkOS, and Grafana Cloud if you want observability. Your agent walks you through creating each one and the API tokens
+            <p>A coding agent, plus accounts on GitHub, Neon, Fly.io, Cloudflare,
+              WorkOS and Grafana Cloud. Your agent walks you through creating each one and the API tokens
               it needs, one step at a time.</p>
             <p>With Claude Code on the web, every session on your app, starting with
               setup, runs in a cloud environment of its own, named after the app (say,

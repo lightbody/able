@@ -29,8 +29,8 @@ inputs:
   grafana-otlp-token:
     description: >-
       Grafana Cloud access policy token (metrics:write, logs:write,
-      traces:write). Optional: without it, or with deploy.env's grafana
-      module off, the backend deploys with telemetry off.
+      traces:write). Without it the backend still deploys, with telemetry
+      off and a warning.
     required: false
     default: ""
 
@@ -93,7 +93,7 @@ runs:
         GRAFANA_OTLP_TOKEN: ${{ inputs.grafana-otlp-token }}
       run: |
         if [ -z "${GRAFANA_OTLP_ENDPOINT:-}" ] || [ -z "${GRAFANA_OTLP_INSTANCE_ID:-}" ] || [ -z "$GRAFANA_OTLP_TOKEN" ]; then
-          echo "::notice::Telemetry is off: the grafana module in .github/deploy.env is off, or the GRAFANA_OTLP_TOKEN secret is missing."
+          echo "::warning::Telemetry is off: the GRAFANA_OTLP_TOKEN secret is missing (or deploy.env's GRAFANA_OTLP_* values are empty)."
           echo "enabled=false" >> "$GITHUB_OUTPUT"
           exit 0
         fi

@@ -26,8 +26,7 @@ Then paste:
 
 Claude asks for the app's name, walks you through creating accounts and API
 tokens, and does the rest: it renames the skeleton, provisions Neon, Fly and
-Cloudflare, sets up observability in Grafana Cloud (optional, but
-recommended), configures CI, and verifies Production and Previews. A custom
+Cloudflare, sets up observability in Grafana Cloud, configures CI, and verifies Production and Previews. A custom
 domain is an optional last step. Claude asks for each token with only the
 permissions it needs at the time, and has you narrow them once setup is
 done, so later sessions can debug the app without setup-level access.
@@ -60,7 +59,7 @@ real features as they land.
 | Realtime | Neon Realtime live SQL queries, sealed by the backend |
 | Auth | WorkOS AuthKit (stateless bearer JWTs) |
 | Frontend | React + Vite SPA on Cloudflare Pages |
-| Observability (optional) | OpenTelemetry + Grafana Faro → Grafana Cloud (Tempo, Loki, Mimir, Frontend Observability) |
+| Observability | OpenTelemetry + Grafana Faro → Grafana Cloud (Tempo, Loki, Mimir, Frontend Observability) |
 | CI/CD | GitHub Actions with per-PR preview stacks |
 
 ### How it fits together
@@ -84,7 +83,7 @@ real features as they land.
   synced.
 - `GET /me` is a minimal smoke-test endpoint: it just echoes back the
   authenticated user's WorkOS id, to confirm the token round-trips.
-- **Telemetry** (when the grafana module is on): every request is traced
+- **Telemetry**: every request is traced
   from the browser through the backend into Postgres, and logs and metrics
   carry the same trace ids. See "Observability" below.
 
@@ -97,7 +96,7 @@ frontend/    React SPA
 observability/  Grafana Frontend Observability app spec
 scripts/     gcx -- Grafana's CLI, installed on first use, for querying telemetry
 docker-compose.yml   Postgres for backend tests
-.github/     CI workflows + preview-env scripts; deploy.env (the Modules)
+.github/     CI workflows + preview-env scripts
 ```
 
 ## Local development
@@ -151,14 +150,11 @@ cd frontend && npm test            # currently no frontend tests; add as compone
 All non-secret deploy config lives in `.github/deploy.env`: the Neon project
 ID, database and default branch; the Fly org and app name; the Cloudflare
 account and Pages project; the prod frontend origin; the WorkOS client
-ID; and optional modules such as grafana. Values are grouped into
-**Modules**: deploys wait until every required one is filled in, and an
-optional one is on only when all its values are (see the file's header).
-Every workflow loads it first, through `.github/scripts/deploy-config.sh`.
-The only GitHub secrets are a few API tokens, the CI Tokens: `NEON_API_KEY`
+ID; and the Grafana Stack. Every workflow loads it first. The only GitHub
+secrets are a few API tokens, the CI Tokens: `NEON_API_KEY`
 (project-scoped), `FLY_API_TOKEN` (org token, since Previews create apps),
 `CLOUDFLARE_API_TOKEN` (Account → Cloudflare Pages → Edit), and
-`GRAFANA_OTLP_TOKEN` (write-only telemetry) for the grafana module.
+`GRAFANA_OTLP_TOKEN` (write-only telemetry).
 **[`SECRETS.md`](SECRETS.md)** covers what each token is, where it lives,
 and how to rotate it.
 
@@ -212,10 +208,9 @@ the PR closes.
 
 ## Observability
 
-With the optional **grafana** module on, the app sends traces, metrics and
-logs to its own **Grafana Stack** (Grafana Cloud; the free tier is enough
-to start). Everything is plain OpenTelemetry, and with the module off
-nothing is sent.
+The app sends traces, metrics and logs to its own **Grafana Stack**
+(Grafana Cloud; the free tier is enough to start). Everything is plain
+OpenTelemetry; Development and tests send nothing.
 
 | Source | What | How it gets there |
 |---|---|---|
@@ -231,7 +226,7 @@ read-only Claude Code Token; `CLAUDE.md` "Observability" has the details.
 
 PLAYBOOK.md sets this up for a new app: the Grafana Stack (in the region
 next to the app's Neon and Fly regions), the Faro app
-(`observability/faro-app.yaml`), the grafana module's values, the
+(`observability/faro-app.yaml`), the Grafana values in `deploy.env`, the
 `GRAFANA_OTLP_TOKEN` CI Token and Claude's read-only service account.
 
 **Fly's metrics (optional).** Fly keeps platform metrics for every org at
