@@ -362,7 +362,7 @@ Environment there are none. If some are saved, check each:
 | Neon | `console.neon.tech` | `GET https://console.neon.tech/api/v2/projects` succeeds. A project-scoped key fails with "not allowed outside the project". It can't create the new project, so it must be replaced with an organization key. |
 | Fly | `api.fly.io` **and** `api.machines.dev` | the GraphQL `{ organizations { nodes { slug name type } } }` lists **the org the user chose for this app**. A token for any other org must be replaced. |
 | Cloudflare | `api.cloudflare.com` | `GET /client/v4/user/tokens/verify` is `active`, **and** `GET /client/v4/accounts` lists the account |
-| Grafana | the Grafana Stack's host from step 2 | `GET <stack>/api/user` shows a service-account login (`sa-…`), `GET <stack>/api/datasources` lists `grafanacloud-logs`, `grafanacloud-traces` and `grafanacloud-prom`, **and** `GET <stack>/api/access-control/user/permissions` includes `grafana-kowalski-app.apps:write` (the Frontend Observability role step 5 needs). If only that's missing, the token is fine: have the user add the role (step 3 of the Grafana steps below), no new card. |
+| Grafana | the Grafana Stack's host from step 2 | `GET <stack>/api/user` shows a service-account login (`sa-…`), `GET <stack>/api/datasources` lists `grafanacloud-logs`, `grafanacloud-traces` and `grafanacloud-prom`, **and** `GET <stack>/api/access-control/user/permissions` includes `grafana-kowalski-app.apps:write` (the Frontend Observability role step 5 needs). A 403 on `/api/datasources`, with `folders:read` as the only permission, means the role is still **None**: the role change wasn't saved with **Update**. Either way the token is fine: have the user fix the roles (step 3 of the Grafana steps below) and tap **Update**, no new card. |
 
 Walk the user through creating the missing or unusable ones, each named
 `<App Handle>-claude-code`. Say once that they're for Claude on this app only:
@@ -503,9 +503,10 @@ only if the user wants a Custom Domain whose DNS is on Cloudflare. Give
 the user these steps, in your own words:
 
 1. Open **https://dash.cloudflare.com/profile/api-tokens** and sign in.
-   This is **My Profile → API Tokens** (user tokens). Don't use
-   **Manage Account → API Tokens** (account tokens), and don't touch the
-   **Global API Key** section.
+   This is **My Profile → API Tokens** (user tokens): Claude's token acts
+   for you, one person. Don't use **Manage account → Account API tokens**
+   (that's for the CI Token in step 6, which acts for the account), and
+   don't touch the **Global API Key** section.
 2. Tap **Create Token**, then **Start from scratch** (older dashboards:
    scroll to the bottom, **Create Custom Token** → **Get started**).
 3. **Token name:** type `<App Handle>-claude-code`.
@@ -554,11 +555,15 @@ exists. Tell the user that in one line, then give these steps:
 1. Open `https://<stack slug>.grafana.net/org/serviceaccounts`
    (**Administration → Users and access → Service accounts**) and tap
    **Add service account**. You're creating it; it doesn't exist yet.
-2. **Display name:** type `<App Handle>-claude-code`. **Role:** **Viewer**.
-   Tap **Create**.
-3. On its page, open the **Role** picker, keep **Viewer**, and add
-   **Frontend Observability → Editor**. (The basic **Editor** role isn't
-   enough.) Save.
+2. **Display name:** type `<App Handle>-claude-code`, and tap **Create**.
+3. On its page, set the roles. Grafana starts it at **None**, which can't
+   read anything:
+   1. Change **None** to **Viewer**.
+   2. In the same **Role** picker, also add **Frontend Observability →
+      Editor**. (The basic **Editor** role isn't enough.)
+   3. Tap **Update**. This is easy to miss: Grafana doesn't save a role change until you tap **Update**.
+      Check the page now shows **Viewer** plus the Frontend
+      Observability role.
 4. Still on its page, tap **Add service account token**. Name: type
    `<App Handle>-claude-code`. **No expiration** is fine: after step 5 it
    only reads. Tap **Generate token**.
@@ -725,14 +730,18 @@ Origin and `https://*.<Pages Subdomain>`. Add the Custom Domain too, if
 the user chose one; allowing it early is harmless. Run
 `scripts/gcx frontend apps create -f observability/faro-app.yaml` (step 8
 commits the file). `scripts/gcx frontend apps get <App Handle>-frontend -o json`
-gives `collectEndpointURL` and `appKey`; `GRAFANA_FARO_URL` is
-`<collectEndpointURL>/<appKey>`. The key isn't a secret: it ships in the
+returns a **list** with the one app: `GRAFANA_FARO_URL` is
+`<.[0].spec.collectEndpointURL>/<.[0].spec.appKey>`, and `.[0].metadata.name`
+is the app's **slug-id**, `<App Handle>-frontend-<id>` (e.g.
+`myapp-frontend-6445`). Updates need the slug-id, not the plain name, so
+note it. The key isn't a secret: it ships in the
 bundle.
 
 Then narrow the Grafana token to its Baseline straight away, with nothing
 to copy: have the user open `<App Handle>-claude-code` on the Grafana
-Stack's **Service accounts** page and remove **Frontend Observability →
-Editor** in its **Role** picker, leaving **Viewer**. Check:
+Stack's **Service accounts** page, remove **Frontend Observability →
+Editor** in its **Role** picker, leaving **Viewer**, and tap **Update**
+(the change isn't saved otherwise). Check:
 `scripts/gcx frontend apps update <slug-id> -f observability/faro-app.yaml`
 (the whole, unchanged spec, so it changes nothing even if allowed) must now
 fail with `missing grafana-kowalski-app.apps:write`. Don't test with any
@@ -778,21 +787,25 @@ These tokens never go into a card.
       expiry, or none if offered, since CI needs it long-term.
    5. Copy the **whole** value. In GitHub, paste it **as is**, including
       `FlyV1 ` at the start. Unlike the card, GitHub needs the prefix.
-3. **`CLOUDFLARE_API_TOKEN`**: the same page as Claude's token in step 4,
-   with fewer permissions.
-   1. Open **https://dash.cloudflare.com/profile/api-tokens** (My Profile
-      → API Tokens, not the Global API Key).
-   2. **Create Token** → **Start from scratch** (older dashboards:
-      bottom of the page, **Create Custom Token** → **Get started**).
+3. **`CLOUDFLARE_API_TOKEN`**: an **account API token**, not a user token
+   like Claude's in step 4. CI acts for the account rather than for one
+   person, and Cloudflare recommends account tokens for CI/CD.
+   1. Open **https://dash.cloudflare.com**, choose the account, then
+      **Manage account → Account API tokens** (not **My Profile → API
+      Tokens**, and not the Global API Key).
+   2. Tap **Create Token**, and start from a custom token (no template).
    3. **Token name:** type `<App Handle>-ci`.
-   4. **Add new Account policy.** Scope: `Include` · their account. Tick
-      **only Cloudflare Pages → Edit**. No Account Settings and no Zone
-      policy.
-   5. **Create Token** → **Copy**.
+   4. Permissions: **Account → Cloudflare Pages → Edit**, and nothing
+      else. No Zone permissions.
+   5. **Create Token** → **Copy**. The token starts with `cfat_`; if it
+      doesn't, it was made on the user-token page, so make it again here.
 4. **`GRAFANA_OTLP_TOKEN`**: write-only, so the backend can send telemetry
-   to the Grafana Stack.
-   1. Open grafana.com → **My Account** → the stack's **OpenTelemetry**
-      tile → **Configure**.
+   to the Grafana Stack. Give the user the direct link: build it from
+   `GET <stack>/bootdata` → `.settings.openFeatureContext` (`gcomOrgSlug`
+   and `stackId`).
+   1. Open `https://grafana.com/orgs/<gcomOrgSlug>/stacks/<stackId>/otlp-info`,
+      filled in. (By menu: grafana.com → **My Account** → the stack's
+      **OpenTelemetry** tile → **Configure**.)
    2. Under **Password / API Token**, tap **Generate now**. Name: type
       `<App Handle>-ci`. Leave the scopes as they are: they're preset and
       write-only.

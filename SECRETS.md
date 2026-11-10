@@ -48,7 +48,7 @@ Manage them at `https://github.com/<owner>/<repo>/settings/secrets/actions`.
 |---|---|---|---|
 | `NEON_API_KEY` | Neon API key | **project-scoped** to this app's project | creates and deletes Preview branches, enables Realtime on them, reads their credentials |
 | `FLY_API_TOKEN` | Fly **organization** token (starts with `FlyV1 `) | this app's own Fly org (`FLY_ORG`) | creates and destroys a Fly app per Preview. An app-scoped deploy token can't create apps. Because of that, each app gets **its own Fly org**: a linked org billed to your main org if Fly approves it (it reviews these manually), otherwise an org with its own billing. Sharing an org lets this token touch your other apps. |
-| `CLOUDFLARE_API_TOKEN` | Cloudflare API token | `Account` → `Cloudflare Pages` → `Edit`, for one account | uploads deployments and deletes Preview deployments. Cloudflare can't narrow this to a single project. |
+| `CLOUDFLARE_API_TOKEN` | Cloudflare **account API token** (starts with `cfat_`), since CI acts for the account rather than one person | `Account` → `Cloudflare Pages` → `Edit`, for one account | uploads deployments and deletes Preview deployments. Cloudflare can't narrow this to a single project. |
 | `GRAFANA_OTLP_TOKEN` | Grafana Cloud access policy token | write-only: `metrics:write`, `logs:write`, `traces:write` (preset; Grafana doesn't let you pick) | `deploy-backend` turns it into the backend's OTLP `Authorization` header (Basic `GRAFANA_OTLP_INSTANCE_ID:token`), stored as the Fly secret `OTEL_EXPORTER_OTLP_HEADERS`, for Production and every Preview. It can't read anything back. Without it, deploys still run, with telemetry off and a warning. |
 
 ## The Claude Code Tokens (the Agent Environment)
@@ -98,7 +98,7 @@ https://developers.cloudflare.com/fundamentals/api/reference/permissions/
 | Cloudflare | https://dash.cloudflare.com/profile/api-tokens → the `myapp-claude-code` token → **⋯ → Edit**. Add the permission to the existing policy (for Workers: `Workers Scripts` → `Edit`, and `Workers Tail` → `Read` for live logs), or add a Zone policy for one specific zone. Save. The value doesn't change, so nothing to paste. Don't **Roll** it. | **⋯ → Edit** again, remove what was added so the token matches the Baseline table, and save. | Claude makes a read-only call that the removed permission allowed (for Workers, listing the account's Workers scripts) and expects it to fail with 403. Where no safe read exists, such as Edit narrowed back to Read, you confirm the token's summary shows only the Baseline. |
 | Neon | Only for work outside this project, such as creating another project. Create an **Organization** key named `myapp-claude-code` (the organization's **Settings → API keys**, not the profile menu's), copy it, and paste it into the card Claude shows for `console.neon.tech`. | Create a **Project-scoped** key for this project with the same name, paste it into a new card, then revoke the Organization key on the same page. | Claude checks this project is still readable, and that listing all projects now fails ("not allowed outside the project"). |
 | Fly | Rarely needed: the Baseline already covers every app in this app's org. Anything outside the org belongs to another app's Agent Environment. | — | — |
-| Grafana | The Grafana Stack → **Administration → Users and access → Service accounts** → `myapp-claude-code` → **Role** picker. Keep the basic role **Viewer** and add only the one role the task needs: **Frontend Observability → Editor** to create or update the Faro app (basic **Editor** is refused), **Data sources → Writer** to create or edit a data source. The token doesn't change, so nothing to paste. | Remove the added role in the same picker. **Also** remove `myapp-claude-code` from the **Permissions** tab of anything it created while widened (a data source, say): Grafana gives the creator admin on what it creates, and dropping the role doesn't take that away. | Grafana's reads stay allowed at Viewer, so the check is a *write* that can't change anything: aim it at something that doesn't exist (e.g. `PUT /api/datasources/uid/<a uid that doesn't exist>`) and expect 403. For the Faro app, the one allowed real update: `scripts/gcx frontend apps update <slug-id> -f observability/faro-app.yaml`, the whole, unchanged spec, so it changes nothing even if allowed; it must fail with `missing grafana-kowalski-app.apps:write`. `GET /api/access-control/user/permissions` should list no `…:write`/`…:create`/`…:delete` beyond the Baseline's. Never test with any other real update: a data source update, for one, replaces its whole config. |
+| Grafana | The Grafana Stack → **Administration → Users and access → Service accounts** → `myapp-claude-code` → **Role** picker. Keep the basic role **Viewer** and add only the one role the task needs: **Frontend Observability → Editor** to create or update the Faro app (basic **Editor** is refused), **Data sources → Writer** to create or edit a data source. Tap **Update**: Grafana doesn't save a role change until you do. The token doesn't change, so nothing to paste. | Remove the added role in the same picker and tap **Update**. **Also** remove `myapp-claude-code` from the **Permissions** tab of anything it created while widened (a data source, say): Grafana gives the creator admin on what it creates, and dropping the role doesn't take that away. | Grafana's reads stay allowed at Viewer, so the check is a *write* that can't change anything: aim it at something that doesn't exist (e.g. `PUT /api/datasources/uid/<a uid that doesn't exist>`) and expect 403. For the Faro app, the one allowed real update: `scripts/gcx frontend apps update <slug-id> -f observability/faro-app.yaml` (the slug-id is `.[0].metadata.name` from `scripts/gcx frontend apps get myapp-frontend -o json`, e.g. `myapp-frontend-6445`), the whole, unchanged spec, so it changes nothing even if allowed; it must fail with `missing grafana-kowalski-app.apps:write`. `GET /api/access-control/user/permissions` should list no `…:write`/`…:create`/`…:delete` beyond the Baseline's. Never test with any other real update: a data source update, for one, replaces its whole config. |
 
 ### Adding a service
 
@@ -141,13 +141,17 @@ and copy only one thing at a time.
      pick this app's org → that org's **Tokens** (not an app's Tokens,
      and not the account menu's Access Tokens) → create an **Org Deploy
      Token**. Copy the whole value, including `FlyV1 `.
-   - **Cloudflare:** https://dash.cloudflare.com/profile/api-tokens (My
-     Profile → API Tokens; never the Global API Key). Either **⋯ → Roll**
-     on the existing `myapp-ci` token (same permissions, new value),
-     or **Create Token → Start from scratch** with one Account policy
-     (your account) that ticks only **Cloudflare Pages → Edit**.
-   - **Grafana (`GRAFANA_OTLP_TOKEN`):** grafana.com → **My Account** → the
-     Grafana Stack's **OpenTelemetry** tile → **Configure** → under
+   - **Cloudflare:** https://dash.cloudflare.com → the account → **Manage
+     account → Account API tokens** (account tokens, not My Profile's user
+     tokens; never the Global API Key). Either **⋯ → Roll** on the
+     existing `myapp-ci` token (same permissions, new value), or
+     **Create Token** with only **Account → Cloudflare Pages → Edit**. It
+     starts with `cfat_`.
+   - **Grafana (`GRAFANA_OTLP_TOKEN`):**
+     `https://grafana.com/orgs/<gcomOrgSlug>/stacks/<stackId>/otlp-info`
+     (Claude can fill both in from `GET <stack>/bootdata` →
+     `.settings.openFeatureContext`; by menu: grafana.com → **My Account**
+     → the stack's **OpenTelemetry** tile → **Configure**) → under
      **Password / API Token**, **Generate now**. Name it `myapp-ci`.
 2. **Update the GitHub secret.** In the repo's secrets page, tap the
    secret's ✏️ (**Update**), paste, and tap **Update secret**.
@@ -155,7 +159,8 @@ and copy only one thing at a time.
    (Actions → the run → **Re-run all jobs**), and for Cloudflare the
    latest **Frontend** run. A green deploy means the new token works.
 4. **Revoke the old token** in the service's dashboard: the Neon API keys
-   page, the Fly Tokens page, or Cloudflare API Tokens → **⋯ → Delete**.
+   page, the Fly Tokens page, or Cloudflare's **Account API tokens** →
+   **⋯ → Delete**.
    Cloudflare's **Roll** already invalidated the old value, so there's
    nothing to revoke after a roll. For Grafana, step 3's deploy goes green
    even with a bad token (only the exporter fails), so first check
@@ -167,8 +172,10 @@ and copy only one thing at a time.
 1. Create the new token in the same place as its CI counterpart (step 1
    of "Rotating a CI Token"), named `myapp-claude-code` and with the
    scope from the table above. For Fly that's an org deploy token from
-   the org's **Tokens** page. For Cloudflare, **⋯ → Roll** on the existing
-   token gives a new value with the same permissions.
+   the org's **Tokens** page. For Cloudflare it's a **user** token, unlike
+   the CI one: https://dash.cloudflare.com/profile/api-tokens (My Profile →
+   API Tokens), where **⋯ → Roll** on the existing token gives a new value
+   with the same permissions.
 2. In the Agent Environment, open **Network secrets** and replace the
    value for that host. For Fly, update both hosts and delete `FlyV1 ` (6
    characters, including the space) from the start of the value: the form

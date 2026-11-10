@@ -153,7 +153,8 @@ account and Pages project; the prod frontend origin; the WorkOS client
 ID; and the Grafana Stack. Every workflow loads it first. The only GitHub
 secrets are a few API tokens, the CI Tokens: `NEON_API_KEY`
 (project-scoped), `FLY_API_TOKEN` (org token, since Previews create apps),
-`CLOUDFLARE_API_TOKEN` (Account → Cloudflare Pages → Edit), and
+`CLOUDFLARE_API_TOKEN` (an account API token: Account → Cloudflare
+Pages → Edit), and
 `GRAFANA_OTLP_TOKEN` (write-only telemetry).
 **[`SECRETS.md`](SECRETS.md)** covers what each token is, where it lives,
 and how to rotate it.
@@ -238,15 +239,17 @@ own:
 1. Claude creates a Prometheus data source named **My App: Fly** (uid
    `myapp-fly-prometheus`, one per app, since each app has its own Fly
    org) without a secret. For this, its Grafana service
-   account is widened for the task to **Data sources → Writer**
+   account is widened for the task to **Data sources → Writer** (in its
+   **Role** picker, then **Update**)
    (SECRETS.md, "Widening a token for a task").
 2. In the Fly dashboard → the app's org → **Tokens**, create an Org Deploy
    Token named `myapp-grafana-fly-metrics`.
 3. In Grafana → **Connections → Data sources → My App: Fly** → **HTTP headers**,
    paste it as the `Authorization` value (`FlyV1 fm2_…`, exactly one
    `FlyV1`), then **Save & test**.
-4. Back to the Baseline: remove the Writer role, **and** remove the service
-   account from the data source's own **Permissions** tab.
+4. Back to the Baseline: remove the Writer role and tap **Update**, **and**
+   remove the service account from the data source's own **Permissions**
+   tab.
 
 It's an org token because Fly's dashboard can't make read-only ones;
 SECRETS.md ("Tokens held by other services") says why that's acceptable and
