@@ -1,0 +1,77 @@
+#!/bin/bash
+# gcx -- Grafana's CLI (github.com/grafana/gcx), pinned and pre-configured for
+# this app's Grafana Cloud stack. Use this instead of a bare `gcx`:
+#
+#   scripts/gcx logs query '{service_name="myapp-backend"}' --since 1h
+#
+# Installed just in time, not at session start: the first call in a fresh
+# container downloads the pinned release (~35 MB, a couple of seconds),
+# verifies it against the SHA-256 below, and caches it under ~/.local/share.
+# Sessions that never look at telemetry pay nothing.
+#
+# Config comes from .github/deploy.env (GRAFANA_STACK_URL). gcx discovers the
+# stack's numeric ID from the stack itself, so that isn't needed.
+# The token does NOT: in Claude Code cloud sessions the network proxy injects
+# the `Authorization` header for the stack's host (a Viewer service-account
+# token saved as a network secret on the environment; see SECRETS.md), so
+# this sends a placeholder the proxy replaces. Locally, export GRAFANA_TOKEN.
+set -euo pipefail
+
+GCX_PINNED=1.7.1
+# From the release's gcx_<version>_checksums.txt. Bump both together.
+declare -A GCX_SHA256=(
+  [amd64]=5f1601feac13d850017064a9b556f11983de6def2986ba0bee402a947659c3e9
+  [arm64]=1d8284557e66dd5c6e4d5b37a651afca98bea42729df7b4aa8720464360b2f54
+)
+
+die() { echo "scripts/gcx: $*" >&2; exit 1; }
+
+install_gcx() {
+  local dest="$1" arch
+  case "$(uname -m)" in
+    x86_64 | amd64) arch=amd64 ;;
+    aarch64 | arm64) arch=arm64 ;;
+    *) die "no pinned gcx build for $(uname -m); install gcx $GCX_PINNED yourself and put it on PATH" ;;
+  esac
+  local tmp url
+  tmp="$(mktemp -d)"
+  url="https://github.com/grafana/gcx/releases/download/v$GCX_PINNED/gcx_${GCX_PINNED}_linux_${arch}.tar.gz"
+  echo "scripts/gcx: installing gcx $GCX_PINNED (first use in this container)..." >&2
+  if curl -fsSL --retry 2 -o "$tmp/gcx.tar.gz" "$url"; then
+    # A mismatch is never retried another way: it means the download isn't
+    # the release we pinned.
+    echo "${GCX_SHA256[$arch]}  $tmp/gcx.tar.gz" | sha256sum -c --status \
+      || { rm -rf "$tmp"; die "checksum mismatch for $url -- refusing to run it"; }
+    tar -xzf "$tmp/gcx.tar.gz" -C "$tmp" gcx
+  else
+    # github.com unreachable from this environment: build from source via the
+    # Go module proxy (checked against sum.golang.org). Slow, ~2 minutes.
+    command -v go > /dev/null || { rm -rf "$tmp"; die "can't download $url and Go isn't installed"; }
+    echo "scripts/gcx: download failed; building from source instead (~2 min)..." >&2
+    GOBIN="$tmp" go install "github.com/grafana/gcx/cmd/gcx@v$GCX_PINNED" >&2
+  fi
+  mkdir -p "$(dirname "$dest")"
+  mv "$tmp/gcx" "$dest"
+  rm -rf "$tmp"
+}
+
+if [ "$(uname -s)" = "Linux" ]; then
+  gcx_bin="${XDG_DATA_HOME:-$HOME/.local/share}/gcx/$GCX_PINNED/gcx"
+  [ -x "$gcx_bin" ] || install_gcx "$gcx_bin"
+else
+  # macOS etc.: use your own install (e.g. `brew install gcx`).
+  gcx_bin="$(command -v gcx)" || die "install gcx first (e.g. brew install gcx)"
+fi
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+deploy_env() { sed -n "s/^$1=//p" "$repo_root/.github/deploy.env" | tail -n1; }
+
+export GRAFANA_SERVER="${GRAFANA_SERVER:-$(deploy_env GRAFANA_STACK_URL)}"
+[ -n "$GRAFANA_SERVER" ] \
+  || die "GRAFANA_STACK_URL is empty in .github/deploy.env: Grafana isn't set up for this app yet"
+export GRAFANA_TOKEN="${GRAFANA_TOKEN:-proxy-injected}"
+# No usage stats to Grafana Labs, no update nags, and no OS keychain (cloud
+# containers have none; the token above is never stored anyway).
+export GCX_TELEMETRY=disabled GCX_NO_UPDATE_NOTIFIER=1 GCX_KEYCHAIN=off
+
+exec "$gcx_bin" "$@"

@@ -1,4 +1,5 @@
-// Boot sequence.
+// Boot sequence. Run with `node --import ./dist/telemetry.js` (see the
+// Dockerfile) so OpenTelemetry is set up before anything below is imported.
 
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -6,12 +7,19 @@ import { createRealtime } from "@neon/realtime/server";
 import dotenv from "dotenv";
 import { importJWK, type JWK, type KeyLike } from "jose";
 import { Pool } from "pg";
+import { pino } from "pino";
 import type { AppContext } from "./context.js";
 import { runMigrations } from "./migrate.js";
 import { buildApp } from "./server.js";
+import { shutdownTelemetry, telemetryEnabled } from "./telemetry.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const backendRoot = path.join(__dirname, "..");
+
+// JSON lines on stdout (what `fly logs` shows). When telemetry is enabled
+// the pino instrumentation also ships each line to Grafana Loki as an OTLP
+// log record, with the active trace and span ids attached.
+const log = pino({ level: process.env.LOG_LEVEL ?? "info" });
 
 function requireEnv(name: string): string {
   const value = process.env[name];
@@ -47,7 +55,7 @@ async function main(): Promise<void> {
     if (key instanceof Uint8Array) continue; // RSA/EC keys only
     jwks.set(kid, key);
   }
-  console.log(`loaded ${jwks.size} WorkOS JWKS key(s)`);
+  log.info({ keys: jwks.size }, "loaded WorkOS JWKS");
 
   // Without an explicit timeout, a stalled TCP handshake hangs the pool
   // forever instead of surfacing an error (pg's default connectionTimeoutMillis
@@ -57,19 +65,39 @@ async function main(): Promise<void> {
   const pool = new Pool({ connectionString: databaseUrl, connectionTimeoutMillis: 30_000 });
 
   await runMigrations(pool, path.join(backendRoot, "migrations"));
-  console.log("migrations applied");
+  log.info("migrations applied");
 
   const ctx: AppContext = { pool, realtime, realtimeUrl, jwks };
-  const app = buildApp(ctx, allowedOrigin);
+  const app = buildApp(ctx, allowedOrigin, { logger: log });
 
   // Dual-stack by default, required by Fly.io; overridable via HOST for
   // environments without IPv6.
   const host = process.env.HOST ?? "::";
   await app.listen({ port, host });
-  console.log(`listening on port ${port} 🚀`);
+  log.info({ port, telemetry: telemetryEnabled }, "listening");
+
+  // Fly sends SIGINT when it stops a machine (including auto-stop when idle),
+  // then SIGKILL after kill_timeout (5s by default). Drain in-flight
+  // requests, then flush telemetry so the last spans before a stop aren't lost.
+  let stopping = false;
+  const stop = async (signal: NodeJS.Signals): Promise<void> => {
+    if (stopping) return;
+    stopping = true;
+    log.info({ signal }, "shutting down");
+    try {
+      await app.close();
+      await pool.end();
+    } finally {
+      await shutdownTelemetry();
+      process.exit(0);
+    }
+  };
+  process.once("SIGINT", stop);
+  process.once("SIGTERM", stop);
 }
 
-main().catch((e) => {
-  console.error(e);
+main().catch(async (e) => {
+  log.fatal(e, "boot failed");
+  await shutdownTelemetry();
   process.exit(1);
 });

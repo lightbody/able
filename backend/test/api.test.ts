@@ -9,6 +9,7 @@ import { createRealtime } from "@neon/realtime/server";
 import type { FastifyInstance } from "fastify";
 import { compactDecrypt, exportJWK, importJWK, SignJWT, type KeyLike } from "jose";
 import { Pool } from "pg";
+import { pino } from "pino";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import type { AppContext } from "../src/context.js";
 import { runMigrations } from "../src/migrate.js";
@@ -42,6 +43,7 @@ function mintRealtimeSecret(): { secret: string; key: Uint8Array } {
 }
 
 let pool: Pool;
+let ctx: AppContext;
 let app: FastifyInstance;
 let privateKey: KeyLike;
 let realtimeKey: Uint8Array;
@@ -61,7 +63,7 @@ beforeAll(async () => {
   realtimeKey = key;
   const realtime = createRealtime({ secret, db: "neondb" });
 
-  const ctx: AppContext = { pool, realtime, realtimeUrl: REALTIME_URL, jwks: keys.jwks };
+  ctx = { pool, realtime, realtimeUrl: REALTIME_URL, jwks: keys.jwks };
   app = buildApp(ctx, "http://localhost:5173");
   await app.ready();
 });
@@ -183,5 +185,50 @@ describe("POST /live/:view", () => {
       headers: { authorization: `Bearer ${jwt}` },
     });
     expect(res.statusCode).toBe(400);
+  });
+});
+
+describe("request logging", () => {
+  // A real pino logger writing into an array, so we see exactly what would
+  // reach stdout (and, in production, Loki).
+  async function withCapturedLogs(
+    fn: (logged: FastifyInstance) => Promise<void>,
+  ): Promise<Array<Record<string, unknown>>> {
+    const lines: Array<Record<string, unknown>> = [];
+    const logger = pino({ level: "info" }, { write: (line: string) => void lines.push(JSON.parse(line)) });
+    const logged = buildApp(ctx, "http://localhost:5173", { logger });
+    await logged.ready();
+    try {
+      await fn(logged);
+    } finally {
+      await logged.close();
+    }
+    return lines;
+  }
+
+  it("keeps CORS preflights out of the logs", async () => {
+    const lines = await withCapturedLogs(async (logged) => {
+      const res = await logged.inject({
+        method: "OPTIONS",
+        url: "/greetings",
+        headers: {
+          origin: "http://localhost:5173",
+          "access-control-request-method": "POST",
+          "access-control-request-headers": "authorization,content-type",
+        },
+      });
+      expect(res.statusCode).toBe(204);
+      expect(res.headers["access-control-allow-origin"]).toBe("http://localhost:5173");
+    });
+    expect(lines.filter((l) => (l.req as { method?: string } | undefined)?.method === "OPTIONS")).toEqual([]);
+    expect(lines.filter((l) => l.msg === "request completed")).toEqual([]);
+  });
+
+  it("still logs ordinary requests", async () => {
+    const lines = await withCapturedLogs(async (logged) => {
+      const res = await logged.inject({ method: "GET", url: "/me" });
+      expect(res.statusCode).toBe(401);
+    });
+    expect(lines.map((l) => l.msg)).toEqual(["incoming request", "request completed"]);
   });
 });

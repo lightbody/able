@@ -4,11 +4,15 @@ import { BrowserRouter } from "react-router-dom";
 import { AuthKitProvider } from "@workos-inc/authkit-react";
 import App from "./App";
 import "./App.css";
+import { initTelemetry } from "./telemetry";
 
 const clientId = import.meta.env.VITE_WORKOS_CLIENT_ID;
 if (!clientId) {
   throw new Error("VITE_WORKOS_CLIENT_ID is not set");
 }
+
+// Not awaited: telemetry must never delay or break the first render.
+void initTelemetry().catch((e) => console.warn("telemetry init failed", e));
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

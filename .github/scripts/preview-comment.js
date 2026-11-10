@@ -20,6 +20,13 @@ function render(data) {
     row('Frontend', data.frontendUrl),
     row('Backend', data.backendUrl),
     row('Neon branch', neonCell),
+    // Only once Grafana is configured: an unconfigured app has no telemetry.
+    ...(data.grafanaStackUrl && data.deployEnvironment
+      ? [
+          `| Telemetry | [Grafana](${data.grafanaStackUrl}/a/grafana-app-observability-app/services) ` +
+            `· filter \`deployment.environment.name=${data.deployEnvironment}\` |`,
+        ]
+      : []),
   ].join('\n');
 }
 

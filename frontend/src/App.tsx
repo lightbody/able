@@ -2,18 +2,22 @@ import { formatGreeting } from "@myapp/shared";
 import type { SealedLiveQuery } from "@neon/realtime/client";
 import { useLiveQuery } from "@neon/realtime-react";
 import { useAuth } from "@workos-inc/authkit-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Route, Routes } from "react-router-dom";
 import { postGreeting } from "./api";
 import { useReturnPathRedirect } from "./authReturn";
 import { Landing } from "./pages/Landing";
 import { RealtimeGate, useSealedView, type Greeting } from "./realtime";
+import { setTelemetryUser } from "./telemetry";
 
 export default function App() {
   const { isLoading, user } = useAuth();
   // Every sign-in redirect lands back on "/" (see main.tsx); send anyone who
   // started deeper in the app back to where they actually started.
   useReturnPathRedirect(user, isLoading);
+  useEffect(() => {
+    if (!isLoading) setTelemetryUser(user?.id ?? null);
+  }, [isLoading, user?.id]);
 
   if (isLoading) {
     return <p className="status">Loading…</p>;
