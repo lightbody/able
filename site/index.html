@@ -44,22 +44,24 @@
         </p>
 
         <ol class="setup">
-          <li><strong>Name your app.</strong> Choose an App Name, such as "Todoable",
-            and an App Handle: the same name in lowercase, with hyphens instead of
-            spaces, such as <code>todoable</code>.</li>
-          <li><strong>Make your app's repo from the
+          <li>
+            <label for="app-name"><strong>Name your app.</strong></label>
+            <input class="app-name" id="app-name" type="text" value="Todoable"
+              autocomplete="off" autocapitalize="words" spellcheck="false" maxlength="40">
+          </li>
+          <li><strong>Make its repo from the
             <a href="https://github.com/lightbody/able/generate">Able template</a>.</strong>
-            For the repository name, use the App Handle (<code>todoable</code>).</li>
+            Name the repository <code data-handle>todoable</code>.</li>
           <li><strong>Connect GitHub to Claude Code.</strong></li>
-          <li><strong>Create a cloud environment for the app</strong> in Claude Code,
-            named after it ("Todoable"), with <em>Full</em> network access.</li>
-          <li><strong>Start a session</strong> on that environment, with your new repo
-            selected, and paste:</li>
+          <li><strong>Create a cloud environment</strong> in Claude Code named
+            "<span data-name>Todoable</span>", with <em>Full</em> network access.</li>
+          <li><strong>Start a session</strong> on "<span data-name>Todoable</span>", with
+            the <code data-handle>todoable</code> repo selected, and paste:</li>
         </ol>
 
         <div class="prompt">
           <p class="prompt-label">Paste this into Claude Code</p>
-          <p class="prompt-body" id="prompt-text">Read https://github.com/lightbody/able/blob/main/PLAYBOOK.md and follow it to set up my new app. I've done the steps before the session: this session should be on my app's new repo, made from the Able template, and on a cloud environment named after the app. Check both first.</p>
+          <p class="prompt-body" id="prompt-text">Read https://github.com/lightbody/able/blob/main/PLAYBOOK.md and follow it to set up my new app. App Name: "<span data-name>Todoable</span>". App Handle: <span data-handle>todoable</span>. I've made the <span data-handle>todoable</span> repo from the Able template and a cloud environment named "<span data-name>Todoable</span>", and this session should be on both. Check that first.</p>
           <button class="btn btn-primary copy" type="button" data-copy="#prompt-text">
             <span class="copy-label">Copy prompt</span>
           </button>
@@ -248,6 +250,23 @@
   </svg>
 
   <script>
+    (function () {
+      var input = document.getElementById('app-name');
+      var fallback = { name: 'Todoable', handle: 'todoable' };
+      var handleOf = function (name) {
+        return name.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      };
+      var update = function () {
+        var name = input.value.replace(/\s+/g, ' ').trim() || fallback.name;
+        var handle = handleOf(name) || 'my-app';
+        document.querySelectorAll('[data-name]').forEach(function (el) { el.textContent = name; });
+        document.querySelectorAll('[data-handle]').forEach(function (el) { el.textContent = handle; });
+      };
+      input.addEventListener('input', update);
+      update();
+    })();
+
     document.querySelectorAll('[data-copy]').forEach(function (btn) {
       btn.addEventListener('click', function () {
         var text = document.querySelector(btn.getAttribute('data-copy')).textContent.trim();

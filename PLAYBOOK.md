@@ -194,9 +194,9 @@ these before pasting the prompt, as Able's landing page and README tell
 them. You need them again only to explain a step that step 0 finds
 missing, so reuse the wording:
 
-1. **Name the app.** Choose an App Name, e.g. "Todoable", and an App
-   Handle: the same name in lowercase, with hyphens instead of spaces,
-   e.g. `todoable`.
+1. **Name the app**, e.g. "Todoable". Able's landing page derives the
+   App Handle from it (`todoable`), uses both in the steps below, and puts
+   them in the prompt.
 2. **Make the app's repo from the template** at
    **https://github.com/lightbody/able/generate**. Repository name: the
    App Handle (`todoable`). Public or private is up to the user.
@@ -245,10 +245,12 @@ retry. Clone it to the path the result gives you, and work in that clone
 from here on. Tell them that later sessions on the app should start with
 this repo selected.
 
-**The App Name.** Take it from the Agent Environment's name, if it's
-named for this app. Otherwise ask. Derive the App Handle from it as step
-1 describes; if the repo's name differs but is a valid handle, the repo
-name wins. Confirm both in one line.
+**The App Name and App Handle.** The prompt from Able's landing page
+states both ("App Name: …. App Handle: …."); the page derives the handle
+from the name as step 1 describes. If the prompt has neither, take the
+App Name from the Agent Environment's name, or ask, and derive the App
+Handle. If the repo's name differs from the App Handle but is a valid
+handle, the repo name wins. Confirm both in one line.
 
 **The Agent Environment.** (If you have no `get_environment` tool, you
 aren't in a Claude Code cloud session: skip this part.) Call

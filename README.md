@@ -10,9 +10,10 @@ fine from a phone or tablet), do these first. A cloud session starts from
 a repo and runs on an environment, both chosen before it starts, so they
 can't be part of the playbook itself:
 
-1. **Name your app.** Choose an **App Name**, its human-readable name,
-   e.g. `Todoable`, and an **App Handle**: the same name in lowercase,
-   with hyphens instead of spaces, e.g. `todoable`.
+1. **Name your app**, e.g. `Todoable` (its **App Name**), and write the
+   same name in lowercase, with hyphens instead of spaces: `todoable`, its
+   **App Handle**. (https://able.lightbody.net does this for you, and fills
+   in the steps and the prompt.)
 2. **Make the app's repo from this template** at
    https://github.com/lightbody/able/generate. For the repository name,
    use the App Handle (`todoable`).
@@ -25,9 +26,13 @@ can't be part of the playbook itself:
    selected, and paste:
 
 > Read https://github.com/lightbody/able/blob/main/PLAYBOOK.md and follow
-> it to set up my new app. I've done the steps before the session: this
-> session should be on my app's new repo, made from the Able template, and
-> on a cloud environment named after the app. Check both first.
+> it to set up my new app. App Name: "Todoable". App Handle: todoable.
+> I've made the todoable repo from the Able template and a cloud
+> environment named "Todoable", and this session should be on both. Check
+> that first.
+
+(with your own App Name and App Handle in place of `Todoable` and
+`todoable`)
 
 With another coding agent, make the repo the same way, open the agent in
 a clone of it, and paste the same prompt.
