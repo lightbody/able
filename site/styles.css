@@ -107,7 +107,7 @@ h2 { font-size: clamp(1.8rem, 4vw, 2.5rem); margin-bottom: 2rem; }
 }
 .hero-inner h1 { max-width: 15em; }
 .lede { font-size: 1.2rem; color: var(--ink-soft); max-width: 34em; margin: 1.5rem 0 2.25rem; }
-.fine { font-size: .9rem; color: var(--ink-soft); margin-top: 1rem; }
+.fine { font-size: .9rem; color: var(--ink-soft); margin-top: 1rem; max-width: 620px; }
 
 .prompt {
   background: var(--green);
@@ -219,3 +219,19 @@ h2 { font-size: clamp(1.8rem, 4vw, 2.5rem); margin-bottom: 2rem; }
 /* Footer */
 .footer { border-top: 1px solid var(--line); padding: 28px 0 40px; color: var(--ink-soft); font-size: .9rem; }
 .footer-inner { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
+
+/* Before-you-paste steps */
+.setup { counter-reset: step; list-style: none; margin: 0 0 1.75rem; padding: 0; display: grid; gap: 12px; max-width: 620px; }
+.setup li { counter-increment: step; position: relative; padding-left: 2.25rem; color: var(--ink-soft); }
+.setup li strong { color: var(--ink); font-weight: 600; }
+.setup li a { color: var(--green-2); overflow-wrap: anywhere; }
+.setup li::before {
+  content: counter(step);
+  position: absolute; left: 0; top: .15em;
+  width: 24px; height: 24px; border-radius: 50%;
+  display: grid; place-items: center;
+  font: 600 .78rem/1 var(--sans);
+  background: var(--green); color: #e9f0e6;
+}
+@media (prefers-color-scheme: dark) { .setup li::before { background: var(--lime); color: #13261e; } }
+.setup li code { white-space: nowrap; }

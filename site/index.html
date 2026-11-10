@@ -43,17 +43,35 @@
           free tiers or close to it.
         </p>
 
+        <ol class="setup">
+          <li><strong>Pick a name for your app,</strong> say "Chore Chart".</li>
+          <li><strong>Connect Claude Code to GitHub</strong> at
+            <a href="https://claude.ai/connect-github">claude.ai/connect-github</a>.</li>
+          <li><strong>Make your app's repo from the template:</strong> open
+            <a href="https://github.com/lightbody/able/generate">github.com/lightbody/able/generate</a>,
+            name it after the app (<code>chore-chart</code>) and make it private.
+            If Claude's GitHub app only sees selected repos,
+            <a href="https://github.com/apps/claude/installations/select_target">add the new one</a>.</li>
+          <li><strong>Give the app a cloud environment of its own.</strong> At
+            <a href="https://claude.ai/code">claude.ai/code</a>, tap the environment
+            selector, then <em>New environment</em>. Name it after the app ("Chore Chart"),
+            set <em>Network access</em> to <em>Full</em>, and add it. Its tokens never reach your
+            other projects.</li>
+          <li><strong>Start a session</strong> on that environment, with your new repo
+            selected (not <code>lightbody/able</code>), and paste:</li>
+        </ol>
+
         <div class="prompt">
-          <p class="prompt-label">Paste this into your coding agent</p>
-          <p class="prompt-body" id="prompt-text">Read https://github.com/lightbody/able/blob/main/PLAYBOOK.md and follow it to set up a new app for me. Ask me what it's called first.</p>
+          <p class="prompt-label">Paste this into Claude Code</p>
+          <p class="prompt-body" id="prompt-text">Read https://github.com/lightbody/able/blob/main/PLAYBOOK.md and follow it to set up my new app. I've done the steps before the session: this session should be on my app's new repo, made from the Able template, and on a cloud environment named after the app. Check both first.</p>
           <button class="btn btn-primary copy" type="button" data-copy="#prompt-text">
             <span class="copy-label">Copy prompt</span>
           </button>
         </div>
-        <p class="fine">Your agent walks you through creating the accounts and does the rest.
-          Using Claude Code on the web? Your agent first gives the app a cloud
-          environment of its own, named after the app (say, "Chore Chart"), so
-          its tokens never reach your other projects.</p>
+        <p class="fine">Claude checks the repo and the environment, walks you through
+          creating the other accounts, and does the rest. Missed a step? It tells you
+          how to fix it. Using another coding agent? Make the repo the same way, open
+          your agent in a clone of it, and paste the same prompt.</p>
       </div>
     </section>
 
@@ -184,11 +202,12 @@
             <p>A coding agent, plus accounts on GitHub, Neon, Fly.io, Cloudflare,
               WorkOS and Grafana Cloud. Your agent walks you through creating each one and the API tokens
               it needs, one step at a time.</p>
-            <p>With Claude Code on the web, every session on your app, starting with
-              setup, runs in a cloud environment of its own, named after the app (say,
-              "Chore Chart"). Create it first with Full
-              network access (recommended), or ask Claude for one with Limited access and
-              just the hosts the app needs. Claude asks for each API token with only the permissions it needs
+            <p>With Claude Code on the web, a session starts from a repo, so you make
+              your app's repo from the template first, and a cloud environment of its own,
+              named after the app (say, "Chore Chart"): the steps at the top of this page.
+              Every session on your app, starting with setup, runs on that environment.
+              Create it with Full network access (recommended), or ask Claude for one with
+              Limited access and just the hosts the app needs. Claude asks for each API token with only the permissions it needs
               at the time, and has you narrow them once setup is done.</p>
           </details>
           <details>

@@ -6,26 +6,41 @@ it into a new, fully deployed app: a Production environment and a Preview
 for every pull request, with sign-in and live data working end to end.
 
 **To start a new app** with Claude Code on the web (claude.ai/code works
-fine from a phone or tablet), give the app a cloud environment of its own,
-its **Agent Environment**, named with the app's human-readable name, e.g.
-`Chore Chart`. Every session on the app, starting with the setup session,
-runs there, so its tokens never reach your other projects. On the
-new-session screen, tap the environment selector (the first control under
-the message box) → **New environment**, type the name, set **Network
-access** to **Full** (recommended: nothing gets blocked, during setup or
-later), tap **Add environment**, and start the session on it (no
-repository needed). If you'd rather limit where the app's sessions can
-connect, start on any environment instead and ask Claude for a **Limited**
-one: it creates it with the hosts the app needs, and you add three
-wildcard hosts for Previews.
+fine from a phone or tablet), do these first. A cloud session starts from
+a repo and runs on an environment, both chosen before it starts, so they
+can't be part of the playbook itself:
 
-Then paste:
+1. **Pick the App Name**, the app's human-readable name, e.g.
+   `Chore Chart`.
+2. **Connect Claude Code to GitHub** at https://claude.ai/connect-github.
+3. **Make the app's repo from this template**: open
+   https://github.com/lightbody/able/generate, name it after the app in
+   lowercase with hyphens (`chore-chart`, the **App Handle**), choose
+   **Private** and tap **Create repository**. If the Claude GitHub App is
+   installed on selected repos only, add the new one at
+   https://github.com/apps/claude/installations/select_target.
+4. **Create the app's Agent Environment**, a cloud environment of its own,
+   so its tokens never reach your other projects. On the new-session
+   screen, tap the environment selector (the first control under the
+   message box) → **New environment**, type the App Name, set **Network
+   access** to **Full** (recommended: nothing gets blocked, during setup
+   or later) and tap **Add environment**. If you'd rather limit where the
+   app's sessions can connect, skip this, start on any environment and
+   ask Claude for a **Limited** one: it creates it with the hosts the app
+   needs, and you add three wildcard hosts for Previews.
+5. **Start a session** on the Agent Environment with the new repo selected
+   (not `lightbody/able`), and paste:
 
 > Read https://github.com/lightbody/able/blob/main/PLAYBOOK.md and follow
-> it to set up a new app for me. Ask me what it's called first.
+> it to set up my new app. I've done the steps before the session: this
+> session should be on my app's new repo, made from the Able template, and
+> on a cloud environment named after the app. Check both first.
 
-Claude asks for the app's name, walks you through creating accounts and API
-tokens, and does the rest: it renames the skeleton, provisions Neon, Fly and
+With another coding agent, make the repo the same way, open the agent in
+a clone of it, and paste the same prompt.
+
+Claude checks the repo and the Agent Environment (and helps fix either),
+walks you through creating accounts and API tokens, and does the rest: it renames the skeleton, provisions Neon, Fly and
 Cloudflare, sets up observability in Grafana Cloud, configures CI, and verifies Production and Previews. A custom
 domain is an optional last step. Claude asks for each token with only the
 permissions it needs at the time, and has you narrow them once setup is

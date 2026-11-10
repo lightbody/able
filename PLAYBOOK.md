@@ -8,6 +8,10 @@ order. Do as much of the work as possible yourself. The user's part is
 creating accounts and API tokens and a few dashboard settings that have no
 API.
 
+The user has already done a few things before this session, because a
+Claude Code cloud session can't start without them: see "Before the
+session" below. Step 0 checks they're done right.
+
 The user may be on a phone or tablet: no terminal, no clipboard manager,
 one clipboard item at a time, but as many browser tabs as they like. Every
 instruction you give must work with that.
@@ -40,8 +44,8 @@ instruction you give must work with that.
 
 | Term | Meaning | Where it's used |
 |---|---|---|
-| **App Name** | The app's human-readable name, as the user gives it in step 0 or 1, e.g. "Chore Chart". Spaces and capitals are fine. | the Agent Environment's name; the Fly org (step 4); the Neon project (step 5); the WorkOS project (step 7); the README and `CLAUDE.md` titles and the page itself, in place of `My App` (step 8) |
-| **App Handle** | The app's technical name: lowercase letters, digits and hyphens, derived from the App Name, e.g. `chore-chart`. Wherever a service wants a name without spaces, it's this. | token names (`<App Handle>-claude-code`, `<App Handle>-ci`); the GitHub repo (step 3); the Fly backend app (`<github-user>-<App Handle>-backend`) and the Pages project (`<App Handle>-frontend`) (step 5); the npm scope and other code names, in place of `myapp` (step 8) |
+| **App Name** | The app's human-readable name, chosen by the user before the session (it names the Agent Environment) and confirmed in step 0, e.g. "Chore Chart". Spaces and capitals are fine. | the Agent Environment's name; the Fly org (step 4); the Neon project (step 5); the WorkOS project (step 7); the README and `CLAUDE.md` titles and the page itself, in place of `My App` (step 8) |
+| **App Handle** | The app's technical name: lowercase letters, digits and hyphens, derived from the App Name, e.g. `chore-chart`. Wherever a service wants a name without spaces, it's this. | token names (`<App Handle>-claude-code`, `<App Handle>-ci`); the GitHub repo (made before the session; step 3); the Fly backend app (`<github-user>-<App Handle>-backend`) and the Pages project (`<App Handle>-frontend`) (step 5); the npm scope and other code names, in place of `myapp` (step 8) |
 | **App Environments** | The places the app itself runs: **Development**, **Preview** and **Production**, described below. | throughout |
 | **Development** | A developer's own copy of the app: `npm run dev` against a personal Neon branch (`dev/<you>`), as the README's "Local development" describes. | after setup |
 | **Preview** | The app deployed for one pull request: Neon branch `preview/pr-<n>`, Fly app `<FLY_BACKEND_APP>-pr-<n>`, and a Pages preview. Created when the PR opens, deleted when it closes. Previews take the place of a shared staging environment. | step 10 |
@@ -50,7 +54,7 @@ instruction you give must work with that.
 | **Pages Subdomain** | The `<name>.pages.dev` host Cloudflare gives the Pages project, usually `<App Handle>-frontend.pages.dev`. Each Preview's frontend is a subdomain of it. | steps 5, 7, 10 |
 | **Custom Domain** | An optional domain of the user's for Production, e.g. `chore-chart.example.com`. Asked about in step 1, switched on in step 11. | steps 1, 4, 11 |
 | **Region Trio** | The Neon region, the Fly region next to it, and the Grafana Cloud region next to those (used only if the user creates a new Grafana Stack), chosen in step 1. | steps 1, 2, 5, 8 |
-| **Agent Environment** | The Claude Code cloud environment for this app, named with the App Name and used for nothing else. This setup session and every later Claude Code session on the app run on it, and it holds the Claude Code Tokens. | step 0, step 4, and "Limited network access" |
+| **Agent Environment** | The Claude Code cloud environment for this app, named with the App Name and used for nothing else. This setup session and every later Claude Code session on the app run on it, and it holds the Claude Code Tokens. | "Before the session", step 0, step 4, and "Limited network access" |
 | **Claude Code Tokens** | Claude's own API tokens for Neon, Fly, Cloudflare and Grafana, each named `<App Handle>-claude-code` and saved on the Agent Environment. | steps 4, 5, 6, 12 |
 | **CI Tokens** | GitHub Actions' API tokens for the same services, each named `<App Handle>-ci` and saved as GitHub secrets. | step 6 |
 | **Observability** | The app's telemetry (traces, metrics and logs from the backend, real-user data from the frontend) in a **Grafana Stack**: a Grafana Cloud instance, `GRAFANA_STACK_URL`, usually shared by all of the user's apps. Each app's telemetry is labelled with its App Handle. | steps 2, 4, 5, 6, 9, 10 |
@@ -182,16 +186,72 @@ uses, its region shows up in `GRAFANA_OTLP_ENDPOINT`.
 
 ---
 
-## Step 0: The Agent Environment
+## Before the session: the user's part
 
-Do this first, before anything else. (If you have no `get_environment`
-tool, you aren't in a Claude Code cloud session: skip this step.)
+A Claude Code cloud session starts from a repository and runs on an
+environment, both chosen on the new-session screen. So the user does
+these before pasting the prompt, as Able's landing page and README tell
+them. You need them again only to explain a step that step 0 finds
+missing, so reuse the wording:
 
-1. **Ask only the App Name now**, step 1's first question, and derive
-   the App Handle from it as step 1 describes. Confirm both in one line.
-   The rest of step 1 comes after this step.
-2. Call `get_environment`. It describes the environment this session runs
-   in.
+1. **Pick the App Name**, e.g. "Chore Chart".
+2. **Connect Claude Code to GitHub** at https://claude.ai/connect-github,
+   and install the Claude GitHub App from there.
+3. **Make the app's repo from the template.** Open
+   **https://github.com/lightbody/able/generate**. Owner: their account.
+   Repository name: the App Handle (the App Name in lowercase, with
+   hyphens). Choose **Private**, and tap **Create repository**. If the
+   Claude GitHub App is installed on selected repos only, add the new repo
+   at **https://github.com/apps/claude/installations/select_target**.
+4. **Create the Agent Environment.** At **claude.ai/code**, or the
+   **Code** tab in the Claude app, on the new-session screen tap the
+   environment selector (the first control in the row under the message
+   box), then **New environment** at the bottom of the menu. Name: type
+   the App Name. **Network access** → **Full**. Leave everything else as
+   it is, and tap **Add environment**. (Users who want Limited network
+   access can instead start on any environment and ask you for one:
+   "Limited network access" at the end of this file.)
+5. **Start the session** on the Agent Environment, with the app's new
+   repo selected (not `lightbody/able`), and paste the prompt.
+
+With another coding agent, the user makes the repo the same way and runs
+the agent in a clone of it.
+
+## Step 0: Check the repo and the Agent Environment
+
+Do this first, before anything else. Check both, then tell the user what
+you found in one message. Fix what you can here; the Agent Environment
+can only be fixed with a new session.
+
+**The repo.** Look at the working directory's git repo:
+`git remote get-url origin` ends in `<owner>/<repo>` (in a cloud session
+the URL may point at a local proxy, but the path still ends that way). It's
+the app's repo when it's **not** `lightbody/able`, it has `PLAYBOOK.md`,
+and `.github/deploy.env` still has `APP_HANDLE=myapp` and empty Neon,
+Fly and Cloudflare values (a fresh copy of the template). Then the repo
+name is the App Handle. Work in this clone from here on.
+
+If there's no repo, the repo is `lightbody/able` itself (the template was
+selected rather than a copy of it), or it's some other repo, don't set up
+there. If its `deploy.env` is already filled in, it's an app that's
+already set up: ask what they want. Otherwise give the user "Before the
+session" step 3 (and step 2 if GitHub isn't connected), wait until
+they've made the repo, then call `add_repo` for it with
+`access: "push"`. If that's refused because the Claude GitHub App can't
+see the new repo, have them add it at
+**https://github.com/apps/claude/installations/select_target**, then
+retry. Clone it to the path the result gives you, and work in that clone
+from here on. Tell them that later sessions on the app should start with
+this repo selected.
+
+**The App Name.** Take it from the Agent Environment's name, if it's
+named for this app. Otherwise ask. Derive the App Handle from it as step
+1 describes; if the repo's name differs but is a valid handle, the repo
+name wins. Confirm both in one line.
+
+**The Agent Environment.** (If you have no `get_environment` tool, you
+aren't in a Claude Code cloud session: skip this part.) Call
+`get_environment`. It describes the environment this session runs in.
 
 **This session's environment is named with the App Name** (ignore case;
 an environment named with the App Handle, as older versions of this
@@ -217,36 +277,28 @@ cards will replace them. Then check its network:
 shared by several projects): don't set up here. Explain briefly why the
 app gets an Agent Environment of its own: its tokens reach only this app; this session and
 every later session on the app use it, so setup and later debugging see
-the same access; and nothing changes Agent Environment partway through. Then
-give the steps for the recommended setup, with Full network access. The
-user creates it, because a session can't create an environment with Full
-network access or move onto one:
-
-1. At **claude.ai/code**, or the **Code** tab in the Claude app, start a
-   new session, and on the new-session screen tap the environment
-   selector (the first control in the row under the message box), then
-   **New environment** at the bottom of the menu.
-2. Name: type the App Name, e.g. `Chore Chart`.
-3. **Network access** → **Full**. Leave everything else as it is, and tap
-   **Add environment**.
-4. Start the session on it (no repository is needed yet), and paste the
-   same prompt they used here.
+the same access; and nothing changes Agent Environment partway through.
+The user creates it, because a session can't create an environment with
+Full network access or move onto one. Give them "Before the session"
+steps 4 and 5: create the Agent Environment, then start a new session on
+it with the app's repo selected (if the repo was missing too, sort that
+out first, as above, so the new session can select it), and paste the
+same prompt they used here.
 
 Add one line: if they'd rather limit where the app's sessions can connect,
 you can create a Limited Agent Environment for them instead, and move this
 session onto it ("Limited network access" at the end of this file). If
 they ask for that, do it; otherwise stop here.
 
-## Step 1: Name the app
+## Step 1: About the app
 
-Ask the user (skip the name if step 0 already asked it):
+Step 0 settled the App Name and App Handle. Ask the user:
 
-1. **What's the app called?** This is the App Name, e.g. "Chore Chart".
-2. **One sentence on what it's for.** This goes into the README and
+1. **One sentence on what it's for.** This goes into the README and
    `CLAUDE.md`.
-3. **Roughly where are you and your users?** A continent or country is
+2. **Roughly where are you and your users?** A continent or country is
    enough. This picks where the database and backend run.
-4. **Do you want a Custom Domain, and if so, which one?** For example
+3. **Do you want a Custom Domain, and if so, which one?** For example
    `chore-chart.example.com`. Ask now, not later: the answer decides which
    permissions the Cloudflare token needs in step 4, and creating it
    with the right ones the first time saves the user a second trip to
@@ -263,9 +315,10 @@ Ask the user (skip the name if step 0 already asked it):
    database's live-updates setting at it, and the user adds it to WorkOS
    (one more value, the same two lists as step 7).
 
-Derive the **App Handle** from the App Name: lowercase letters, digits
-and hyphens only, e.g. `chore-chart`. Keep it short, since longer names
-are built from it (`<github-user>-<App Handle>-backend`).
+The **App Handle** is derived from the App Name: lowercase letters,
+digits and hyphens only, e.g. `chore-chart`. It should be short, since
+longer names are built from it (`<github-user>-<App Handle>-backend`).
+Normally it's the repo's name.
 
 Suggest a **Region Trio** from the table below. The backend talks to the
 database on every request, so the Fly region must sit next to the Neon
@@ -298,12 +351,12 @@ them. Confirm the App Name, App Handle, Region Trio and Custom Domain (or
 
 ## Step 2: Accounts
 
-Ask which of these the user already has. For the rest, give the sign-up
-links and wait. Signing in with GitHub is fine wherever it's offered.
+GitHub is done already ("Before the session"). Ask which of these the
+user already has. For the rest, give the sign-up links and wait. Signing
+in with GitHub is fine wherever it's offered.
 
 | Service | What it's for | Sign up |
 |---|---|---|
-| GitHub | code + CI | https://github.com/signup |
 | Neon | Postgres + Realtime | https://console.neon.tech/signup |
 | Fly.io | backend hosting (asks for a payment method) | https://fly.io/app/sign-up |
 | Cloudflare | frontend hosting (Pages) | https://dash.cloudflare.com/sign-up |
@@ -330,26 +383,16 @@ skipped, have them create it with the App Name as the project name and
 the Neon region from step 1, and close any connection string without
 copying it. You adopt that project in step 5 instead of creating one.
 
-## Step 3: Create the repo from the template
+## Step 3: The app's repo
 
-Have the user:
+The repo already exists: the user made it before the session, or step 0
+did. Work in its clone, on `main`: if the session checked out another
+branch, `git fetch origin main && git checkout main`. The user's request
+to set up this app authorizes pushing the setup commit to `main` of this
+new repo. If the session refuses, push a branch and open a PR instead.
 
-1. Open **https://github.com/lightbody/able/generate**.
-2. Owner: their account. Repository name: the App Handle. Choose **Private**.
-3. Tap **Create repository**, then tell you their GitHub username and the
-   repo name, if they differ from what you expect.
-
-Then attach it with push access: call `add_repo` with `access: "push"`.
-If it's refused because the Claude GitHub App can't see the new repo (the
-app is installed on selected repos only), have the user add the repo at
-**https://github.com/apps/claude/installations/select_target**, then retry.
-Once attached, clone it to the path the result gives you, and work on
-`main`. The user's request to set up this app authorizes pushing the setup
-commit to `main` of this new repo. If the session refuses, push a branch
-and open a PR instead.
-
-Creating the repo triggers CI on its first commit. The deploy jobs skip
-themselves while `.github/deploy.env` is empty, so the run is harmless.
+Creating the repo triggered CI on its first commit. The deploy jobs skip
+themselves while `.github/deploy.env` is empty, so the run was harmless.
 
 ## Step 4: Claude Code Tokens
 
@@ -1022,7 +1065,7 @@ to its activity.
   GraphQL API, which they block. Use the REST API instead:
   `gh api repos/<owner>/<repo>/pulls -f title=… -f head=<branch> -f base=main -f body=…`.
   Close it later with `gh api -X PATCH repos/<owner>/<repo>/pulls/<n> -f state=closed`.
-- The clone from step 3 is shallow and tracks only `main`. Push the new
+- The session's clone may be shallow and track only `main`. Push the new
   branch with `git push -u origin <branch>`. If a hook still says the
   branch has no remote, add a fetch refspec for it
   (`git config --add remote.origin.fetch +refs/heads/<branch>:refs/remotes/origin/<branch>`)
@@ -1147,7 +1190,7 @@ If the user asks to move an app set up by an older version of this
 playbook onto an Agent Environment of its own, attach its repo, read
 `.github/deploy.env`, `CLAUDE.md` and `SECRETS.md`, then:
 
-1. Do step 0 with the app's App Name. Its App Handle is the repo name. If the user keeps Limited network
+1. Do step 0's Agent Environment check with the app's App Name. Its App Handle is the repo name. If the user keeps Limited network
    access, also do everything under "Limited network access" now: the
    app's hosts all exist already. The Pages subdomain comes from
    `GET /accounts/<CLOUDFLARE_ACCOUNT_ID>/pages/projects/<CLOUDFLARE_PAGES_PROJECT>`.
@@ -1200,15 +1243,16 @@ and that this session moves onto it), then call `create_environment` with
 `name`: the App Name, `scope: "personal"`, `allowed_hosts`: the list below,
 `allow_package_managers: true`, `allow_mcp_servers: true`,
 `switch_session: "network_only"`, and `leave_statement` copied exactly from
-`get_environment` if it returned one. No repositories (the repo doesn't
-exist yet), variables or setup script.
+`get_environment` if it returned one, and `repositories`: the app's repo
+(`<owner>/<repo>`). No variables or setup script.
 
 - **Approved and moved:** call `get_environment` again to check this
   session is on the new Agent Environment, then go to step 1.
 - **Created, but this session didn't move:** have the user start a new
-  session on it and paste the same prompt. Then stop.
-- **Declined:** don't propose it again. Give the Full steps from step 0
-  instead, and stop.
+  session on it, with the app's repo selected, and paste the same prompt.
+  Then stop.
+- **Declined:** don't propose it again. Give "Before the session" steps
+  4 and 5 instead (Full network access), and stop.
 
 **Setting up the allowlist.** On an existing Limited Agent Environment, add
 whichever of these are missing with one `update_environment` call
