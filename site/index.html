@@ -4,9 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Able — ship real apps on best-in-class platforms</title>
-  <meta name="description" content="Able is an easy, opinionated TypeScript stack for deploying new apps on Cloudflare, Neon, Fly.io and WorkOS, set up for you by your coding agent.">
+  <meta name="description" content="Able is an easy, opinionated TypeScript stack for deploying new apps on Cloudflare, Neon, Fly.io, WorkOS and Grafana Cloud, set up for you by your coding agent.">
   <meta property="og:title" content="Able — ship real apps on best-in-class platforms">
-  <meta property="og:description" content="An easy, opinionated stack for deploying new apps on Cloudflare, Neon, Fly.io and WorkOS, set up for you by your coding agent.">
+  <meta property="og:description" content="An easy, opinionated stack for deploying new apps on Cloudflare, Neon, Fly.io, WorkOS and Grafana Cloud, set up for you by your coding agent.">
   <meta property="og:url" content="https://able.lightbody.net/">
   <meta property="og:type" content="website">
   <meta name="theme-color" content="#0e3b2c">
@@ -38,8 +38,9 @@
         <h1>Ship real apps on<br><em>best-in-class</em> platforms.</h1>
         <p class="lede">
           Able is an easy, opinionated TypeScript stack. It deploys new apps on
-          Cloudflare, Neon, Fly.io and WorkOS, the same platforms professional
-          teams use, and a low-traffic app runs on their free tiers or close to it.
+          Cloudflare, Neon, Fly.io and WorkOS, watched by Grafana Cloud: the same
+          platforms professional teams use, and a low-traffic app runs on their
+          free tiers or close to it.
         </p>
 
         <div class="prompt">
@@ -58,7 +59,7 @@
 
     <section class="section" id="platforms">
       <div class="wrap">
-        <h2>Four platforms, already wired together.</h2>
+        <h2>Five platforms, already wired together.</h2>
         <ul class="platforms">
           <li>
             <span class="role">Frontend</span>
@@ -84,13 +85,19 @@
             <p>Hosted sign-in with AuthKit, so you never handle passwords.</p>
             <span class="tier">Free tier</span>
           </li>
+          <li>
+            <span class="role">Observability</span>
+            <strong>Grafana Cloud</strong>
+            <p>Traces, logs and metrics for every request, from browser to database, for you and your agent.</p>
+            <span class="tier">Free tier</span>
+          </li>
         </ul>
 
         <ul class="gets">
           <li><strong>Production on day one.</strong> Merge to <code>main</code> and it deploys.</li>
           <li><strong>A preview for every pull request,</strong> with its own database branch. It's deleted when the PR closes.</li>
           <li><strong>Sign-in and live data already working</strong>, so you start on features, not plumbing.</li>
-          <li><strong>Observability built in.</strong> Traces, logs and metrics in Grafana Cloud, from the browser to the database, that your agent can query too.</li>
+          <li><strong>An agent that can see Production.</strong> It reads the same traces, logs and metrics you do, so it fixes bugs from evidence and checks its own pull requests before you merge them.</li>
         </ul>
       </div>
     </section>
@@ -157,6 +164,17 @@
             <p>Electric's team joined Neon, and Neon Realtime is built from that work.
               It comes with the database you already have, so there's no separate sync
               service to run.</p>
+          </details>
+          <details>
+            <summary>Why Grafana Cloud?</summary>
+            <p>Your coding agent writes most of the code, so it should be able to see
+              how that code behaves. Able sends standard OpenTelemetry to Grafana
+              Cloud, and your agent queries it with Grafana's own command-line tool,
+              using a read-only token. One trace follows a click from the browser
+              through the backend into the database, so a bug report becomes
+              evidence, not guesswork, and every preview is checked the same way.
+              Grafana is open source, its free tier covers a small app, and because
+              it's all OpenTelemetry, you can point it elsewhere later.</p>
           </details>
           <details>
             <summary>What do I need to get started?</summary>
