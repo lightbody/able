@@ -220,26 +220,25 @@ h2 { font-size: clamp(1.8rem, 4vw, 2.5rem); margin-bottom: 2rem; }
 .footer { border-top: 1px solid var(--line); padding: 28px 0 40px; color: var(--ink-soft); font-size: .9rem; }
 .footer-inner { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
 
-/* Before-you-paste steps */
-.setup { counter-reset: step; list-style: none; margin: 0 0 1.75rem; padding: 0; display: grid; gap: 12px; max-width: 620px; }
-.setup li { counter-increment: step; position: relative; padding-left: 2.25rem; color: var(--ink-soft); }
-.setup li strong { color: var(--ink); font-weight: 600; }
-.setup li a { color: var(--green-2); overflow-wrap: anywhere; }
-.setup li::before {
-  content: counter(step);
-  position: absolute; left: 0; top: .15em;
-  width: 24px; height: 24px; border-radius: 50%;
-  display: grid; place-items: center;
-  font: 600 .78rem/1 var(--sans);
-  background: var(--green); color: #e9f0e6;
-}
-@media (prefers-color-scheme: dark) { .setup li::before { background: var(--lime); color: #13261e; } }
-.setup li code { white-space: nowrap; }
-.setup label { display: block; margin-bottom: 6px; }
+/* Setup wizard */
+.wizard { max-width: 620px; margin-bottom: 1.25rem; }
+.js .wizard-step:not(.is-active) { display: none; }
+.wizard-step + .wizard-step { margin-top: 2rem; }
+.js .wizard-step + .wizard-step { margin-top: 0; }
+.step-count { margin: 0 0 6px; font: 600 .75rem var(--sans); letter-spacing: .08em; text-transform: uppercase; color: var(--green-2); }
+.step-text { display: block; margin: 0 0 16px; font: 500 1.25rem/1.45 var(--sans); color: var(--ink); }
+.step-text:focus { outline: none; }
+.step-text a { color: var(--green-2); }
+.step-text code { white-space: nowrap; }
+.step-nav { display: none; gap: 10px; margin-top: 16px; }
+.js .step-nav { display: flex; }
+.wizard .prompt { margin-top: 4px; }
 .app-name {
-  width: 100%; max-width: 320px; box-sizing: border-box;
-  font: 500 1rem/1.4 var(--sans); color: var(--ink);
+  display: block; width: 100%; max-width: 360px; box-sizing: border-box;
+  font: 500 1.05rem/1.4 var(--sans); color: var(--ink);
   background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
-  padding: 10px 12px;
+  padding: 11px 13px;
 }
 .app-name:focus { outline: 2px solid var(--green-2); outline-offset: 1px; border-color: transparent; }
+.step-nav .btn { padding: .85rem 1.25rem; color: var(--ink); }
+.step-nav .btn-primary { color: var(--coral-ink); }

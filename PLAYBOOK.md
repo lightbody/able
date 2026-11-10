@@ -194,9 +194,9 @@ these before pasting the prompt, as Able's landing page and README tell
 them. You need them again only to explain a step that step 0 finds
 missing, so reuse the wording:
 
-1. **Name the app**, e.g. "Todoable". Able's landing page derives the
-   App Handle from it (`todoable`), uses both in the steps below, and puts
-   them in the prompt.
+1. **Name the app**, e.g. "Todoable". Able's landing page is a short
+   wizard: it derives the App Handle from the name (`todoable`), uses
+   both in the steps below, and puts them in the prompt.
 2. **Make the app's repo from the template.** The landing page links to
    `https://github.com/new?template_owner=lightbody&template_name=able&owner=@me&visibility=private&name=<App Handle>`,
    which fills in the form: the user's own account, Private, and the App
