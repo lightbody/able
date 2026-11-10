@@ -44,7 +44,7 @@
         </p>
 
         <div class="wizard" id="wizard">
-          <!-- Screenshots load from screens/<step>-<device>.png, e.g. screens/repo-mobile.png
+          <!-- Screenshots load from screens/<step>-<device>.jpg, e.g. screens/repo-mobile.jpg
                (steps: repo, github, environment, session; devices: mobile, tablet, desktop).
                A missing file shows a labelled placeholder instead. -->
           <ol class="stepper" aria-label="Setup steps">
@@ -394,10 +394,10 @@
         });
         wizard.querySelectorAll('.shot').forEach(function (fig) {
           var step = fig.dataset.shot, img = fig.querySelector('img');
-          var src = 'screens/' + step + '-' + d + '.png' + (assetVersion ? '?v=' + assetVersion : '');
+          var src = 'screens/' + step + '-' + d + '.jpg' + (assetVersion ? '?v=' + assetVersion : '');
           var label = step.charAt(0).toUpperCase() + step.slice(1);
           fig.querySelector('.shot-placeholder').innerHTML =
-            '<strong>Screenshot</strong><span>' + label + ' &middot; ' + labels[d] + '</span><code>screens/' + step + '-' + d + '.png</code>';
+            '<strong>Screenshot</strong><span>' + label + ' &middot; ' + labels[d] + '</span><code>screens/' + step + '-' + d + '.jpg</code>';
           fig.classList.remove('has-image');
           img.hidden = true;
           img.onload = function () { img.hidden = false; fig.classList.add('has-image'); };
