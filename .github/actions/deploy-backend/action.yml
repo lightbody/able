@@ -3,8 +3,9 @@ description: >-
   Deploy the backend to a Fly app, wired to one Neon branch. Pulls the
   branch's pooled DATABASE_URL and Realtime URL/secret from Neon on every
   deploy (so nothing is copied by hand, and rotated credentials are picked up
-  automatically) and stages them as Fly secrets. Expects .github/deploy.env
-  to be loaded into the environment already.
+  automatically) and stages them as Fly secrets. When Grafana Cloud is
+  configured, also turns on OpenTelemetry export (traces, metrics, logs).
+  Expects .github/deploy.env to be loaded into the environment already.
 
 inputs:
   app:
@@ -20,6 +21,19 @@ inputs:
     required: true
   fly-api-token:
     required: true
+  environment:
+    description: >-
+      deployment.environment.name on all telemetry, naming the app and
+      which deploy: "<APP_HANDLE>" for Production, "<APP_HANDLE>-pr<n>" for
+      a Preview
+    required: true
+  grafana-otlp-token:
+    description: >-
+      Grafana Cloud access policy token (metrics:write, logs:write,
+      traces:write). Without it the backend still deploys, with telemetry
+      off and a warning.
+    required: false
+    default: ""
 
 runs:
   using: composite
@@ -71,14 +85,48 @@ runs:
           NEON_REALTIME_URL="$realtime_url" \
           NEON_REALTIME_SECRET="$realtime_secret"
 
+    - name: Stage Grafana Cloud credentials as a Fly secret
+      id: otel
+      shell: bash
+      env:
+        FLY_API_TOKEN: ${{ inputs.fly-api-token }}
+        APP: ${{ inputs.app }}
+        GRAFANA_OTLP_TOKEN: ${{ inputs.grafana-otlp-token }}
+      run: |
+        if [ -z "${GRAFANA_OTLP_ENDPOINT:-}" ] || [ -z "${GRAFANA_OTLP_INSTANCE_ID:-}" ] || [ -z "$GRAFANA_OTLP_TOKEN" ]; then
+          echo "::warning::Telemetry is off: the GRAFANA_OTLP_TOKEN secret is missing (or deploy.env's GRAFANA_OTLP_* values are empty)."
+          echo "enabled=false" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+        # OTLP/HTTP Basic auth: <instance id>:<token>. The SDK URL-decodes
+        # OTEL_EXPORTER_OTLP_HEADERS values, hence %20 for the space.
+        basic="$(printf '%s:%s' "$GRAFANA_OTLP_INSTANCE_ID" "$GRAFANA_OTLP_TOKEN" | base64 -w0)"
+        echo "::add-mask::$basic"
+        flyctl secrets set --app "$APP" --stage \
+          OTEL_EXPORTER_OTLP_HEADERS="Authorization=Basic%20$basic"
+        echo "enabled=true" >> "$GITHUB_OUTPUT"
+
     - name: Deploy
       shell: bash
       env:
         FLY_API_TOKEN: ${{ inputs.fly-api-token }}
         APP: ${{ inputs.app }}
         ALLOWED_ORIGIN: ${{ inputs.allowed-origin }}
+        OTEL_ENABLED: ${{ steps.otel.outputs.enabled }}
+        DEPLOY_ENVIRONMENT: ${{ inputs.environment }}
       run: |
+        otel_env=()
+        if [ "$OTEL_ENABLED" = "true" ]; then
+          # Without OTEL_EXPORTER_OTLP_ENDPOINT the backend never starts the
+          # SDK (backend/src/telemetry.ts), so this is the on/off switch.
+          otel_env=(
+            --env OTEL_EXPORTER_OTLP_ENDPOINT="$GRAFANA_OTLP_ENDPOINT"
+            --env OTEL_SERVICE_NAME="$APP_HANDLE-backend"
+            --env OTEL_RESOURCE_ATTRIBUTES="service.namespace=$APP_HANDLE,deployment.environment.name=$DEPLOY_ENVIRONMENT,service.version=$GITHUB_SHA"
+          )
+        fi
         flyctl deploy --app "$APP" --config fly.backend.toml --remote-only \
           --env NEON_DB_NAME="$NEON_DB_NAME" \
           --env WORKOS_JWKS_URL="https://api.workos.com/sso/jwks/$WORKOS_CLIENT_ID" \
-          --env ALLOWED_ORIGIN="$ALLOWED_ORIGIN"
+          --env ALLOWED_ORIGIN="$ALLOWED_ORIGIN" \
+          "${otel_env[@]}"

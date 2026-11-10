@@ -26,7 +26,7 @@ Then paste:
 
 Claude asks for the app's name, walks you through creating accounts and API
 tokens, and does the rest: it renames the skeleton, provisions Neon, Fly and
-Cloudflare, configures CI, and verifies Production and Previews. A custom
+Cloudflare, sets up observability in Grafana Cloud, configures CI, and verifies Production and Previews. A custom
 domain is an optional last step. Claude asks for each token with only the
 permissions it needs at the time, and has you narrow them once setup is
 done, so later sessions can debug the app without setup-level access.
@@ -59,6 +59,7 @@ real features as they land.
 | Realtime | Neon Realtime live SQL queries, sealed by the backend |
 | Auth | WorkOS AuthKit (stateless bearer JWTs) |
 | Frontend | React + Vite SPA on Cloudflare Pages |
+| Observability | OpenTelemetry + Grafana Faro → Grafana Cloud (Tempo, Loki, Mimir, Frontend Observability) |
 | CI/CD | GitHub Actions with per-PR preview stacks |
 
 ### How it fits together
@@ -82,6 +83,9 @@ real features as they land.
   synced.
 - `GET /me` is a minimal smoke-test endpoint: it just echoes back the
   authenticated user's WorkOS id, to confirm the token round-trips.
+- **Telemetry**: every request is traced
+  from the browser through the backend into Postgres, and logs and metrics
+  carry the same trace ids. See "Observability" below.
 
 ## Layout
 
@@ -89,6 +93,8 @@ real features as they land.
 backend/     Node/Fastify API + migrations
 shared/      @myapp/shared -- placeholder shared logic (used by backend + frontend)
 frontend/    React SPA
+observability/  Grafana Frontend Observability app spec
+scripts/     gcx -- Grafana's CLI, installed on first use, for querying telemetry
 docker-compose.yml   Postgres for backend tests
 .github/     CI workflows + preview-env scripts
 ```
@@ -143,12 +149,15 @@ cd frontend && npm test            # currently no frontend tests; add as compone
 
 All non-secret deploy config lives in `.github/deploy.env`: the Neon project
 ID, database and default branch; the Fly org and app name; the Cloudflare
-account and Pages project; the prod frontend origin; and the WorkOS client
-ID. Every workflow loads it first. The only GitHub secrets are three API
-tokens: `NEON_API_KEY` (project-scoped), `FLY_API_TOKEN` (org token, since
-previews create apps), and `CLOUDFLARE_API_TOKEN` (Account → Cloudflare
-Pages → Edit). **[`SECRETS.md`](SECRETS.md)** covers what each token is,
-where it lives, and how to rotate it.
+account and Pages project; the prod frontend origin; the WorkOS client
+ID; and the Grafana Stack. Every workflow loads it first. The only GitHub
+secrets are a few API tokens, the CI Tokens: `NEON_API_KEY`
+(project-scoped), `FLY_API_TOKEN` (org token, since Previews create apps),
+`CLOUDFLARE_API_TOKEN` (an account API token: Account → Cloudflare
+Pages → Edit), and
+`GRAFANA_OTLP_TOKEN` (write-only telemetry).
+**[`SECRETS.md`](SECRETS.md)** covers what each token is, where it lives,
+and how to rotate it.
 
 Nothing else is copied by hand. On every deploy,
 `.github/actions/deploy-backend` pulls the target Neon branch's pooled
@@ -197,3 +206,51 @@ work only from `PROD_FRONTEND_ORIGIN`.
 Every pull request gets an isolated Preview: a Realtime-enabled Neon
 branch, a dedicated backend Fly app and a Pages preview. It's torn down when
 the PR closes.
+
+## Observability
+
+The app sends traces, metrics and logs to a **Grafana Stack** (Grafana
+Cloud; the free tier is enough to start). One stack can serve all your
+apps: each app's telemetry is labelled with its App Handle
+(`service.namespace`). Everything is plain
+OpenTelemetry; Development and tests send nothing.
+
+| Source | What | How it gets there |
+|---|---|---|
+| Backend | traces: HTTP (named by route, with the WorkOS `user.id`), `pg` queries, outgoing fetch; metrics: HTTP rate/errors/latency, pg pool, Node runtime, the app's own counters; logs: every line, with its trace id | OTel Node SDK → the Grafana Stack's OTLP gateway (`backend/src/telemetry.ts`) |
+| Frontend | page loads, Web Vitals, JS errors, fetch spans joined to the backend's traces | Grafana Faro → Frontend Observability (`frontend/src/telemetry.ts`) |
+| Fly (optional) | machine CPU/memory/restarts, Fly edge requests and latency | Fly's built-in Prometheus, as a Grafana data source (below) |
+
+Everything is labelled `deployment.environment.name=myapp` for Production,
+or `myapp-pr<n>` for a Preview, plus `service.version=<commit sha>`, so each
+deploy of each app is easy to pick out, even on a shared stack. Claude Code sessions query it with
+`scripts/gcx` (Grafana's CLI) through the `observability` skill, using a
+read-only Claude Code Token; `CLAUDE.md` "Observability" has the details.
+
+PLAYBOOK.md sets this up for a new app: the Grafana Stack (an existing
+one, or a new one), the Faro app
+(`observability/faro-app.yaml`), the Grafana values in `deploy.env`, the
+`GRAFANA_OTLP_TOKEN` CI Token and Claude's read-only service account.
+
+**Fly's metrics (optional).** Fly keeps platform metrics for every org at
+`https://api.fly.io/prometheus/<FLY_ORG>/`. To see them next to the app's
+own:
+
+1. Claude creates a Prometheus data source named **My App: Fly** (uid
+   `myapp-fly-prometheus`, one per app, since each app has its own Fly
+   org) without a secret. For this, its Grafana service
+   account is widened for the task to **Data sources → Writer** (in its
+   **Role** picker, then **Update**)
+   (SECRETS.md, "Widening a token for a task").
+2. In the Fly dashboard → the app's org → **Tokens**, create an Org Deploy
+   Token named `myapp-grafana-fly-metrics`.
+3. In Grafana → **Connections → Data sources → My App: Fly** → **HTTP headers**,
+   paste it as the `Authorization` value (`FlyV1 fm2_…`, exactly one
+   `FlyV1`), then **Save & test**.
+4. Back to the Baseline: remove the Writer role and tap **Update**, **and**
+   remove the service account from the data source's own **Permissions**
+   tab.
+
+It's an org token because Fly's dashboard can't make read-only ones;
+SECRETS.md ("Tokens held by other services") says why that's acceptable and
+how to rotate it.

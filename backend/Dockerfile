@@ -21,4 +21,4 @@ COPY --from=builder /app/backend/dist ./backend/dist
 COPY --from=builder /app/backend/migrations ./backend/migrations
 COPY --from=builder /app/backend/package.json ./backend/package.json
 EXPOSE 8080
-CMD ["node", "backend/dist/main.js"]
+CMD ["node", "--import", "./backend/dist/telemetry.js", "backend/dist/main.js"]

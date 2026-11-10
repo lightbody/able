@@ -89,3 +89,5 @@ jobs:
           allowed-origin: ${{ env.PROD_FRONTEND_ORIGIN }}
           neon-api-key: ${{ secrets.NEON_API_KEY }}
           fly-api-token: ${{ secrets.FLY_API_TOKEN }}
+          environment: ${{ env.APP_HANDLE }}
+          grafana-otlp-token: ${{ secrets.GRAFANA_OTLP_TOKEN }}

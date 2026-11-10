@@ -3,6 +3,7 @@ import type { FastifyInstance } from "fastify";
 import { authenticate } from "../auth.js";
 import type { AppContext } from "../context.js";
 import { AppError } from "../errors.js";
+import { appMetrics } from "../observability.js";
 
 interface CreateGreetingBody {
   message?: string;
@@ -22,6 +23,7 @@ export function registerGreetingRoutes(app: FastifyInstance, ctx: AppContext): v
       "INSERT INTO greetings (message, created_by) VALUES ($1, $2) RETURNING id, message, created_by, created_at, pg_current_xact_id()::text AS txid",
       [formatGreeting(message), userId],
     );
+    appMetrics.greetingsCreated.add(1);
     return reply.status(201).send(rows[0]);
   });
 }

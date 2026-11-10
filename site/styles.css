@@ -128,7 +128,7 @@ h2 { font-size: clamp(1.8rem, 4vw, 2.5rem); margin-bottom: 2rem; }
 .platforms {
   list-style: none; margin: 0; padding: 0;
   display: grid; gap: 16px;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  grid-template-columns: 1fr;
 }
 .platforms li {
   position: relative;
@@ -150,6 +150,16 @@ h2 { font-size: clamp(1.8rem, 4vw, 2.5rem); margin-bottom: 2rem; }
   color: var(--ink);
 }
 .tier-paid { background: color-mix(in srgb, var(--coral) 22%, var(--surface)); color: var(--ink); }
+/* Five cards: 3 + 2 on tablets (a 6-column grid), one row on wide screens. */
+@media (min-width: 640px) {
+  .platforms { grid-template-columns: repeat(6, 1fr); }
+  .platforms li { grid-column: span 2; }
+  .platforms li:nth-child(n+4) { grid-column: span 3; }
+}
+@media (min-width: 1000px) {
+  .platforms { grid-template-columns: repeat(5, 1fr); gap: 14px; }
+  .platforms li, .platforms li:nth-child(n+4) { grid-column: span 1; padding: 20px; }
+}
 
 .gets { list-style: none; margin: 48px 0 0; padding: 0; display: grid; gap: 14px; max-width: 760px; }
 .gets li { position: relative; padding-left: 2rem; color: var(--ink-soft); font-size: 1.05rem; }

@@ -1,0 +1,25 @@
+# The Grafana Frontend Observability (Faro) app for the frontend: the record
+# of how it was created, so it can be recreated or updated by command.
+#   Create: scripts/gcx frontend apps create -f observability/faro-app.yaml
+#   Update: scripts/gcx frontend apps update <slug-id> -f observability/faro-app.yaml
+#     where <slug-id> is .[0].metadata.name from
+#     `scripts/gcx frontend apps get myapp-frontend -o json` (a list), e.g.
+#     myapp-frontend-6445 -- not the plain name.
+# Both need the Claude Code Token's Grafana service account widened to
+# Frontend Observability -> Editor for the task (SECRETS.md, "Widening a
+# token for a task"). The collector URL it yields goes in
+# .github/deploy.env as GRAFANA_FARO_URL.
+#
+# corsOrigins: the Production Origin and every Preview's frontend. Keep it in
+# step with PROD_FRONTEND_ORIGIN (and the Custom Domain, once there is one).
+apiVersion: faro.ext.grafana.app/v1alpha1
+kind: FaroApp
+metadata:
+  name: myapp-frontend
+spec:
+  name: myapp-frontend
+  appType: web
+  runtime: web-js
+  corsOrigins:
+    - url: https://myapp-frontend.pages.dev
+    - url: https://*.myapp-frontend.pages.dev
