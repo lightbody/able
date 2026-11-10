@@ -194,15 +194,14 @@ these before pasting the prompt, as Able's landing page and README tell
 them. You need them again only to explain a step that step 0 finds
 missing, so reuse the wording:
 
-1. **Pick the App Name**, e.g. "Todoable".
-2. **Make the app's repo from the template.** On
-   **https://github.com/lightbody/able**, tap **Use this template** →
-   **Create a new repository**. Owner: their account. Repository name:
-   the App Handle (the App Name in lowercase, with hyphens). Choose
-   **Private**, and create it.
-3. **Connect Claude Code to GitHub**, and make sure the Claude GitHub App
-   can see the new repo. This comes after the repo exists, so the new
-   repo is in the list Claude Code offers.
+1. **Name the app.** Choose an App Name, e.g. "Todoable", and an App
+   Handle: the same name in lowercase, with hyphens instead of spaces,
+   e.g. `todoable`.
+2. **Make the app's repo from the template** at
+   **https://github.com/lightbody/able/generate**. Repository name: the
+   App Handle (`todoable`). Public or private is up to the user.
+3. **Connect GitHub to Claude Code.** This comes after the repo exists,
+   so the new repo is in the list Claude Code offers.
 4. **Create the Agent Environment**: a cloud environment named with the
    App Name, with **Full** network access. (Users who want Limited can
    instead start on any environment and ask you for one: "Limited network
@@ -211,8 +210,8 @@ missing, so reuse the wording:
    repo selected, and paste the prompt.
 
 Where you give these steps yourself (step 0), add the detail: GitHub is
-connected at https://claude.ai/connect-github, and a Claude GitHub App
-installed on selected repos only gets the new repo at
+connected at https://claude.ai/connect-github, and if the Claude GitHub
+App is installed on selected repos only, the new repo is added at
 **https://github.com/apps/claude/installations/select_target**. A new
 environment is made on the new-session screen: tap the environment
 selector (the first control in the row under the message box), then

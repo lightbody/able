@@ -10,14 +10,13 @@ fine from a phone or tablet), do these first. A cloud session starts from
 a repo and runs on an environment, both chosen before it starts, so they
 can't be part of the playbook itself:
 
-1. **Pick the App Name**, the app's human-readable name, e.g.
-   `Todoable`.
-2. **Make the app's repo from this template**: on
-   https://github.com/lightbody/able, tap **Use this template** → **Create
-   a new repository**, name it after the app in lowercase with hyphens
-   (`todoable`, the **App Handle**), and choose **Private**.
-3. **Connect Claude Code to GitHub**, and make sure the Claude GitHub App
-   can see the new repo.
+1. **Name your app.** Choose an **App Name**, its human-readable name,
+   e.g. `Todoable`, and an **App Handle**: the same name in lowercase,
+   with hyphens instead of spaces, e.g. `todoable`.
+2. **Make the app's repo from this template** at
+   https://github.com/lightbody/able/generate. For the repository name,
+   use the App Handle (`todoable`).
+3. **Connect GitHub to Claude Code.**
 4. **Create the app's Agent Environment**: a cloud environment in Claude
    Code named with the App Name, with **Full** network access. (For
    **Limited** access instead, start on any environment and ask Claude to
