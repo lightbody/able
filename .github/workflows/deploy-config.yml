@@ -1,14 +1,18 @@
 name: Deploy config
 
-# Reusable check: deploy jobs run only once every value in
+# Reusable check: deploy jobs run only once every *required* module in
 # .github/deploy.env is filled in. Keeps the empty template, and a new app
-# mid-setup, from attempting (and failing) deploys.
+# mid-setup, from attempting (and failing) deploys. Optional modules (like
+# grafana) never block a deploy; `modules` lists the ones that are on.
 on:
   workflow_call:
     outputs:
       configured:
-        description: "'true' when .github/deploy.env has no empty values"
+        description: "'true' when every required module in .github/deploy.env is filled in"
         value: ${{ jobs.check.outputs.configured }}
+      modules:
+        description: "Space-separated optional modules that are on, e.g. 'grafana'"
+        value: ${{ jobs.check.outputs.modules }}
 
 jobs:
   check:
@@ -16,14 +20,8 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       configured: ${{ steps.check.outputs.configured }}
+      modules: ${{ steps.check.outputs.modules }}
     steps:
       - uses: actions/checkout@v4
       - id: check
-        run: |
-          missing="$(grep -E '^[A-Z_]+=\s*$' .github/deploy.env | cut -d= -f1 | tr '\n' ' ')"
-          if [ -n "$missing" ]; then
-            echo "::notice::Skipping deploys: .github/deploy.env has no value for: $missing"
-            echo "configured=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "configured=true" >> "$GITHUB_OUTPUT"
-          fi
+        run: .github/scripts/deploy-config.sh check
