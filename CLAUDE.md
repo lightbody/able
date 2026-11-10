@@ -24,7 +24,33 @@ The `lightbody.net` zone makes browsers cache static files for a day
 the `styles.css` and `favicon.svg` links at deploy time. Add any new asset
 file to that step's `sed` pattern, or it can go stale after a deploy.
 
+## Terms (template repo only)
+
+The "Terms" table in `PLAYBOOK.md` is Able's glossary: App Name, App
+Handle, the App Environments (Development, Preview, Production), Agent
+Environment, Claude Code Tokens, CI Tokens, Baseline and the rest. Use
+those terms, capitalized as proper nouns, in the playbook, `README.md`,
+`SECRETS.md`, this file and `site/`. If you add or rename one, update the
+table and every file that uses it in the same change. The "Terms" section
+below is the subset that stays in new apps, so keep it in step too.
+
 <!-- able:template-end -->
+
+## Terms
+
+- **App Environments** -- where the app runs: **Development** (`npm run
+  dev` against your own Neon branch, see README "Local development"),
+  **Preview** (one per open PR, deleted when it closes) and **Production**
+  (deployed from `main`). There's no shared staging environment: Previews
+  take its place. Production and every Preview sign in against the
+  **WorkOS Production environment**; WorkOS's own Staging and Development
+  environments aren't used.
+- **Agent Environment** -- the Claude Code cloud environment for this app,
+  named "My App" and used for nothing else. It holds the Claude Code Tokens.
+- **Claude Code Tokens** (`myapp-claude-code`) and **CI Tokens**
+  (`myapp-ci`) -- Claude's and GitHub Actions' separate API tokens for
+  Neon, Fly and Cloudflare. **Baseline** -- the permissions the Claude Code
+  Tokens keep between tasks. See `SECRETS.md`.
 
 ## Stack
 
@@ -90,35 +116,35 @@ asserts the SQL and params, like the existing `POST /live/:view` test.
   skip themselves while any value in it is empty
   (`.github/workflows/deploy-config.yml`).
 - GitHub has only three secrets: `NEON_API_KEY`, `FLY_API_TOKEN` and
-  `CLOUDFLARE_API_TOKEN` -- this app's narrowly scoped CI tokens. See
+  `CLOUDFLARE_API_TOKEN` -- this app's narrowly scoped CI Tokens. See
   `SECRETS.md` for scopes and rotation. `.github/actions/deploy-backend` pulls the DB URL
   and Realtime credentials from Neon on every deploy, so never set those on
   Fly by hand.
-- Cloud sessions on this app's own environment (named after the app, Full
-  or Limited network access: see `SECRETS.md`) have `myapp-claude-code`
-  API keys, injected by the network proxy and separate from the CI tokens:
+- Cloud sessions on the Agent Environment (Full or Limited network
+  access: see `SECRETS.md`) have the `myapp-claude-code` Claude Code
+  Tokens, injected by the network proxy and separate from the CI Tokens:
   `console.neon.tech` (project-scoped), `api.fly.io` and `api.machines.dev`
-  (an org deploy token for `FLY_ORG`, so prod and every preview app) and
+  (an org deploy token for `FLY_ORG`, so Production and every Preview app) and
   `api.cloudflare.com` (Pages Edit, Account Settings and Account Analytics
   Read, plus DNS and Zone Read for a custom domain). They may be missing or
   revoked, so check with a read-only call first. If a host is refused on a
-  Limited environment, propose adding that exact host rather than working
+  Limited Agent Environment, propose adding that exact host rather than working
   around it. To use the CLIs, set
   the key variable to the placeholder `proxy-injected`, e.g.
   `NEON_API_KEY=proxy-injected npx neon@<NEON_CLI version> ...`,
   `FLY_API_TOKEN=proxy-injected flyctl ...`. Direct Postgres connections
   (port 5432) are blocked from these containers, so use Neon's HTTPS SQL
   endpoint (`@neondatabase/serverless`) if you need to query a branch.
-- **Claude Code tokens stay at their baseline** (the table in `SECRETS.md`,
+- **Claude Code Tokens stay at their Baseline** (the table in `SECRETS.md`,
   "The baseline"). If a task needs more than that, such as creating or
   updating a Cloudflare Worker, say so before starting, name the exact
   permission, and guide the user through widening only that, following
   `SECRETS.md`, "Widening a token for a task". When the task is done, guide
-  them back to the baseline and check the narrowing took (a read the
+  them back to the Baseline and check the narrowing took (a read the
   removed permission allowed should now fail). Never work around a missing
   permission, for example with a CI token or a broader key, and don't treat
-  a temporary widening as the new baseline: if the app needs it
-  permanently, update the baseline table in the same change, and say so.
+  a temporary widening as the new Baseline: if the app needs it
+  permanently, update the Baseline table in the same change, and say so.
 - Never print connection strings or Realtime secrets. When checking
   `neon env pull` output, match on shape (as `deploy-backend` does)
   instead of echoing values.
