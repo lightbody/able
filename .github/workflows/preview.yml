@@ -70,7 +70,7 @@ jobs:
           allowed-origin: '*'
           neon-api-key: ${{ secrets.NEON_API_KEY }}
           fly-api-token: ${{ secrets.FLY_API_TOKEN }}
-          environment: pr-${{ github.event.pull_request.number }}
+          environment: ${{ env.APP_HANDLE }}-pr${{ github.event.pull_request.number }}
           grafana-otlp-token: ${{ secrets.GRAFANA_OTLP_TOKEN }}
 
       - name: Update preview environment comment
@@ -83,7 +83,7 @@ jobs:
               neonBranch: process.env.NEON_BRANCH,
               neonProjectId: process.env.NEON_PROJECT_ID,
               grafanaStackUrl: process.env.GRAFANA_STACK_URL,
-              deployEnvironment: 'pr-${{ github.event.pull_request.number }}',
+              deployEnvironment: `${process.env.APP_HANDLE}-pr${{ github.event.pull_request.number }}`,
             });
 
   cleanup:

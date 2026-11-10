@@ -23,8 +23,9 @@ inputs:
     required: true
   environment:
     description: >-
-      deployment.environment.name on all telemetry: "production", or "pr-<n>"
-      for a PR preview
+      deployment.environment.name on all telemetry, naming the app and
+      which deploy: "<APP_HANDLE>" for Production, "<APP_HANDLE>-pr<n>" for
+      a Preview
     required: true
   grafana-otlp-token:
     description: >-

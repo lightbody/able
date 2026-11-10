@@ -9,7 +9,7 @@
 //   OTEL_EXPORTER_OTLP_ENDPOINT  e.g. https://otlp-gateway-prod-us-east-0.grafana.net/otlp
 //   OTEL_EXPORTER_OTLP_HEADERS   Authorization=Basic%20<base64 instanceId:token>  (a Fly secret)
 //   OTEL_SERVICE_NAME            myapp-backend
-//   OTEL_RESOURCE_ATTRIBUTES     deployment.environment.name=production,service.version=<sha>
+//   OTEL_RESOURCE_ATTRIBUTES     service.namespace=<app>,deployment.environment.name=<app>[-pr<n>],service.version=<sha>
 // With no endpoint set (local dev, tests, an app that hasn't set up Grafana
 // yet) the SDK never starts: the @opentelemetry/api calls elsewhere in the
 // code are no-ops and nothing is exported.

@@ -985,7 +985,8 @@ other.
 
 Then check Observability, with the `observability` skill:
 
-- **Logs:** `production` backend lines for those requests, each with a
+- **Logs:** backend lines for those requests, with
+  `deployment_environment_name="<App Handle>"` (Production's label), each with a
   `trace_id` (the first lines can take a few seconds). If there are none,
   look for a "Telemetry is off" warning in the backend deploy's log: it
   means `GRAFANA_OTLP_TOKEN` is missing or wrong.
@@ -1022,7 +1023,7 @@ comments the URLs. `frontend.yml` deploys a Pages preview at
 
 Run the same server-side checks against the Preview, then have the user do
 the two-tab test on the Preview URL from the PR comment. Check that its
-telemetry arrives too, labelled `deployment_environment_name="pr-<n>"`
+telemetry arrives too, labelled `deployment_environment_name="<App Handle>-pr<n>"`
 (the PR comment's Telemetry row links to the Grafana Stack). Then merge or
 close the PR. Closing tears the Preview down.
 

@@ -60,7 +60,7 @@ Loki and Prometheus, `resource.service.namespace="myapp"` (or a
 |---|---|---|
 | `service.namespace` | `service_namespace` / `resource.service.namespace` | `myapp` (the App Handle) |
 | `service.name` | `service_name` / `resource.service.name` | `myapp-backend`, `myapp-frontend` |
-| `deployment.environment.name` | `deployment_environment_name` / `resource.deployment.environment.name` | `production`, `pr-<n>` (a PR preview) |
+| `deployment.environment.name` | `deployment_environment_name` / `resource.deployment.environment.name` | `myapp` (Production), `myapp-pr<n>` (a Preview) (a PR preview) |
 | `service.version` | `service_version` / `resource.service.version` | the deployed commit SHA |
 | `user.id` (spans only) | `span.user.id` | the opaque WorkOS user id |
 
@@ -75,7 +75,7 @@ and widen if needed.
 ```bash
 # Errors in production, newest first
 scripts/gcx logs query -d grafanacloud-logs \
-  '{service_name="myapp-backend", deployment_environment_name="production"} | detected_level=~"error|fatal"' --since 24h
+  '{service_name="myapp-backend", deployment_environment_name="myapp"} | detected_level=~"error|fatal"' --since 24h
 
 # Failing or slow requests
 scripts/gcx traces query -d grafanacloud-traces \
@@ -90,8 +90,8 @@ scripts/gcx traces get -d grafanacloud-traces <trace_id> --since 24h --llm -o js
 # Everything one user did (e.g. from a bug report)
 scripts/gcx traces query -d grafanacloud-traces '{resource.service.namespace="myapp" && span.user.id="user_..."}' --since 24h
 
-# A PR preview: same queries, with environment pr-<n>
-scripts/gcx logs query -d grafanacloud-logs '{service_namespace="myapp", deployment_environment_name="pr-12"}' --since 2h
+# A PR preview: same queries, with environment myapp-pr<n>
+scripts/gcx logs query -d grafanacloud-logs '{service_namespace="myapp", deployment_environment_name="myapp-pr12"}' --since 2h
 
 # p95 latency and error rate by route
 scripts/gcx metrics query -d grafanacloud-prom \
@@ -139,4 +139,4 @@ and `_total` suffixes are added. Confirm a name with
 - **Mind privacy.** Don't paste user ids or user content from telemetry
   into commits, PRs or issues. Describe the pattern instead.
 - **Verify your own PRs.** After pushing, exercise the PR preview and check
-  its `pr-<n>` traces and logs, as well as the tests.
+  its `myapp-pr<n>` traces and logs, as well as the tests.

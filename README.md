@@ -220,9 +220,9 @@ OpenTelemetry; Development and tests send nothing.
 | Frontend | page loads, Web Vitals, JS errors, fetch spans joined to the backend's traces | Grafana Faro → Frontend Observability (`frontend/src/telemetry.ts`) |
 | Fly (optional) | machine CPU/memory/restarts, Fly edge requests and latency | Fly's built-in Prometheus, as a Grafana data source (below) |
 
-Everything is labelled `deployment.environment.name=production`, or
-`pr-<n>` for a Preview, plus `service.version=<commit sha>`, so a Preview's
-telemetry is easy to pick out. Claude Code sessions query it with
+Everything is labelled `deployment.environment.name=myapp` for Production,
+or `myapp-pr<n>` for a Preview, plus `service.version=<commit sha>`, so each
+deploy of each app is easy to pick out, even on a shared stack. Claude Code sessions query it with
 `scripts/gcx` (Grafana's CLI) through the `observability` skill, using a
 read-only Claude Code Token; `CLAUDE.md` "Observability" has the details.
 

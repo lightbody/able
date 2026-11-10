@@ -181,8 +181,10 @@ Development export nothing.
   `VITE_GRAFANA_FARO_URL`.
 - **Shared resource attributes**, used to filter everything:
   `service.namespace=<APP_HANDLE>`; `service.name=<APP_HANDLE>-backend` /
-  `<APP_HANDLE>-frontend`; `deployment.environment.name=production` or
-  `pr-<n>` for a Preview; `service.version=<commit sha>`. Spans for
+  `<APP_HANDLE>-frontend`; `deployment.environment.name=<APP_HANDLE>` for
+  Production or `<APP_HANDLE>-pr<n>` for a Preview (e.g. `myapp-pr3`), so
+  every deploy is identifiable on a shared stack; `service.version=<commit
+  sha>`. Spans for
   signed-in requests carry `user.id` (the opaque WorkOS id).
 
 ### Querying it from a session

@@ -6,7 +6,7 @@ interface ImportMetaEnv {
   /** Grafana Faro collector URL; unset turns frontend telemetry off. */
   readonly VITE_GRAFANA_FARO_URL?: string;
   readonly VITE_OTEL_SERVICE_NAMESPACE?: string;
-  /** "production" or "pr-<n>", matching the backend's deployment.environment.name. */
+  /** "<APP_HANDLE>" (Production) or "<APP_HANDLE>-pr<n>", matching the backend's deployment.environment.name. */
   readonly VITE_DEPLOY_ENVIRONMENT?: string;
   /** The commit SHA, matching the backend's service.version. */
   readonly VITE_APP_VERSION?: string;

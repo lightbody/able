@@ -45,7 +45,8 @@ jobs:
         run: |
           # A PR's frontend talks to that PR's preview backend app.
           app="$FLY_BACKEND_APP${PR_NUMBER:+-pr-$PR_NUMBER}"
-          deploy_env="${PR_NUMBER:+pr-$PR_NUMBER}"
+          # The app, and which Preview: "<APP_HANDLE>" or "<APP_HANDLE>-pr<n>".
+          deploy_env="$APP_HANDLE${PR_NUMBER:+-pr$PR_NUMBER}"
           # Same WorkOS Production Client ID for prod and every PR preview
           # (with a wildcard redirect URI registered in the WorkOS
           # dashboard) so prod and preview share one user pool/IDs.
@@ -55,7 +56,7 @@ jobs:
           VITE_API_URL="https://$app.fly.dev" VITE_WORKOS_CLIENT_ID="$WORKOS_CLIENT_ID" \
           VITE_GRAFANA_FARO_URL="$GRAFANA_FARO_URL" \
           VITE_OTEL_SERVICE_NAMESPACE="$APP_HANDLE" \
-          VITE_DEPLOY_ENVIRONMENT="${deploy_env:-production}" \
+          VITE_DEPLOY_ENVIRONMENT="$deploy_env" \
           VITE_APP_VERSION="$GITHUB_SHA" \
             npm run build --workspace=frontend
 
