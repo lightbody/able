@@ -233,7 +233,7 @@ h2 { font-size: clamp(1.8rem, 4vw, 2.5rem); margin-bottom: 2rem; }
   --shot-h: 300px;
   min-height: 660px;
 }
-@media (min-width: 760px) { .wizard { padding: 28px 32px; --shot-h: 380px; min-height: 600px; } }
+@media (min-width: 760px) { .wizard { padding: 28px 32px; --shot-h: 500px; min-height: 720px; } }
 
 .stepper { list-style: none; margin: 0 0 24px; padding: 0 0 16px; display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; border-bottom: 1px solid var(--line); }
 .stepper button {
