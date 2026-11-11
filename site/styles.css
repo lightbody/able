@@ -39,6 +39,8 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 a { color: inherit; }
+/* Quick repeated taps (Next, Back) would otherwise be read as double-tap zoom on iOS Safari. */
+a, button, summary, input, label { touch-action: manipulation; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
 code {
   font: 500 .86em var(--mono);
