@@ -230,8 +230,8 @@ h2 { font-size: clamp(1.8rem, 4vw, 2.5rem); margin-bottom: 2rem; }
   padding: 20px;
   margin-bottom: 1.25rem;
   display: flex; flex-direction: column;
-  --shot-h: 300px;
-  min-height: 660px;
+  --shot-h: 240px;
+  min-height: 620px;
 }
 @media (min-width: 760px) { .wizard { padding: 28px 32px; --shot-h: 500px; min-height: 720px; } }
 
@@ -264,13 +264,25 @@ h2 { font-size: clamp(1.8rem, 4vw, 2.5rem); margin-bottom: 2rem; }
 @media (min-width: 760px) {
   .step-body:has(.shot) { grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 32px; }
 }
-.step-text { display: block; margin: 0 0 16px; font: 500 1.25rem/1.45 var(--sans); color: var(--ink); }
+.step-text { display: block; margin: 0 0 16px; font: 500 1.45rem/1.4 var(--sans); color: var(--ink); }
+@media (min-width: 760px) { .step-text { font-size: 1.3rem; } }
 .step-text:focus { outline: none; }
 .step-text a { color: var(--green-2); }
 .step-text code { white-space: nowrap; }
-.step-nav { display: flex; gap: 10px; margin-top: 24px; }
-.step-nav .btn { padding: .85rem 1.25rem; color: var(--ink); }
-.step-nav .btn-primary { color: var(--coral-ink); }
+
+/* Back / Next live at the top of the card, pinned under the site header, so
+   they're always where the eye already is. */
+.wizard-bar {
+  position: sticky; top: 65px; z-index: 5;
+  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  margin: -20px -20px 14px; padding: 12px 20px;
+  background: var(--surface);
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+@media (min-width: 760px) { .wizard-bar { margin: -28px -32px 18px; padding: 16px 32px; } }
+.wizard-bar .btn { padding: .8rem 1.4rem; color: var(--ink); }
+.wizard-bar .btn-primary { color: var(--coral-ink); font-size: 1.02rem; padding: .85rem 1.7rem; }
+.wizard-bar .is-off { visibility: hidden; }
 
 .app-name {
   display: block; width: 100%; max-width: 360px; box-sizing: border-box;
@@ -285,3 +297,4 @@ h2 { font-size: clamp(1.8rem, 4vw, 2.5rem); margin-bottom: 2rem; }
 .shot { margin: 0; height: var(--shot-h); display: flex; align-items: center; justify-content: center; }
 .shot img { display: block; max-width: 100%; max-height: 100%; width: auto; height: auto; border-radius: 12px; border: 1px solid var(--line); }
 .wizard .prompt { margin-top: 4px; }
+@media (max-width: 559px) { .wizard .prompt-body { font-size: .8rem; } .wizard .prompt { padding: 14px 16px 16px; } }

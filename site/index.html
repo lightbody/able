@@ -44,6 +44,11 @@
         </p>
 
         <div class="wizard" id="wizard">
+          <div class="wizard-bar">
+            <button class="btn btn-ghost" type="button" id="wizard-back">Back</button>
+            <button class="btn btn-primary" type="button" id="wizard-next">Next <span aria-hidden="true">&rarr;</span></button>
+          </div>
+
           <ol class="stepper" aria-label="Setup steps">
             <li><button type="button" data-goto="1"><span class="dot">1</span><span class="label">Name</span></button></li>
             <li><button type="button" data-goto="2"><span class="dot">2</span><span class="label">Repo</span></button></li>
@@ -61,9 +66,6 @@
                   autocomplete="off" autocapitalize="words" spellcheck="false" maxlength="40">
               </div>
             </div>
-            <div class="step-nav">
-              <button class="btn btn-primary" type="submit">Next</button>
-            </div>
           </form>
 
           <section class="wizard-step" data-step="2" hidden>
@@ -77,10 +79,6 @@
                 <img src="screens/repo.jpg" alt="GitHub's new repository form, with the Able template, your account as owner, and the repository name filled in">
               </figure>
             </div>
-            <div class="step-nav">
-              <button class="btn btn-ghost" type="button" data-back>Back</button>
-              <button class="btn btn-primary" type="button" data-next>Next</button>
-            </div>
           </section>
 
           <section class="wizard-step" data-step="3" hidden>
@@ -91,10 +89,6 @@
               <figure class="shot">
                 <img src="screens/github.jpg" alt="Claude Code's Connect repositories screen">
               </figure>
-            </div>
-            <div class="step-nav">
-              <button class="btn btn-ghost" type="button" data-back>Back</button>
-              <button class="btn btn-primary" type="button" data-next>Next</button>
             </div>
           </section>
 
@@ -108,10 +102,6 @@
                 <img src="screens/environment.jpg" alt="Claude Code's New cloud environment form, with the name and Full network access">
               </figure>
             </div>
-            <div class="step-nav">
-              <button class="btn btn-ghost" type="button" data-back>Back</button>
-              <button class="btn btn-primary" type="button" data-next>Next</button>
-            </div>
           </section>
 
           <section class="wizard-step" data-step="5" hidden>
@@ -123,10 +113,6 @@
               <figure class="shot">
                 <img src="screens/session.jpg" alt="Claude Code's new session screen, with the environment and repo selected">
               </figure>
-            </div>
-            <div class="step-nav">
-              <button class="btn btn-ghost" type="button" data-back>Back</button>
-              <button class="btn btn-primary" type="button" data-next>Next</button>
             </div>
           </section>
 
@@ -142,9 +128,6 @@
                   </button>
                 </div>
               </div>
-            </div>
-            <div class="step-nav">
-              <button class="btn btn-ghost" type="button" data-back>Back</button>
             </div>
           </section>
         </div>
@@ -337,6 +320,9 @@
       var input = document.getElementById('app-name');
       var link = document.getElementById('generate-link');
       var current = 1, reached = 1;
+      var backBtn = document.getElementById('wizard-back');
+      var nextBtn = document.getElementById('wizard-next');
+      var nav = document.querySelector('.nav');
 
       var handleOf = function (name) {
         return name.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
@@ -351,6 +337,16 @@
         url.searchParams.set('name', handle);
         link.href = url.toString();
       };
+      // The card is about as tall as a phone screen, so a tap on Next can leave
+      // the new step's text off-screen. On phones, snap the card's top to just
+      // under the site header after every step change; on bigger screens, only
+      // scroll if the card has slipped above it.
+      var revealCard = function () {
+        var top = wizard.getBoundingClientRect().top;
+        var limit = nav.offsetHeight + 8;
+        var phone = window.innerWidth < 760;
+        if (phone ? Math.abs(top - limit) > 2 : top < limit) window.scrollBy(0, top - limit);
+      };
       var show = function (n, focus) {
         current = n;
         reached = Math.max(reached, n);
@@ -362,22 +358,24 @@
           t.disabled = i > reached;
           if (i === n) t.setAttribute('aria-current', 'step'); else t.removeAttribute('aria-current');
         });
+        backBtn.classList.toggle('is-off', n === 1);
+        nextBtn.classList.toggle('is-off', n === steps.length);
         if (!focus) return;
+        revealCard();
         var target = n === 1 ? input : steps[n - 1].querySelector('.step-text');
         target.focus({ preventScroll: true });
+      };
+      var next = function () {
+        if (current === 1) applyName();
+        if (current < steps.length) show(current + 1, true);
       };
 
       document.getElementById('name-form').addEventListener('submit', function (e) {
         e.preventDefault();
-        applyName();
-        show(2, true);
+        next();
       });
-      wizard.querySelectorAll('[data-next]').forEach(function (b) {
-        b.addEventListener('click', function () { show(current + 1, true); });
-      });
-      wizard.querySelectorAll('[data-back]').forEach(function (b) {
-        b.addEventListener('click', function () { show(current - 1, true); });
-      });
+      nextBtn.addEventListener('click', next);
+      backBtn.addEventListener('click', function () { if (current > 1) show(current - 1, true); });
       tabs.forEach(function (t) {
         t.addEventListener('click', function () {
           if (current === 1) applyName();
