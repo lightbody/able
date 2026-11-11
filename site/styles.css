@@ -118,7 +118,6 @@ h2 { font-size: clamp(1.8rem, 4vw, 2.5rem); margin-bottom: 2rem; }
   max-width: 620px;
 }
 @media (prefers-color-scheme: dark) { .prompt { background: #071410; border: 1px solid var(--line); } }
-.prompt-label { margin: 0 0 8px; font: 500 .75rem var(--sans); letter-spacing: .06em; text-transform: uppercase; color: rgba(233, 240, 230, .6); }
 .prompt-body { font: 400 .92rem/1.6 var(--mono); margin: 0 0 16px; overflow-wrap: anywhere; }
 
 /* Platforms */
@@ -220,7 +219,7 @@ h2 { font-size: clamp(1.8rem, 4vw, 2.5rem); margin-bottom: 2rem; }
 .footer { border-top: 1px solid var(--line); padding: 28px 0 40px; color: var(--ink-soft); font-size: .9rem; }
 .footer-inner { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
 
-/* Setup wizard: one fixed-size card, a step at a time */
+/* Setup wizard: a card that shows one step at a time */
 .wizard {
   max-width: 960px;
   background: var(--surface);
@@ -231,14 +230,38 @@ h2 { font-size: clamp(1.8rem, 4vw, 2.5rem); margin-bottom: 2rem; }
   margin-bottom: 1.25rem;
   display: flex; flex-direction: column;
   --shot-h: 240px;
-  min-height: 620px;
 }
-@media (min-width: 760px) { .wizard { padding: 28px 32px; --shot-h: 500px; min-height: 720px; } }
+@media (min-width: 760px) { .wizard { padding: 28px 32px; --shot-h: 500px; } }
 
-.stepper { list-style: none; margin: 0 0 24px; padding: 0 0 16px; display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; border-bottom: 1px solid var(--line); }
+/* Back, the steps, and Next (Copy on the last step) in one bar, pinned under
+   the site header so they're always where the eye already is. */
+.wizard-bar {
+  position: sticky; top: 65px; z-index: 5;
+  display: flex; align-items: center; gap: 8px;
+  margin: -20px -20px 18px; padding: 12px 20px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+@media (min-width: 760px) { .wizard-bar { gap: 16px; margin: -28px -32px 22px; padding: 16px 32px; } }
+.wizard-bar .btn { flex: none; padding: .7rem 1.05rem; color: var(--ink); }
+.wizard-bar .btn-primary { color: var(--coral-ink); font-size: 1.02rem; padding: .75rem 1.3rem; }
+@media (min-width: 560px) { .wizard-bar .btn { padding: .8rem 1.4rem; } .wizard-bar .btn-primary { padding: .85rem 1.7rem; } }
+.wizard-bar .is-off { visibility: hidden; }
+
+/* The strip is clipped to the space between the buttons, with the clipped
+   ends faded out (--fl / --fr are set from script). */
+.stepper {
+  flex: 1; min-width: 0; overflow: hidden;
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 var(--fl, 0px), #000 calc(100% - var(--fr, 0px)), transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0, #000 var(--fl, 0px), #000 calc(100% - var(--fr, 0px)), transparent 100%);
+}
+.stepper ol { list-style: none; margin: 0; padding: 0; display: flex; align-items: flex-start; gap: 8px; width: max-content; position: relative; }
+.stepper ol.animate { transition: transform .25s ease; }
+@media (min-width: 560px) { .stepper ol { gap: 24px; } }
 .stepper button {
-  width: 100%; display: flex; flex-direction: column; align-items: center; gap: 6px;
-  background: none; border: 0; padding: 0; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  background: none; border: 0; padding: 2px 4px; cursor: pointer;
   font: 500 .78rem/1.2 var(--sans); color: var(--ink-soft);
 }
 .stepper button:disabled { cursor: default; opacity: .55; }
@@ -270,20 +293,6 @@ h2 { font-size: clamp(1.8rem, 4vw, 2.5rem); margin-bottom: 2rem; }
 .step-text a { color: var(--green-2); }
 .step-text code { white-space: nowrap; }
 
-/* Back / Next live at the top of the card, pinned under the site header, so
-   they're always where the eye already is. */
-.wizard-bar {
-  position: sticky; top: 65px; z-index: 5;
-  display: flex; justify-content: space-between; align-items: center; gap: 12px;
-  margin: -20px -20px 14px; padding: 12px 20px;
-  background: var(--surface);
-  border-radius: var(--radius) var(--radius) 0 0;
-}
-@media (min-width: 760px) { .wizard-bar { margin: -28px -32px 18px; padding: 16px 32px; } }
-.wizard-bar .btn { padding: .8rem 1.4rem; color: var(--ink); }
-.wizard-bar .btn-primary { color: var(--coral-ink); font-size: 1.02rem; padding: .85rem 1.7rem; }
-.wizard-bar .is-off { visibility: hidden; }
-
 .app-name {
   display: block; width: 100%; max-width: 360px; box-sizing: border-box;
   font: 500 1.05rem/1.4 var(--sans); color: var(--ink);
@@ -300,4 +309,6 @@ h2 { font-size: clamp(1.8rem, 4vw, 2.5rem); margin-bottom: 2rem; }
    covers the step's text. */
 .shot img { display: block; box-sizing: border-box; height: var(--shot-h); width: auto; max-width: 100%; object-fit: contain; border-radius: 12px; border: 1px solid var(--line); }
 .wizard .prompt { margin-top: 4px; }
-@media (max-width: 559px) { .wizard .prompt-body { font-size: .8rem; } .wizard .prompt { padding: 14px 16px 16px; } }
+.wizard .prompt { padding: 18px 20px; }
+.wizard .prompt-body { margin: 0; }
+@media (max-width: 559px) { .wizard .prompt-body { font-size: .8rem; } .wizard .prompt { padding: 14px 16px; } }
