@@ -25,7 +25,11 @@
 }
 
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; scroll-padding-top: 76px; -webkit-text-size-adjust: 100%; }
+html { scroll-padding-top: 76px; -webkit-text-size-adjust: 100%; }
+/* Added by script after load: smooth scrolling on `html` would also animate the
+   browser's scroll restoration on reload, which reads as a jump. */
+html.smooth { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html.smooth { scroll-behavior: auto; } }
 body {
   margin: 0;
   background: var(--bg);

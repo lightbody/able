@@ -457,6 +457,11 @@
   </script>
 
   <script>
+    // Smooth anchor scrolling is switched on only after load, so reloading mid-page
+    // restores the scroll position at once instead of gliding down from the top.
+    window.addEventListener('load', function () {
+      requestAnimationFrame(function () { document.documentElement.classList.add('smooth'); });
+    });
     // A soft spotlight that follows the pointer across the platform and feature cards.
     (function () {
       document.querySelectorAll('.platforms li, .gets li').forEach(function (el) {
