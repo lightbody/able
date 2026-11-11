@@ -294,7 +294,10 @@ h2 { font-size: clamp(1.8rem, 4vw, 2.5rem); margin-bottom: 2rem; }
 
 /* Screenshots are phone-shaped, so they sit in a fixed-height area and
    never change the card's size. */
-.shot { margin: 0; height: var(--shot-h); display: flex; align-items: center; justify-content: center; }
-.shot img { display: block; max-width: 100%; max-height: 100%; width: auto; height: auto; border-radius: 12px; border: 1px solid var(--line); }
+.shot { margin: 0; height: var(--shot-h); overflow: hidden; display: flex; align-items: center; justify-content: center; }
+/* An explicit height, not max-height: 100%: Safari can draw the image at full
+   size on first layout when it has to resolve a percentage, and it then
+   covers the step's text. */
+.shot img { display: block; box-sizing: border-box; height: var(--shot-h); width: auto; max-width: 100%; object-fit: contain; border-radius: 12px; border: 1px solid var(--line); }
 .wizard .prompt { margin-top: 4px; }
 @media (max-width: 559px) { .wizard .prompt-body { font-size: .8rem; } .wizard .prompt { padding: 14px 16px 16px; } }
