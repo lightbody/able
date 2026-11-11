@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-asset-version="">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -44,17 +44,13 @@
         </p>
 
         <div class="wizard" id="wizard">
-          <!-- Screenshots load from screens/<step>-<device>.jpg, e.g. screens/repo-mobile.jpg
-               (steps: repo, github, environment, session; devices: mobile, tablet, desktop).
-               A missing file shows a labelled placeholder instead. -->
           <ol class="stepper" aria-label="Setup steps">
             <li><button type="button" data-goto="1"><span class="dot">1</span><span class="label">Name</span></button></li>
-            <li><button type="button" data-goto="2"><span class="dot">2</span><span class="label">Device</span></button></li>
-            <li><button type="button" data-goto="3"><span class="dot">3</span><span class="label">Repo</span></button></li>
-            <li><button type="button" data-goto="4"><span class="dot">4</span><span class="label">GitHub</span></button></li>
-            <li><button type="button" data-goto="5"><span class="dot">5</span><span class="label">Environment</span></button></li>
-            <li><button type="button" data-goto="6"><span class="dot">6</span><span class="label">Session</span></button></li>
-            <li><button type="button" data-goto="7"><span class="dot">7</span><span class="label">Prompt</span></button></li>
+            <li><button type="button" data-goto="2"><span class="dot">2</span><span class="label">Repo</span></button></li>
+            <li><button type="button" data-goto="3"><span class="dot">3</span><span class="label">GitHub</span></button></li>
+            <li><button type="button" data-goto="4"><span class="dot">4</span><span class="label">Environment</span></button></li>
+            <li><button type="button" data-goto="5"><span class="dot">5</span><span class="label">Session</span></button></li>
+            <li><button type="button" data-goto="6"><span class="dot">6</span><span class="label">Prompt</span></button></li>
           </ol>
 
           <form class="wizard-step" data-step="1" id="name-form">
@@ -73,14 +69,13 @@
           <section class="wizard-step" data-step="2" hidden>
             <div class="step-body">
               <div class="step-main">
-                <p class="step-text" tabindex="-1">What are you setting up on?</p>
-                <p class="step-hint">So the screenshots match what you see.</p>
-                <div class="devices" role="radiogroup" aria-label="Device">
-                  <button type="button" role="radio" data-device="mobile">Mobile</button>
-                  <button type="button" role="radio" data-device="tablet">Tablet</button>
-                  <button type="button" role="radio" data-device="desktop">Desktop</button>
-                </div>
+                <p class="step-text" tabindex="-1">Make its repo from the
+                  <a id="generate-link" href="https://github.com/new?template_owner=lightbody&amp;template_name=able&amp;owner=%40me&amp;name=todoable&amp;visibility=private">Able template</a>.
+                  Name it <code data-handle>todoable</code>.</p>
               </div>
+              <figure class="shot">
+                <img src="screens/repo.jpg" alt="GitHub's new repository form, with the Able template, your account as owner, and the repository name filled in">
+              </figure>
             </div>
             <div class="step-nav">
               <button class="btn btn-ghost" type="button" data-back>Back</button>
@@ -91,13 +86,10 @@
           <section class="wizard-step" data-step="3" hidden>
             <div class="step-body">
               <div class="step-main">
-                <p class="step-text" tabindex="-1">Make its repo from the
-                  <a id="generate-link" href="https://github.com/new?template_owner=lightbody&amp;template_name=able&amp;owner=%40me&amp;name=todoable&amp;visibility=private">Able template</a>.
-                  Name it <code data-handle>todoable</code>.</p>
+                <p class="step-text" tabindex="-1">Connect GitHub to Claude Code.</p>
               </div>
-              <figure class="shot" data-shot="repo">
-                <img alt="" hidden>
-                <figcaption class="shot-placeholder"></figcaption>
+              <figure class="shot">
+                <img src="screens/github.jpg" alt="Claude Code's Connect repositories screen">
               </figure>
             </div>
             <div class="step-nav">
@@ -109,11 +101,11 @@
           <section class="wizard-step" data-step="4" hidden>
             <div class="step-body">
               <div class="step-main">
-                <p class="step-text" tabindex="-1">Connect GitHub to Claude Code.</p>
+                <p class="step-text" tabindex="-1">In Claude Code, create a cloud environment
+                  named "<span data-name>Todoable</span>", with <em>Full</em> network access.</p>
               </div>
-              <figure class="shot" data-shot="github">
-                <img alt="" hidden>
-                <figcaption class="shot-placeholder"></figcaption>
+              <figure class="shot">
+                <img src="screens/environment.jpg" alt="Claude Code's New cloud environment form, with the name and Full network access">
               </figure>
             </div>
             <div class="step-nav">
@@ -125,12 +117,11 @@
           <section class="wizard-step" data-step="5" hidden>
             <div class="step-body">
               <div class="step-main">
-                <p class="step-text" tabindex="-1">In Claude Code, create a cloud environment
-                  named "<span data-name>Todoable</span>", with <em>Full</em> network access.</p>
+                <p class="step-text" tabindex="-1">Start a session on "<span data-name>Todoable</span>",
+                  with the <code data-handle>todoable</code> repo selected.</p>
               </div>
-              <figure class="shot" data-shot="environment">
-                <img alt="" hidden>
-                <figcaption class="shot-placeholder"></figcaption>
+              <figure class="shot">
+                <img src="screens/session.jpg" alt="Claude Code's new session screen, with the environment and repo selected">
               </figure>
             </div>
             <div class="step-nav">
@@ -140,23 +131,6 @@
           </section>
 
           <section class="wizard-step" data-step="6" hidden>
-            <div class="step-body">
-              <div class="step-main">
-                <p class="step-text" tabindex="-1">Start a session on "<span data-name>Todoable</span>",
-                  with the <code data-handle>todoable</code> repo selected.</p>
-              </div>
-              <figure class="shot" data-shot="session">
-                <img alt="" hidden>
-                <figcaption class="shot-placeholder"></figcaption>
-              </figure>
-            </div>
-            <div class="step-nav">
-              <button class="btn btn-ghost" type="button" data-back>Back</button>
-              <button class="btn btn-primary" type="button" data-next>Next</button>
-            </div>
-          </section>
-
-          <section class="wizard-step" data-step="7" hidden>
             <div class="step-body">
               <div class="step-main">
                 <p class="step-text" tabindex="-1">Paste this into the session:</p>
@@ -362,17 +336,8 @@
       var tabs = Array.prototype.slice.call(wizard.querySelectorAll('[data-goto]'));
       var input = document.getElementById('app-name');
       var link = document.getElementById('generate-link');
-      var assetVersion = document.documentElement.getAttribute('data-asset-version');
-      var labels = { mobile: 'Mobile', tablet: 'Tablet', desktop: 'Desktop' };
-      var current = 1, reached = 1, device;
+      var current = 1, reached = 1;
 
-      var detectDevice = function () {
-        var ua = navigator.userAgent;
-        var touchMac = /Macintosh/.test(ua) && navigator.maxTouchPoints > 1;
-        if (/iPad|Tablet|PlayBook|Silk/i.test(ua) || touchMac || (/Android/i.test(ua) && !/Mobile/i.test(ua))) return 'tablet';
-        if ((navigator.userAgentData && navigator.userAgentData.mobile) || /Mobi|iPhone|iPod|Android/i.test(ua)) return 'mobile';
-        return 'desktop';
-      };
       var handleOf = function (name) {
         return name.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
           .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
@@ -385,26 +350,6 @@
         var url = new URL(link.href);
         url.searchParams.set('name', handle);
         link.href = url.toString();
-      };
-      var setDevice = function (d) {
-        device = d;
-        wizard.dataset.device = d;
-        wizard.querySelectorAll('[data-device]').forEach(function (b) {
-          b.setAttribute('aria-checked', String(b.dataset.device === d));
-        });
-        wizard.querySelectorAll('.shot').forEach(function (fig) {
-          var step = fig.dataset.shot, img = fig.querySelector('img');
-          var src = 'screens/' + step + '-' + d + '.jpg' + (assetVersion ? '?v=' + assetVersion : '');
-          var label = step.charAt(0).toUpperCase() + step.slice(1);
-          fig.querySelector('.shot-placeholder').innerHTML =
-            '<strong>Screenshot</strong><span>' + label + ' &middot; ' + labels[d] + '</span><code>screens/' + step + '-' + d + '.jpg</code>';
-          fig.classList.remove('has-image');
-          img.hidden = true;
-          img.onload = function () { img.hidden = false; fig.classList.add('has-image'); };
-          img.onerror = function () { img.hidden = true; fig.classList.remove('has-image'); };
-          img.alt = label + ' step, on ' + labels[d].toLowerCase();
-          img.src = src;
-        });
       };
       var show = function (n, focus) {
         current = n;
@@ -433,9 +378,6 @@
       wizard.querySelectorAll('[data-back]').forEach(function (b) {
         b.addEventListener('click', function () { show(current - 1, true); });
       });
-      wizard.querySelectorAll('[data-device]').forEach(function (b) {
-        b.addEventListener('click', function () { setDevice(b.dataset.device); });
-      });
       tabs.forEach(function (t) {
         t.addEventListener('click', function () {
           if (current === 1) applyName();
@@ -447,7 +389,6 @@
       });
 
       applyName();
-      setDevice(detectDevice());
       show(1, false);
     })();
 
