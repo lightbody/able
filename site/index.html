@@ -9,11 +9,11 @@
   <meta property="og:description" content="An easy, opinionated stack for deploying new apps on Cloudflare, Neon, Fly.io, WorkOS and Grafana Cloud, set up for you by your coding agent.">
   <meta property="og:url" content="https://able.lightbody.net/">
   <meta property="og:type" content="website">
-  <meta name="theme-color" content="#0e3b2c">
+  <meta name="theme-color" content="#080a09">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -137,6 +137,7 @@
 
     <section class="section" id="platforms">
       <div class="wrap">
+        <p class="eyebrow">The stack</p>
         <h2>Five platforms, already wired together.</h2>
         <ul class="platforms">
           <li>
@@ -172,17 +173,20 @@
         </ul>
 
         <ul class="gets">
-          <li><strong>Production on day one.</strong> Merge to <code>main</code> and it deploys.</li>
-          <li><strong>A preview for every pull request,</strong> with its own database branch. It's deleted when the PR closes.</li>
-          <li><strong>Sign-in and live data already working</strong>, so you start on features, not plumbing.</li>
-          <li><strong>An agent that can see Production.</strong> It reads the same traces, logs and metrics you do, so it fixes bugs from evidence and checks its own pull requests before you merge them.</li>
+          <li><strong>Production on day one</strong>Merge to <code>main</code> and it deploys.</li>
+          <li><strong>A preview for every pull request</strong>Each has its own database branch, and it's deleted when the PR closes.</li>
+          <li><strong>Sign-in and live data already working</strong>You start on features, not plumbing.</li>
+          <li><strong>An agent that can see Production</strong>It reads the same traces, logs and metrics you do, so it fixes bugs from evidence and checks its own pull requests before you merge them.</li>
         </ul>
       </div>
     </section>
 
     <section class="section section-tint" id="faq">
-      <div class="wrap">
-        <h2>FAQ</h2>
+      <div class="wrap split">
+        <div class="split-head">
+          <p class="eyebrow">Questions</p>
+          <h2>FAQ</h2>
+        </div>
         <div class="faq">
           <details>
             <summary>What's in the stack?</summary>
@@ -286,7 +290,7 @@
         <h2>Your next app is one prompt away.</h2>
         <div class="cta-actions">
           <a class="btn btn-primary" href="#top" data-start>Get started</a>
-          <a class="btn btn-ghost-light" href="https://github.com/lightbody/able">View on GitHub</a>
+          <a class="btn btn-ghost" href="https://github.com/lightbody/able">View on GitHub</a>
         </div>
       </div>
     </section>
@@ -439,6 +443,19 @@
       applyName();
       show(1, false);
       requestAnimationFrame(function () { list.classList.add('animate'); });
+    })();
+  </script>
+
+  <script>
+    // A soft spotlight that follows the pointer across the platform and feature cards.
+    (function () {
+      document.querySelectorAll('.platforms li, .gets li').forEach(function (el) {
+        el.addEventListener('pointermove', function (e) {
+          var r = el.getBoundingClientRect();
+          el.style.setProperty('--mx', (e.clientX - r.left) + 'px');
+          el.style.setProperty('--my', (e.clientY - r.top) + 'px');
+        });
+      });
     })();
   </script>
 </body>
