@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Able — ship real apps on best-in-class platforms</title>
-  <meta name="description" content="Able is an easy, opinionated TypeScript stack for deploying new apps on Cloudflare, Neon, Fly.io, WorkOS and Grafana Cloud, set up for you by your coding agent.">
-  <meta property="og:title" content="Able — ship real apps on best-in-class platforms">
-  <meta property="og:description" content="An easy, opinionated stack for deploying new apps on Cloudflare, Neon, Fly.io, WorkOS and Grafana Cloud, set up for you by your coding agent.">
+  <title>Able — a software factory that fits in your pocket</title>
+  <meta name="description" content="Able sets up your cloud, your pipeline and your agent's playbook from a phone or a browser. Describe what you want, preview it live, ship it. Built on Cloudflare, Neon, Fly.io, WorkOS and Grafana Cloud.">
+  <meta property="og:title" content="Able — a software factory that fits in your pocket">
+  <meta property="og:description" content="Able sets up your cloud, your pipeline and your agent's playbook from a phone or a browser. Describe it, preview it live, ship it. You review the running app, not the code.">
   <meta property="og:url" content="https://able.lightbody.net/">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Able">
@@ -14,10 +14,10 @@
   <meta property="og:image:type" content="image/png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="Able: ship real apps on best-in-class platforms. Cloudflare, Neon, Fly.io, WorkOS and Grafana Cloud.">
+  <meta property="og:image:alt" content="Able: a software factory that fits in your pocket. Describe it, preview it, ship it.">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Able — ship real apps on best-in-class platforms">
-  <meta name="twitter:description" content="An easy, opinionated stack for deploying new apps on Cloudflare, Neon, Fly.io, WorkOS and Grafana Cloud, set up for you by your coding agent.">
+  <meta name="twitter:title" content="Able — a software factory that fits in your pocket">
+  <meta name="twitter:description" content="Able sets up your cloud, your pipeline and your agent's playbook from a phone or a browser. Describe it, preview it live, ship it. You review the running app, not the code.">
   <meta name="twitter:image" content="https://able.lightbody.net/og.png">
   <meta name="theme-color" content="#080a09">
   <meta name="color-scheme" content="dark">
@@ -35,7 +35,8 @@
         <span>Able</span>
       </a>
       <nav class="nav-links">
-        <a href="#platforms">Platforms</a>
+        <a href="#how">How it works</a>
+        <a href="#platforms" class="nav-extra">Stack</a>
         <a href="#faq">FAQ</a>
         <a class="btn btn-ghost" href="https://github.com/lightbody/able">GitHub</a>
       </nav>
@@ -45,14 +46,88 @@
   <main id="top">
     <section class="hero">
       <div class="wrap hero-inner">
-        <h1>Ship real apps on<br><em>best-in-class</em> platforms.</h1>
+        <h1>A <em>software factory</em> that fits in your pocket.</h1>
         <p class="lede">
-          Able is an easy, opinionated TypeScript stack. It deploys new apps on
-          Cloudflare, Neon, Fly.io and WorkOS, watched by Grafana Cloud: the same
-          platforms professional teams use, and a low-traffic app runs on their
-          free tiers or close to it.
+          Able sets up your cloud, your pipeline and your agent's playbook, all
+          from a phone or a browser. Then you describe what you want, your agent
+          builds it, and a live Preview shows you the result. You review the
+          running app, not the code.
         </p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#start" data-start>Start your factory</a>
+          <a class="btn btn-ghost" href="#how">How it works</a>
+        </div>
+        <p class="fine">It runs on Claude Code on the web, so a phone, a tablet or
+          any browser is all you need.</p>
+      </div>
+    </section>
 
+    <section class="section" id="how">
+      <div class="wrap">
+        <p class="eyebrow">How it works</p>
+        <h2>Describe it. Preview it. Ship it.</h2>
+        <ol class="gets loop">
+          <li><strong><span class="num">01</span>Describe it</strong>Tell Claude what you want, in plain language, from your phone or any browser. It writes the code in a cloud session that already has your repo, your tools and its playbook.</li>
+          <li><strong><span class="num">02</span>Preview it</strong>Every pull request becomes a live copy of your app, with its own database branch and its own URL. You tap through the real thing, not a diff.</li>
+          <li><strong><span class="num">03</span>Ship it</strong>Merge, and it deploys to Production. If something breaks, Claude reads the same traces, logs and metrics you can, and fixes it from evidence.</li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="section" id="review">
+      <div class="wrap">
+        <p class="eyebrow">The factory model</p>
+        <h2 class="tight">You review the running app, not the code.</h2>
+        <p class="section-lede">Able is built for a way of working where nobody has to read
+          the diff. That only works if something else stands in for the reading.
+          Four things do.</p>
+        <ul class="gets">
+          <li><strong>Tests on every change</strong>CI type-checks and builds the app and runs the backend tests on each pull request. Production deploys only after they pass.</li>
+          <li><strong>A live Preview for every pull request</strong>Its own Fly app, its own Neon branch forked from Production, and a URL to try. It's deleted when the pull request closes.</li>
+          <li><strong>Telemetry your agent can read</strong>One trace follows a click from the browser through the backend into Postgres. A built-in skill teaches Claude to query it, so bugs get fixed from evidence.</li>
+          <li><strong>Keys kept narrow</strong>The Claude Code Tokens and the CI Tokens that deploy are separate, and the Claude Code Tokens stay at a minimal Baseline between tasks. An agent working on your app can't reach beyond it.</li>
+        </ul>
+        <p class="fine">It's still your repo, and you can read every line whenever you like. Able just doesn't make you.</p>
+      </div>
+    </section>
+
+    <section class="section" id="anywhere">
+      <div class="wrap">
+        <p class="eyebrow">Anywhere, for anyone</p>
+        <h2>Your phone is the dev machine.</h2>
+        <ul class="gets loop">
+          <li><strong>Gear you already own</strong>A phone, a tablet or any browser, plus Claude Code on the web. No laptop, no terminal, no local toolchain.</li>
+          <li><strong>Guided setup</strong>Claude walks you through creating each account and API token, one step at a time, and checks that each one worked. If you can follow a checklist and paste a prompt, you can set it up.</li>
+          <li><strong>Build from anywhere</strong>Start a session wherever you have a few minutes. Your Agent Environment already has your code, your tests and the Claude Code Tokens, so there's nothing to set up again.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="section" id="repo">
+      <div class="wrap">
+        <p class="eyebrow">After setup</p>
+        <h2 class="tight">The factory stays in your repo.</h2>
+        <p class="section-lede">Setup doesn't just wire up five services. It leaves your agent
+          a workshop in your repo, so every later session starts out knowing how your
+          app works and what it may touch.</p>
+        <ul class="files">
+          <li><code>CLAUDE.md</code><span>The agent's guidelines: how sign-in works, how deploys work, what to log, and the rules for its own tokens.</span></li>
+          <li><code>.claude/skills/observability</code><span>A skill that teaches Claude to query your Production and Preview telemetry before it guesses.</span></li>
+          <li><code>.claude/hooks/session-start.sh</code><span>Every cloud session installs dependencies and starts a test database, so the tests just run.</span></li>
+          <li><code>SECRETS.md</code><span>Which tokens exist, what each can do, the Baseline, and how to rotate or revoke them.</span></li>
+          <li><code>.github/workflows</code><span>Tests, Production deploys, and a Preview for every pull request.</span></li>
+        </ul>
+        <p class="fine">Able is a template, not a framework: no library to depend on and no
+          updates to pull. These files are yours to edit as your app grows.</p>
+      </div>
+    </section>
+
+    <section class="section" id="start">
+      <div class="wrap">
+        <p class="eyebrow">Start your factory</p>
+        <h2 class="tight">Six steps, from your phone.</h2>
+        <p class="section-lede">Name your app, make its repo, and paste one prompt into
+          Claude Code. Claude does the rest.</p>
         <div class="wizard" id="wizard">
           <div class="wizard-bar">
             <button class="btn btn-ghost" type="button" id="wizard-back">Back</button>
@@ -147,8 +222,8 @@
 
     <section class="section" id="platforms">
       <div class="wrap">
-        <p class="eyebrow">The stack</p>
-        <h2>Five platforms, already wired together.</h2>
+        <p class="eyebrow">Under the hood</p>
+        <h2>Best-in-class platforms, already wired together.</h2>
         <ul class="platforms">
           <li>
             <span class="role">Frontend</span>
@@ -184,20 +259,45 @@
 
         <ul class="gets">
           <li><strong>Production on day one</strong>Merge to <code>main</code> and it deploys.</li>
-          <li><strong>A preview for every pull request</strong>Each has its own database branch, and it's deleted when the PR closes.</li>
           <li><strong>Sign-in and live data already working</strong>You start on features, not plumbing.</li>
-          <li><strong>An agent that can see Production</strong>It reads the same traces, logs and metrics you do, so it fixes bugs from evidence and checks its own pull requests before you merge them.</li>
         </ul>
       </div>
     </section>
 
-    <section class="section section-tint" id="faq">
+    <section class="section" id="faq">
       <div class="wrap split">
         <div class="split-head">
           <p class="eyebrow">Questions</p>
           <h2>FAQ</h2>
         </div>
         <div class="faq">
+          <details>
+            <summary>Do I have to read the code?</summary>
+            <p>No, and that's the point. Able is built for a way of working where you review the running app, not the diff: Claude writes a change, a Preview shows you the result, and tests and telemetry back it up. The repo is yours, so you can read any of it whenever you like. Able just doesn't make you.</p>
+          </details>
+          <details>
+            <summary>Is that safe?</summary>
+            <p>It's as safe as the checks behind it, and those are modest today. CI type-checks and builds the app and runs the backend tests, and Production deploys only after they pass. There's no browser test suite yet, though Claude can add one as your app grows. Previews and telemetry catch much of what tests miss. If your app handles money or sensitive data, have someone who reads code look it over before you launch.</p>
+          </details>
+          <details>
+            <summary>Do I need a laptop?</summary>
+            <p>No. A phone, a tablet or any browser is enough. Claude Code on the web runs every session in the cloud, and setup is a checklist Claude walks you through, so there's nothing to install and no terminal to open.</p>
+          </details>
+          <details>
+            <summary>What does Able leave in my repo?</summary>
+            <p>Able is a template, not a framework. Setup copies it into your own repo, and from then on the code is yours: there's no Able library to depend on and no updates to pull.</p>
+            <p>What it does leave is the agent's workshop: a <code>CLAUDE.md</code> of guidelines, an <code>observability</code> skill, a session-start hook, <code>SECRETS.md</code>, and the CI and Preview workflows. Every later session starts from them. They're yours to edit as your app grows.</p>
+          </details>
+          <details>
+            <summary>Why no staging environment?</summary>
+            <p>When you build with AI, you make lots of changes quickly, and each one
+              needs to be previewed on its own. So instead of one shared staging
+              environment, every pull request gets its own live preview, with a
+              database forked from production. That fits the way people actually
+              build with agents. It also fits WorkOS pricing: its Production
+              environment is free but Staging costs extra, so production and every
+              preview share the free Production environment.</p>
+          </details>
           <details>
             <summary>What's in the stack?</summary>
             <p>TypeScript everywhere: a React + Vite frontend, a Fastify backend and
@@ -225,22 +325,6 @@
               sleep when no one is using it and wake on the next request, so you pay
               only for the minutes it actually runs. Fly.io also waives monthly bills
               under $5, so your card isn't charged at all.</p>
-          </details>
-          <details>
-            <summary>What does Able expect of my app after setup?</summary>
-            <p>Nothing. Able is a template, not a framework. Setup copies it into your own
-              repo, and from then on the code is yours. There's no Able library to depend
-              on and no updates you have to pull.</p>
-          </details>
-          <details>
-            <summary>Why no staging environment?</summary>
-            <p>When you build with AI, you make lots of changes quickly, and each one
-              needs to be previewed on its own. So instead of one shared staging
-              environment, every pull request gets its own live preview, with a
-              database forked from production. That fits the way people actually
-              build with agents. It also fits WorkOS pricing: its Production
-              environment is free but Staging costs extra, so production and every
-              preview share the free Production environment.</p>
           </details>
           <details>
             <summary>Why WorkOS rather than Clerk?</summary>
@@ -297,9 +381,9 @@
 
     <section class="cta">
       <div class="wrap cta-inner">
-        <h2>Your next app is one prompt away.</h2>
+        <h2>Your factory is one prompt away.</h2>
         <div class="cta-actions">
-          <a class="btn btn-primary" href="#top" data-start>Get started</a>
+          <a class="btn btn-primary" href="#start" data-start>Start your factory</a>
           <a class="btn btn-ghost" href="https://github.com/lightbody/able">View on GitHub</a>
         </div>
       </div>

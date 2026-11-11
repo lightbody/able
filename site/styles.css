@@ -120,11 +120,12 @@ h2 { font-size: clamp(1.8rem, 4vw, 2.6rem); line-height: 1.1; letter-spacing: -.
 .nav-links a:not(.btn) { text-decoration: none; color: var(--ink-soft); transition: color .15s ease; }
 .nav-links a:not(.btn):hover { color: var(--ink); }
 .nav-links .btn { padding: .5rem .85rem; font-size: .84rem; }
+@media (max-width: 559px) { .nav-links { gap: 1.1rem; } .nav-links .nav-extra { display: none; } }
 
 /* Hero */
 .hero {
   position: relative;
-  padding: 40px 0 96px;
+  padding: 56px 0 88px;
   background: radial-gradient(60% 55% at 50% 0%, var(--accent-glow), transparent 72%);
 }
 .hero::before {
@@ -137,10 +138,12 @@ h2 { font-size: clamp(1.8rem, 4vw, 2.6rem); line-height: 1.1; letter-spacing: -.
   -webkit-mask-image: radial-gradient(70% 75% at 50% 0%, #000 0%, transparent 78%);
   mask-image: radial-gradient(70% 75% at 50% 0%, #000 0%, transparent 78%);
 }
-@media (min-width: 720px) { .hero { padding-top: 64px; } }
+@media (min-width: 720px) { .hero { padding: 96px 0 104px; } }
 .hero-inner { position: relative; }
-.hero-inner h1 { max-width: 12em; }
-.lede { text-wrap: pretty; font-size: clamp(1.02rem, 1.6vw, 1.2rem); color: var(--ink-soft); max-width: 36em; margin: 1.5rem 0 3rem; letter-spacing: -.01em; }
+.hero-inner h1 { max-width: 11em; }
+.lede { text-wrap: pretty; font-size: clamp(1.02rem, 1.6vw, 1.2rem); color: var(--ink-soft); max-width: 38em; margin: 1.5rem 0 2rem; letter-spacing: -.01em; }
+.hero-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.hero-actions .btn { padding: .85rem 1.3rem; font-size: .95rem; }
 .fine { font-size: .86rem; color: var(--ink-faint); margin: 1.25rem 0 0; max-width: 700px; }
 
 .prompt {
@@ -155,6 +158,9 @@ h2 { font-size: clamp(1.8rem, 4vw, 2.6rem); line-height: 1.1; letter-spacing: -.
 /* Platforms */
 .section { padding: 104px 0; border-top: 1px solid var(--line); }
 .section h2 { margin-bottom: 3rem; max-width: 16em; }
+.section h2.tight { margin-bottom: 1.1rem; }
+.section-lede { text-wrap: pretty; font-size: 1.05rem; color: var(--ink-soft); max-width: 38em; margin: 0 0 2.5rem; letter-spacing: -.01em; }
+.section .fine { margin-top: 1.5rem; }
 
 /* A bento grid: three cards, then two wider ones. */
 .platforms {
@@ -206,7 +212,19 @@ h2 { font-size: clamp(1.8rem, 4vw, 2.6rem); line-height: 1.1; letter-spacing: -.
 .gets { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 12px; grid-template-columns: 1fr; }
 @media (min-width: 720px) { .gets { grid-template-columns: 1fr 1fr; } }
 .gets li { padding: 24px 26px; color: var(--ink-soft); font-size: .95rem; }
+@media (min-width: 900px) { .gets.loop { grid-template-columns: repeat(3, 1fr); } }
+.gets .num { display: block; font: 500 .72rem var(--mono); letter-spacing: .08em; color: var(--accent); margin-bottom: .6rem; }
 .gets li strong { display: block; color: var(--ink); font-weight: 600; font-size: 1.05rem; letter-spacing: -.02em; margin-bottom: .35rem; }
+
+/* What stays in the repo */
+.files { list-style: none; margin: 0; padding: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.files li { display: grid; gap: 6px; padding: 18px 22px; border-top: 1px solid var(--line); }
+.files li:first-child { border-top: 0; }
+.files code { justify-self: start; max-width: 100%; overflow-wrap: anywhere; color: var(--accent); }
+.files span { color: var(--ink-soft); font-size: .95rem; max-width: 40em; }
+@media (min-width: 760px) {
+  .files li { grid-template-columns: minmax(0, 19rem) minmax(0, 1fr); gap: 28px; align-items: baseline; padding: 18px 26px; }
+}
 
 /* FAQ */
 .split { display: grid; gap: 40px; }
