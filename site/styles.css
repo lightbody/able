@@ -250,7 +250,13 @@ h2 { font-size: clamp(1.8rem, 4vw, 2.5rem); margin-bottom: 2rem; }
 .stepper .is-current .dot { background: var(--green); border-color: var(--green); color: #e9f0e6; }
 .stepper .is-current button { color: var(--ink); font-weight: 600; }
 @media (prefers-color-scheme: dark) { .stepper .is-current .dot { background: var(--lime); border-color: var(--lime); color: #13261e; } }
-@media (max-width: 559px) { .stepper li:not(.is-current) .label { display: none; } .stepper .is-current .label { white-space: nowrap; } }
+.stepper .short { display: none; }
+@media (max-width: 559px) {
+  .stepper li:not(.is-current) .label { display: none; }
+  .stepper .is-current .label { white-space: nowrap; }
+  .stepper .full { display: none; }
+  .stepper .short { display: inline; }
+}
 
 .wizard-step { flex: 1; display: flex; flex-direction: column; }
 .wizard-step[hidden] { display: none; }
