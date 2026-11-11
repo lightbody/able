@@ -53,6 +53,7 @@ jobs:
           v="${GITHUB_SHA::8}"
           sed -i -E "s/(href=\"(styles\.css|favicon\.svg))\"/\1?v=$v\"/g" site/index.html
           sed -i -E "s/(src=\"screens\/[a-z-]+\.jpg)\"/\1?v=$v\"/g" site/index.html
+          sed -i -E "s#(content=\"https://able\.lightbody\.net/og\.png)\"#\1?v=$v\"#g" site/index.html
           grep -q "styles.css?v=$v" site/index.html
           grep -q "screens/repo.jpg?v=$v" site/index.html
 
