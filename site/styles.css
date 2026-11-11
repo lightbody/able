@@ -118,7 +118,7 @@ h2 { font-size: clamp(1.8rem, 4vw, 2.6rem); line-height: 1.1; letter-spacing: -.
 /* Hero */
 .hero {
   position: relative;
-  padding: 88px 0 96px;
+  padding: 40px 0 96px;
   background: radial-gradient(60% 55% at 50% 0%, var(--accent-glow), transparent 72%);
 }
 .hero::before {
@@ -131,9 +131,10 @@ h2 { font-size: clamp(1.8rem, 4vw, 2.6rem); line-height: 1.1; letter-spacing: -.
   -webkit-mask-image: radial-gradient(70% 75% at 50% 0%, #000 0%, transparent 78%);
   mask-image: radial-gradient(70% 75% at 50% 0%, #000 0%, transparent 78%);
 }
+@media (min-width: 720px) { .hero { padding-top: 64px; } }
 .hero-inner { position: relative; }
 .hero-inner h1 { max-width: 12em; }
-.lede { font-size: clamp(1.02rem, 1.6vw, 1.2rem); color: var(--ink-soft); max-width: 36em; margin: 1.5rem 0 3rem; letter-spacing: -.01em; }
+.lede { text-wrap: pretty; font-size: clamp(1.02rem, 1.6vw, 1.2rem); color: var(--ink-soft); max-width: 36em; margin: 1.5rem 0 3rem; letter-spacing: -.01em; }
 .fine { font-size: .86rem; color: var(--ink-faint); margin: 1.25rem 0 0; max-width: 700px; }
 
 .prompt {
