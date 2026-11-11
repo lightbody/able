@@ -348,8 +348,9 @@
         var phone = window.innerWidth < 760;
         if (phone ? Math.abs(top - limit) > 2 : top < limit) window.scrollBy(0, top - limit);
       };
-      // The step strip sits between Back and Next. When it doesn't all fit, centre
-      // the current step and fade whatever is clipped against the buttons.
+      // The step strip sits between Back and Next. If it all fits, centre the strip;
+      // if not, centre the current step (even the first and last, leaving empty room
+      // on one side) and fade whatever is clipped against the buttons.
       var layoutStepper = function () {
         var cur = list.querySelector('.is-current');
         if (!cur) return;
@@ -358,7 +359,6 @@
           x = (cw - lw) / 2;
         } else {
           x = cw / 2 - (cur.offsetLeft + cur.offsetWidth / 2);
-          x = Math.min(0, Math.max(cw - lw, x));
         }
         list.style.transform = 'translateX(' + x + 'px)';
         stepperEl.style.setProperty('--fl', x < -1 ? '20px' : '0px');
