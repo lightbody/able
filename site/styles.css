@@ -1,6 +1,5 @@
-/* Able's landing page. Dark-first and quiet, in the manner of Linear: a near-black
-   ground, hairline borders, tight Inter type, one green accent. Light theme follows
-   the viewer's system setting. */
+/* Able's landing page. Dark only and quiet, in the manner of Linear: a near-black
+   ground, hairline borders, tight Inter type (sans-serif throughout), one green accent. */
 :root {
   --bg: #080a09;
   --surface: #0f1210;
@@ -23,28 +22,6 @@
   --sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
   --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
   color-scheme: dark;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    --bg: #fbfcfb;
-    --surface: #ffffff;
-    --surface-2: #f2f5f3;
-    --line: rgba(10, 24, 16, .09);
-    --line-strong: rgba(10, 24, 16, .17);
-    --ink: #0c1410;
-    --ink-soft: #55615a;
-    --ink-faint: #85908a;
-    --accent: #14804f;
-    --accent-ink: #ffffff;
-    --accent-glow: rgba(20, 128, 79, .13);
-    --coral: #d9532f;
-    --code-bg: #0c1410;
-    --code-ink: #dfe7e2;
-    --grid: rgba(10, 24, 16, .055);
-    --shadow: 0 0 0 1px var(--line), 0 30px 70px -35px rgba(10, 24, 16, .3);
-    color-scheme: light;
-  }
 }
 
 * { box-sizing: border-box; }
