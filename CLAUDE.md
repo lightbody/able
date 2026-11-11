@@ -25,6 +25,10 @@ the `styles.css` and `favicon.svg` links at deploy time. Add any new asset
 file to that step's `sed` pattern, or it can go stale after a deploy. The
 setup wizard's screenshots, `site/screens/<step>.jpg` (phone screenshots,
 one per step), are covered by it: it versions any `src="screens/….jpg"`.
+`site/og.png` is the 1200x630 share card (OpenGraph and Twitter tags in
+`index.html`). It's referenced by absolute production URL, which `site.yml`
+versions too, so a Preview's card only resolves once the file is on `main`.
+Redraw it when the headline changes.
 
 ## Terms (template repo only)
 
