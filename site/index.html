@@ -43,17 +43,95 @@
           free tiers or close to it.
         </p>
 
-        <div class="prompt">
-          <p class="prompt-label">Paste this into your coding agent</p>
-          <p class="prompt-body" id="prompt-text">Read https://github.com/lightbody/able/blob/main/PLAYBOOK.md and follow it to set up a new app for me. Ask me what it's called first.</p>
-          <button class="btn btn-primary copy" type="button" data-copy="#prompt-text">
-            <span class="copy-label">Copy prompt</span>
-          </button>
+        <div class="wizard" id="wizard">
+          <div class="wizard-bar">
+            <button class="btn btn-ghost" type="button" id="wizard-back">Back</button>
+            <nav class="stepper" aria-label="Setup steps">
+              <ol>
+                <li><button type="button" data-goto="1"><span class="dot">1</span><span class="label">Name</span></button></li>
+                <li><button type="button" data-goto="2"><span class="dot">2</span><span class="label">Repo</span></button></li>
+                <li><button type="button" data-goto="3"><span class="dot">3</span><span class="label">GitHub</span></button></li>
+                <li><button type="button" data-goto="4"><span class="dot">4</span><span class="label"><span class="full">Environment</span><span class="short">Env</span></span></button></li>
+                <li><button type="button" data-goto="5"><span class="dot">5</span><span class="label">Session</span></button></li>
+                <li><button type="button" data-goto="6"><span class="dot">6</span><span class="label">Prompt</span></button></li>
+              </ol>
+            </nav>
+            <button class="btn btn-primary" type="button" id="wizard-next">Next <span aria-hidden="true">&rarr;</span></button>
+          </div>
+
+          <form class="wizard-step" data-step="1" id="name-form">
+            <div class="step-body">
+              <div class="step-main">
+                <label class="step-text" for="app-name">Name your app.</label>
+                <input class="app-name" id="app-name" type="text" value="Todoable"
+                  autocomplete="off" autocapitalize="words" spellcheck="false" maxlength="40">
+              </div>
+            </div>
+          </form>
+
+          <section class="wizard-step" data-step="2" hidden>
+            <div class="step-body">
+              <div class="step-main">
+                <p class="step-text" tabindex="-1">Make its repo from the
+                  <a id="generate-link" href="https://github.com/new?template_owner=lightbody&amp;template_name=able&amp;owner=%40me&amp;name=todoable&amp;visibility=private">Able template</a>.
+                  Name it <code data-handle>todoable</code>.</p>
+              </div>
+              <figure class="shot">
+                <img src="screens/repo.jpg" width="648" height="1000" alt="GitHub's new repository form, with the Able template, your account as owner, and the repository name filled in">
+              </figure>
+            </div>
+          </section>
+
+          <section class="wizard-step" data-step="3" hidden>
+            <div class="step-body">
+              <div class="step-main">
+                <p class="step-text" tabindex="-1">Connect GitHub to Claude Code.</p>
+              </div>
+              <figure class="shot">
+                <img src="screens/github.jpg" width="488" height="1000" alt="Claude Code's Connect repositories screen">
+              </figure>
+            </div>
+          </section>
+
+          <section class="wizard-step" data-step="4" hidden>
+            <div class="step-body">
+              <div class="step-main">
+                <p class="step-text" tabindex="-1">In Claude Code, create a cloud environment
+                  named "<span data-name>Todoable</span>", with <em>Full</em> network access.</p>
+              </div>
+              <figure class="shot">
+                <img src="screens/environment.jpg" width="488" height="1000" alt="Claude Code's New cloud environment form, with the name and Full network access">
+              </figure>
+            </div>
+          </section>
+
+          <section class="wizard-step" data-step="5" hidden>
+            <div class="step-body">
+              <div class="step-main">
+                <p class="step-text" tabindex="-1">Start a session on "<span data-name>Todoable</span>",
+                  with the <code data-handle>todoable</code> repo selected.</p>
+              </div>
+              <figure class="shot">
+                <img src="screens/session.jpg" width="487" height="1000" alt="Claude Code's new session screen, with the environment and repo selected">
+              </figure>
+            </div>
+          </section>
+
+          <section class="wizard-step" data-step="6" hidden>
+            <div class="step-body">
+              <div class="step-main">
+                <p class="step-text" tabindex="-1">Copy this, then paste it into the session:</p>
+                <div class="prompt">
+                  <p class="prompt-body" id="prompt-text">Read https://github.com/lightbody/able/blob/main/PLAYBOOK.md and follow it to set up my new app. App Name: "<span data-name>Todoable</span>". App Handle: `<span data-handle>todoable</span>`. I've made the `<span data-handle>todoable</span>` repo from the Able template and a cloud environment named "<span data-name>Todoable</span>", and this session should be on both. Check that first.</p>
+                </div>
+              </div>
+            </div>
+          </section>
         </div>
-        <p class="fine">Your agent walks you through creating the accounts and does the rest.
-          Using Claude Code on the web? Your agent first gives the app a cloud
-          environment of its own, named after the app (say, "Chore Chart"), so
-          its tokens never reach your other projects.</p>
+        <p class="fine">Claude checks the repo and the environment, walks you through
+          creating the other accounts, and does the rest. Missed a step? It tells you
+          how to fix it. Using another coding agent? Make the repo the same way, open
+          your agent in a clone of it, and paste the same prompt.</p>
       </div>
     </section>
 
@@ -184,11 +262,12 @@
             <p>A coding agent, plus accounts on GitHub, Neon, Fly.io, Cloudflare,
               WorkOS and Grafana Cloud. Your agent walks you through creating each one and the API tokens
               it needs, one step at a time.</p>
-            <p>With Claude Code on the web, every session on your app, starting with
-              setup, runs in a cloud environment of its own, named after the app (say,
-              "Chore Chart"). Create it first with Full
-              network access (recommended), or ask Claude for one with Limited access and
-              just the hosts the app needs. Claude asks for each API token with only the permissions it needs
+            <p>With Claude Code on the web, a session starts from a repo, so you make
+              your app's repo from the template first, and a cloud environment of its own,
+              named after the app (say, "Todoable"): the steps at the top of this page.
+              Every session on your app, starting with setup, runs on that environment.
+              Create it with Full network access (recommended), or ask Claude for one with
+              Limited access and just the hosts the app needs. Claude asks for each API token with only the permissions it needs
               at the time, and has you narrow them once setup is done.</p>
           </details>
           <details>
@@ -206,9 +285,7 @@
       <div class="wrap cta-inner">
         <h2>Your next app is one prompt away.</h2>
         <div class="cta-actions">
-          <button class="btn btn-primary copy" type="button" data-copy="#prompt-text">
-            <span class="copy-label">Copy prompt</span>
-          </button>
+          <a class="btn btn-primary" href="#top" data-start>Get started</a>
           <a class="btn btn-ghost-light" href="https://github.com/lightbody/able">View on GitHub</a>
         </div>
       </div>
@@ -233,22 +310,136 @@
   </svg>
 
   <script>
-    document.querySelectorAll('[data-copy]').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var text = document.querySelector(btn.getAttribute('data-copy')).textContent.trim();
-        var label = btn.querySelector('.copy-label');
-        var done = function () {
-          label.textContent = 'Copied!';
-          btn.classList.add('copied');
-          setTimeout(function () { label.textContent = 'Copy prompt'; btn.classList.remove('copied'); }, 1800);
+    (function () {
+      var wizard = document.getElementById('wizard');
+      var steps = Array.prototype.slice.call(wizard.querySelectorAll('.wizard-step'));
+      var tabs = Array.prototype.slice.call(wizard.querySelectorAll('[data-goto]'));
+      var input = document.getElementById('app-name');
+      var link = document.getElementById('generate-link');
+      var current = 1, reached = 1;
+      var stepperEl = wizard.querySelector('.stepper');
+      var list = stepperEl.querySelector('ol');
+      var promptEl = document.getElementById('prompt-text');
+      var copyTimer;
+      var backBtn = document.getElementById('wizard-back');
+      var nextBtn = document.getElementById('wizard-next');
+      var nav = document.querySelector('.nav');
+
+      var handleOf = function (name) {
+        return name.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      };
+      var applyName = function () {
+        var name = input.value.replace(/\s+/g, ' ').trim() || 'Todoable';
+        var handle = handleOf(name) || 'my-app';
+        wizard.querySelectorAll('[data-name]').forEach(function (el) { el.textContent = name; });
+        wizard.querySelectorAll('[data-handle]').forEach(function (el) { el.textContent = handle; });
+        var url = new URL(link.href);
+        url.searchParams.set('name', handle);
+        link.href = url.toString();
+      };
+      // The card is about as tall as a phone screen, so a tap on Next can leave
+      // the new step's text off-screen. On phones, snap the card's top to just
+      // under the site header after every step change; on bigger screens, only
+      // scroll if the card has slipped above it.
+      var revealCard = function () {
+        var top = wizard.getBoundingClientRect().top;
+        var limit = nav.offsetHeight + 8;
+        var phone = window.innerWidth < 760;
+        if (phone ? Math.abs(top - limit) > 2 : top < limit) window.scrollBy(0, top - limit);
+      };
+      // The step strip sits between Back and Next. If it all fits, centre the strip;
+      // if not, centre the current step (even the first and last, leaving empty room
+      // on one side) and fade whatever is clipped against the buttons.
+      var layoutStepper = function () {
+        var cur = list.querySelector('.is-current');
+        if (!cur) return;
+        var cw = stepperEl.clientWidth, lw = list.offsetWidth, x;
+        if (lw <= cw) {
+          x = (cw - lw) / 2;
+        } else {
+          x = cw / 2 - (cur.offsetLeft + cur.offsetWidth / 2);
+        }
+        list.style.transform = 'translateX(' + x + 'px)';
+        stepperEl.style.setProperty('--fl', x < -1 ? '20px' : '0px');
+        stepperEl.style.setProperty('--fr', x + lw > cw + 1 ? '20px' : '0px');
+      };
+      var setNext = function (copy) {
+        clearTimeout(copyTimer);
+        nextBtn.classList.remove('copied');
+        nextBtn.innerHTML = copy ? 'Copy' : 'Next <span aria-hidden="true">&rarr;</span>';
+      };
+      var copyPrompt = function () {
+        var text = promptEl.textContent.trim();
+        var done = function (label, ok) {
+          nextBtn.textContent = label;
+          nextBtn.classList.toggle('copied', ok);
+          clearTimeout(copyTimer);
+          copyTimer = setTimeout(function () { setNext(true); }, 1800);
+        };
+        var fallback = function () {
+          var range = document.createRange();
+          range.selectNodeContents(promptEl);
+          var sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(range);
+          done('Select & copy', false);
         };
         if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(text).then(done, function () { label.textContent = 'Select & copy above'; });
+          navigator.clipboard.writeText(text).then(function () { done('Copied!', true); }, fallback);
         } else {
-          label.textContent = 'Select & copy above';
+          fallback();
         }
+      };
+      var show = function (n, focus) {
+        current = n;
+        reached = Math.max(reached, n);
+        steps.forEach(function (el) { el.hidden = Number(el.dataset.step) !== n; });
+        tabs.forEach(function (t) {
+          var i = Number(t.dataset.goto);
+          t.parentNode.classList.toggle('is-current', i === n);
+          t.parentNode.classList.toggle('is-done', i < n);
+          t.disabled = i > reached;
+          if (i === n) t.setAttribute('aria-current', 'step'); else t.removeAttribute('aria-current');
+        });
+        backBtn.classList.toggle('is-off', n === 1);
+        setNext(n === steps.length);
+        layoutStepper();
+        if (!focus) return;
+        revealCard();
+        var target = n === 1 ? input : steps[n - 1].querySelector('.step-text');
+        target.focus({ preventScroll: true });
+      };
+      var next = function () {
+        if (current === steps.length) { copyPrompt(); return; }
+        if (current === 1) applyName();
+        show(current + 1, true);
+      };
+
+      document.getElementById('name-form').addEventListener('submit', function (e) {
+        e.preventDefault();
+        next();
       });
-    });
+      nextBtn.addEventListener('click', next);
+      backBtn.addEventListener('click', function () { if (current > 1) show(current - 1, true); });
+      tabs.forEach(function (t) {
+        t.addEventListener('click', function () {
+          if (current === 1) applyName();
+          show(Number(t.dataset.goto), true);
+        });
+      });
+      document.querySelectorAll('[data-start]').forEach(function (b) {
+        b.addEventListener('click', function () { show(1, false); setTimeout(function () { input.focus(); }, 300); });
+      });
+
+      window.addEventListener('resize', layoutStepper);
+      stepperEl.addEventListener('scroll', function () { stepperEl.scrollLeft = 0; });
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(layoutStepper);
+
+      applyName();
+      show(1, false);
+      requestAnimationFrame(function () { list.classList.add('animate'); });
+    })();
   </script>
 </body>
 </html>

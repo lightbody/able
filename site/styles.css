@@ -107,7 +107,7 @@ h2 { font-size: clamp(1.8rem, 4vw, 2.5rem); margin-bottom: 2rem; }
 }
 .hero-inner h1 { max-width: 15em; }
 .lede { font-size: 1.2rem; color: var(--ink-soft); max-width: 34em; margin: 1.5rem 0 2.25rem; }
-.fine { font-size: .9rem; color: var(--ink-soft); margin-top: 1rem; }
+.fine { font-size: .9rem; color: var(--ink-soft); margin-top: 1rem; max-width: 620px; }
 
 .prompt {
   background: var(--green);
@@ -118,7 +118,6 @@ h2 { font-size: clamp(1.8rem, 4vw, 2.5rem); margin-bottom: 2rem; }
   max-width: 620px;
 }
 @media (prefers-color-scheme: dark) { .prompt { background: #071410; border: 1px solid var(--line); } }
-.prompt-label { margin: 0 0 8px; font: 500 .75rem var(--sans); letter-spacing: .06em; text-transform: uppercase; color: rgba(233, 240, 230, .6); }
 .prompt-body { font: 400 .92rem/1.6 var(--mono); margin: 0 0 16px; overflow-wrap: anywhere; }
 
 /* Platforms */
@@ -219,3 +218,97 @@ h2 { font-size: clamp(1.8rem, 4vw, 2.5rem); margin-bottom: 2rem; }
 /* Footer */
 .footer { border-top: 1px solid var(--line); padding: 28px 0 40px; color: var(--ink-soft); font-size: .9rem; }
 .footer-inner { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
+
+/* Setup wizard: a card that shows one step at a time */
+.wizard {
+  max-width: 960px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 20px;
+  margin-bottom: 1.25rem;
+  display: flex; flex-direction: column;
+  --shot-h: 240px;
+}
+@media (min-width: 760px) { .wizard { padding: 28px 32px; --shot-h: 500px; } }
+
+/* Back, the steps, and Next (Copy on the last step) in one bar, pinned under
+   the site header so they're always where the eye already is. */
+.wizard-bar {
+  position: sticky; top: 65px; z-index: 5;
+  display: flex; align-items: center; gap: 8px;
+  margin: -20px -20px 18px; padding: 12px 20px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+@media (min-width: 760px) { .wizard-bar { gap: 16px; margin: -28px -32px 22px; padding: 16px 32px; } }
+.wizard-bar .btn { flex: none; padding: .7rem 1.05rem; color: var(--ink); }
+.wizard-bar .btn-primary { color: var(--coral-ink); font-size: 1.02rem; padding: .75rem 1.3rem; }
+@media (min-width: 560px) { .wizard-bar .btn { padding: .8rem 1.4rem; } .wizard-bar .btn-primary { padding: .85rem 1.7rem; } }
+.wizard-bar .is-off { visibility: hidden; }
+
+/* The strip is clipped to the space between the buttons, with the clipped
+   ends faded out (--fl / --fr are set from script). */
+.stepper {
+  flex: 1; min-width: 0; overflow: hidden;
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 var(--fl, 0px), #000 calc(100% - var(--fr, 0px)), transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0, #000 var(--fl, 0px), #000 calc(100% - var(--fr, 0px)), transparent 100%);
+}
+.stepper ol { list-style: none; margin: 0; padding: 0; display: flex; align-items: flex-start; gap: 8px; width: max-content; position: relative; }
+.stepper ol.animate { transition: transform .25s ease; }
+@media (min-width: 560px) { .stepper ol { gap: 24px; } }
+.stepper button {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  background: none; border: 0; padding: 2px 4px; cursor: pointer;
+  font: 500 .78rem/1.2 var(--sans); color: var(--ink-soft);
+}
+.stepper button:disabled { cursor: default; opacity: .55; }
+.stepper .dot {
+  width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center;
+  font: 600 .78rem/1 var(--sans); border: 1.5px solid var(--line); background: var(--bg); color: var(--ink-soft);
+}
+.stepper .is-done .dot { background: var(--tint); border-color: var(--green-2); color: var(--green-2); }
+.stepper .is-current .dot { background: var(--green); border-color: var(--green); color: #e9f0e6; }
+.stepper .is-current button { color: var(--ink); font-weight: 600; }
+@media (prefers-color-scheme: dark) { .stepper .is-current .dot { background: var(--lime); border-color: var(--lime); color: #13261e; } }
+.stepper .short { display: none; }
+@media (max-width: 559px) {
+  .stepper li:not(.is-current) .label { display: none; }
+  .stepper .is-current .label { white-space: nowrap; }
+  .stepper .full { display: none; }
+  .stepper .short { display: inline; }
+}
+
+.wizard-step { flex: 1; display: flex; flex-direction: column; }
+.wizard-step[hidden] { display: none; }
+.step-body { flex: 1; display: grid; gap: 20px; align-content: start; }
+@media (min-width: 760px) {
+  .step-body:has(.shot) { grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 32px; }
+}
+.step-text { display: block; margin: 0 0 16px; font: 500 1.45rem/1.4 var(--sans); color: var(--ink); }
+@media (min-width: 760px) { .step-text { font-size: 1.3rem; } }
+.step-text:focus { outline: none; }
+.step-text a { color: var(--green-2); }
+.step-text code { white-space: nowrap; }
+
+.app-name {
+  display: block; width: 100%; max-width: 360px; box-sizing: border-box;
+  font: 500 1.05rem/1.4 var(--sans); color: var(--ink);
+  background: var(--bg); border: 1px solid var(--line); border-radius: 10px;
+  padding: 11px 13px;
+}
+.app-name:focus { outline: 2px solid var(--green-2); outline-offset: 1px; border-color: transparent; }
+
+/* Screenshots are phone-shaped, so they sit in a fixed-height area and
+   never change the card's size. */
+.shot { margin: 0; height: var(--shot-h); overflow: hidden; display: flex; align-items: center; justify-content: center; }
+/* An explicit height, not max-height: 100%: Safari can draw the image at full
+   size on first layout when it has to resolve a percentage, and it then
+   covers the step's text. */
+.shot img { display: block; box-sizing: border-box; height: var(--shot-h); width: auto; max-width: 100%; object-fit: contain; border-radius: 12px; border: 1px solid var(--line); }
+.wizard .prompt { margin-top: 4px; }
+.wizard .prompt { padding: 18px 20px; }
+.wizard .prompt-body { margin: 0; }
+@media (max-width: 559px) { .wizard .prompt-body { font-size: .8rem; } .wizard .prompt { padding: 14px 16px; } }
