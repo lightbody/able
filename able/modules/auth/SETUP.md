@@ -81,8 +81,11 @@ so check rather than assume.
    Preview. Signing out of a Preview lands on Production,
    because the default sign-out URI is Production's. That's expected.
 
-   Don't add the Custom Domain here yet, even if the user chose one. It's
-   added in step 11, and only works once the app has moved to it.
+3. Only with `custom-domain`: `https://<Custom Domain>`, into **Redirect
+   URIs** and **Session → Manage** only, added last so it isn't the
+   default. Adding it now saves the user a trip in step 11, which then
+   only adds the Sign-out URI and makes the domain the default. Sign-in
+   at the domain still only works once the app has moved to it.
 
 **Part 3: the Client ID.** Last, because it's another copy: on the same
 Application details page, near the top, the Client ID (`client_…`) is

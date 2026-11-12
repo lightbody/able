@@ -79,6 +79,7 @@ end to end. Replace it with real features as they land.
 | Database | Neon (serverless Postgres, `pg`) | <!-- able:only postgres -->
 | Realtime | Neon Realtime live SQL queries, sealed by the backend | <!-- able:only postgres -->
 | Observability | Grafana Faro → Grafana Cloud (Frontend Observability) | <!-- able:only observability -->
+| | OpenTelemetry from the backend → Grafana Cloud (Tempo, Loki, Mimir) | <!-- able:only backend,observability -->
 | CI/CD | GitHub Actions, with a Preview for every pull request |
 
 ### How it fits together

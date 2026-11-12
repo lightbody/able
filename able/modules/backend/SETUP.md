@@ -46,14 +46,17 @@ First, offer the org options in this order and wait for the user's pick:
    refused for hobby projects.
 2. **A new organization with its own billing.** The user adds a payment
    method for it. This is the usual choice.
-3. **Reuse an existing org.** Zero setup, but this app's CI Token can then
-   create, deploy and destroy the user's other apps in that org. Say so
-   plainly if they pick it, and skip to the token steps.
+3. **Reuse an existing org.** Zero setup, but this app's CI Token and
+   Claude Code Token can then create, deploy and destroy every other app
+   in that org. Say so plainly, before they choose. Their personal org is
+   the broadest case, since it usually holds everything else they run on
+   Fly: recommend against it for anything but a throwaway. If they pick
+   it anyway, skip to the token steps.
 
 Steps for the user to create the org (nothing to copy):
 
 1. Open **https://fly.io/organizations/new**.
-2. Name: type the App Name, e.g. `Todoable`.
+2. Name: the App Name, e.g. `Todoable`.
 3. For a linked organization, choose the existing organization to bill
    it to. Otherwise add a payment method for the new org when asked.
 4. Create it, then tell Claude it's done.
@@ -68,7 +71,7 @@ can't create apps.
    the right one before going on.
 3. Tap **Tokens** in that org's menu (not an app's **Tokens**, and not
    the account menu's **Access Tokens**).
-4. Create a token of type **Org Deploy Token**. Name: type `<App Handle>-claude-code`. Leave the expiry at
+4. Create a token of type **Org Deploy Token**. Name: `<App Handle>-claude-code`. Leave the expiry at
    the default, or pick an end date if they prefer.
 5. The token is shown **only once**. Copy the **whole** value; it's long,
    so use the page's copy button if there is one rather than selecting it.
@@ -148,14 +151,20 @@ Record `FLY_ORG` and `FLY_BACKEND_APP` for `.github/deploy.env`.
 **`FLY_API_TOKEN`**: a second **org deploy token** for **the app's own
 org**, made the same way as Claude's token in step 4 but kept
 separate, so either can be revoked without breaking the other.
-1. Open **https://fly.io/dashboard**.
-2. In the **organization dropdown**, choose the app's own org (step 5).
-   Check that it's the right one before going on: a token for the
-   wrong org breaks Previews or reaches other apps.
-3. Tap **Tokens** in that org's menu (not an app's **Tokens**, which
-   makes deploy tokens that can't create Preview apps).
+1. Open `https://fly.io/dashboard/<org slug>/tokens`, filled in: the
+   org's **Tokens** page. For this link, take the org slug from the
+   Machines API's record of the app you reserved in step 5
+   (`GET https://api.machines.dev/v1/apps/<FLY_BACKEND_APP>` →
+   `.organization.slug`), not from `FLY_ORG`: for a personal org the
+   two differ, and the dashboard uses the first.
+2. Check the page is for the app's own org before going on: a token
+   for the wrong org breaks Previews or reaches other apps.
+3. If the link didn't land there: **https://fly.io/dashboard**, choose
+   the org in the **organization dropdown**, then **Tokens** in that
+   org's menu (not an app's **Tokens**, which makes deploy tokens that
+   can't create Preview apps).
 4. Create a token of type **Org Deploy Token**, the same type as the
-   `<App Handle>-claude-code` token in step 4. Name: type `<App Handle>-ci`. Choose a long
+   `<App Handle>-claude-code` token in step 4. Name: `<App Handle>-ci`. Choose a long
    expiry, or none if offered, since CI needs it long-term.
 5. Copy the **whole** value. In GitHub, paste it **as is**, including
    `FlyV1 ` at the start. Unlike the card, GitHub needs the prefix.

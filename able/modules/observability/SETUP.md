@@ -30,15 +30,18 @@ such as their own name, suits a stack they'll reuse), and they pick the
 Grafana Cloud region from the Region Trio rather than the default. Either
 way, ask for the stack's URL, `https://<stack slug>.grafana.net`: it's
 `GRAFANA_STACK_URL`, and isn't a secret, so chat is fine. Check that
-`GET <url>/api/health` answers. **Limited network only:** add the stack's
+`GET <url>/api/health` answers. A 404 or 503 there can be passing: retry
+two or three times, a few seconds apart, before asking the user to check
+the address. **Limited network only:** add the stack's
 host to the allowlist first.
 
 ## Step 4: Claude Code Token
 
 If the Agent Environment already has a credential for the Grafana Stack's
 host, check it: `GET <stack>/api/user` shows a service-account login
-(`sa-…`), `GET <stack>/api/datasources` lists `grafanacloud-logs`,
-`grafanacloud-traces` and `grafanacloud-prom`, **and**
+(`sa-…`), `GET <stack>/api/datasources` lists data sources with the **UIDs**
+`grafanacloud-logs`, `grafanacloud-traces` and `grafanacloud-prom` (match
+on `uid`: their names start with the stack's slug), **and**
 `GET <stack>/api/access-control/user/permissions` includes
 `grafana-kowalski-app.apps:write` (the Frontend Observability role step 5
 needs). A 403 on `/api/datasources`, with `folders:read` as the only
@@ -57,7 +60,7 @@ exists. Tell the user that in one line, then give these steps:
 1. Open `https://<stack slug>.grafana.net/org/serviceaccounts`
    (**Administration → Users and access → Service accounts**) and tap
    **Add service account**. You're creating it; it doesn't exist yet.
-2. **Display name:** type `<App Handle>-claude-code`, and tap **Create**.
+2. **Display name:** `<App Handle>-claude-code`, and tap **Create**.
 3. On its page, set the roles. Grafana starts it at **None**, which can't
    read anything:
    1. Change **None** to **Viewer**.
@@ -66,7 +69,7 @@ exists. Tell the user that in one line, then give these steps:
    3. Tap **Update**. This is easy to miss: Grafana doesn't save a role change until you tap **Update**.
       Check the page now shows **Viewer** plus the Frontend
       Observability role.
-4. Still on its page, tap **Add service account token**. Name: type
+4. Still on its page, tap **Add service account token**. Name:
    `<App Handle>-claude-code`. **No expiration** is fine: after step 5 it
    only reads. Tap **Generate token**.
 5. It's shown **only once**. Copy the `glsa_…` value and tell Claude it's
@@ -80,6 +83,16 @@ host (`<stack slug>.grafana.net`). They paste the token into the card.
 Do this after the playbook's core step 5 has created the Pages project:
 the Faro app needs the Pages Subdomain.
 
+Two things in the repo aren't filled in until step 8, and this step needs
+them now:
+
+- `scripts/gcx` reads the stack's address from `.github/deploy.env`,
+  which is still empty. Until step 8, pass it in:
+  `GRAFANA_SERVER=https://<stack slug>.grafana.net scripts/gcx …`.
+- `observability/faro-app.yaml` still names the app `myapp-frontend`.
+  Change both names in it to `<App Handle>-frontend` before creating the
+  Faro app. Step 8's rename then leaves the file alone.
+
 **Grafana: the OTLP endpoint and instance ID.** Derive them; don't ask
 the user. Both come from the Grafana Stack, through Claude's token:
 
@@ -87,7 +100,8 @@ the user. Both come from the Grafana Stack, through Claude's token:
 STACK=https://<stack slug>.grafana.net
 curl -s $STACK/bootdata -H "Authorization: Bearer x" | jq -r '.settings.openFeatureContext.stackId'   # GRAFANA_OTLP_INSTANCE_ID
 curl -s $STACK/api/datasources/uid/grafanacloud-prom -H "Authorization: Bearer x" | jq -r .url
-#   e.g. https://prometheus-prod-67-prod-us-east-0-…  ->  the region is prod-us-east-0
+#   The host names the region, e.g. …prod-us-east-0… -> prod-us-east-0. The
+#   rest of the host's shape varies from stack to stack.
 #   GRAFANA_OTLP_ENDPOINT=https://otlp-gateway-<region>.grafana.net/otlp
 ```
 
@@ -131,7 +145,7 @@ and `stackId`).
 1. Open `https://grafana.com/orgs/<gcomOrgSlug>/stacks/<stackId>/otlp-info`,
    filled in. (By menu: grafana.com → **My Account** → the stack's
    **OpenTelemetry** tile → **Configure**.)
-2. Under **Password / API Token**, tap **Generate now**. Name: type
+2. Under **Password / API Token**, tap **Generate now**. Name:
    `<App Handle>-ci`. Leave the scopes as they are: they're preset and
    write-only.
 3. Copy the token (it starts with `glc_`). Ignore any ready-made

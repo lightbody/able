@@ -20,10 +20,14 @@ instruction you give must work with that.
 
 1. **One step at a time.** Give the user one numbered step list for one
    service, then wait. Don't front-load the whole playbook.
-2. **One clipboard item at a time.** Whenever the user copies a value, tell
-   them every place it goes *before* they copy anything else. When a form
-   asks for a secret's **name**, tell them to *type* it, because copying the
-   name would replace the token on their clipboard.
+2. **One clipboard item at a time, and the token last.** Whenever the user
+   copies a value, tell them every place it goes *before* they copy
+   anything else. A token is shown only once, so order the steps so that
+   every name is copied and pasted *before* the token is created, and the
+   token is the last thing copied. Give each name the user needs (a token
+   name, a secret name) alone in its own code block, so one tap copies it:
+   names in running text are hard to select on a phone, and typing one
+   invites autocapitalization.
 3. **Deep links.** Use the links given here. Don't invent URLs. Where this
    playbook gives a menu path instead of a link, give the menu path.
 4. **Secrets never go through chat.** Never ask for a token in chat.
@@ -39,6 +43,20 @@ instruction you give must work with that.
    with a read-only call before moving on.
 7. **Use the terms below.** Write them as proper nouns, and use them the
    same way in everything you tell the user.
+8. **What the user must read is the last thing in your turn.** The app
+   shows a turn's final message in full, but may collapse or summarize
+   text you wrote earlier in the turn, before a tool call. So when you
+   give the user steps to follow, a question, or a result, do every tool
+   call first (reading files, checks, note-taking), then write the
+   message, then end the turn. Never follow it with another tool call or
+   a closing line: the user would see only the closing line.
+9. **Check quietly.** Don't narrate lookups the user doesn't need (reading
+   a docs page, listing regions). Say what you found only if it changes
+   what they should do.
+10. **Committing as you go is fine.** You may commit and push progress to
+    `main` before step 8. Deploys skip themselves while any value in
+    `.github/deploy.env` is empty, so leave at least one empty until
+    step 8's commit.
 
 ## Terms
 
@@ -164,7 +182,9 @@ Claude Code Tokens never affects a deploy.
   can't create a token while it is open. So:
   1. **Guide turn.** Send only the steps for creating that one token, ending
      with "copy it, then tell me when you have it copied". Don't call
-     `request_credential` in this turn. End the turn and wait.
+     `request_credential` in this turn. The steps are the last thing in
+     the turn (ground rule 8): no tool call and no closing line after
+     them. End the turn and wait.
   2. **Card turn.** Only after the user confirms they have the token
      copied, say in one line which token the card is for, then call
      `request_credential`. If they report a problem instead, help with
@@ -398,7 +418,8 @@ need. With `postgres`, the backend talks to the database on every request,
 so the Fly region must sit next to the Neon region, and the Neon region
 comes first: Neon Realtime is in beta and available only in the four Neon
 regions below. Before you suggest one, check the current list at
-https://neon.com/docs/realtime/overview#which-regions-is-it-enabled-in. If
+https://neon.com/docs/realtime/overview#which-regions-is-it-enabled-in,
+without telling the user you're doing so. If
 it has changed, pair any new region with the nearest Fly region. If the
 user will create a new Grafana Stack, suggest the Grafana Cloud region
 next to the others; an existing stack is fine wherever it is, since
@@ -461,11 +482,14 @@ usable for setup: `GET /client/v4/user/tokens/verify` is `active`, **and**
 section says how to check its own.
 
 Walk the user through creating the missing or unusable ones, each named
-`<App Handle>-claude-code`. Say once that they're for Claude on this app only:
-for setting it up now and for building and debugging it later, saved on
-the Agent Environment, and that some get narrowed once setup no longer
-needs their extra permissions. Each token goes **only** into a card, never
-into GitHub.
+`<App Handle>-claude-code`. Open the step by saying what's coming, in a
+few lines: that these tokens are for Claude on this app only, for setting
+it up now and for building and debugging it later; which services need
+one (Cloudflare, plus one for each of `backend`, `postgres` and
+`observability` the app has); that they're saved on the Agent
+Environment; and that some get narrowed once setup no longer needs their
+extra permissions. Then show progress as you go ("token 2 of 4: Fly").
+Each token goes **only** into a card, never into GitHub.
 
 Do one token at a time, in the two turns described in "How
 `request_credential` works". First send the creation steps and end
@@ -491,7 +515,7 @@ the user these steps, in your own words:
    don't touch the **Global API Key** section.
 2. Tap **Create Token**, then **Start from scratch** (older dashboards:
    scroll to the bottom, **Create Custom Token** → **Get started**).
-3. **Token name:** type `<App Handle>-claude-code`.
+3. **Token name:** `<App Handle>-claude-code`.
 4. Cloudflare groups permissions into **policies**. Each policy has a
    scope (an account or a zone) and a list of permission groups with
    **Read** and **Edit** checkboxes. Search the list, or open the
@@ -561,12 +585,16 @@ assume the user remembers them from step 4. For each:
 
 1. Before they create anything, have the user open the GitHub page above
    in its own tab, ready. Give the full URL, filled in.
-2. In another tab, they create the token, as below, and copy it. Each
-   token is shown only once.
-3. Back in the GitHub tab: **Name**: *type* it, don't copy it, because
-   copying the name would replace the token on the clipboard.
-   **Secret**: paste. Tap **Add secret**.
-4. They tell you it's added, and only then do you give the next token.
+2. They copy the secret's name from your message (in its own code block)
+   and paste it into **Name** in the GitHub tab.
+3. In another tab, they open the service's token page. They copy the
+   token's name, `<App Handle>-ci`, from your message (its own code block
+   again) and paste it into the form, then create the token and copy it.
+   Each token is shown only once, and it's the last thing they copy.
+4. Back in the GitHub tab: **Secret**: paste. Tap **Add secret**.
+5. They tell you it's added, and only then do you give the next token.
+
+Say how many there are and show progress ("CI token 1 of 4").
 
 These tokens never go into a card.
 
@@ -575,11 +603,13 @@ The core's token:
 **`CLOUDFLARE_API_TOKEN`**: an **account API token**, not a user token
 like Claude's in step 4. CI acts for the account rather than for one
 person, and Cloudflare recommends account tokens for CI/CD.
-1. Open **https://dash.cloudflare.com**, choose the account, then
-   **Manage account → Account API tokens** (not **My Profile → API
-   Tokens**, and not the Global API Key).
+1. Open `https://dash.cloudflare.com/<CLOUDFLARE_ACCOUNT_ID>/api-tokens`,
+   filled in: the account's **Account API tokens** page. (By menu:
+   https://dash.cloudflare.com, choose the account, then **Manage
+   account → Account API tokens**; not **My Profile → API Tokens**, and
+   not the Global API Key.)
 2. Tap **Create Token**, and start from a custom token (no template).
-3. **Token name:** type `<App Handle>-ci`.
+3. **Token name:** `<App Handle>-ci`.
 4. Permissions: **Account → Cloudflare Pages → Edit**, and nothing
    else. No Zone permissions.
 5. **Create Token** → **Copy**. The token starts with `cfat_`; if it
@@ -660,7 +690,9 @@ usually means `CLOUDFLARE_API_TOKEN` was pasted into the wrong secret or
 has the wrong scope, so check the job log for which call failed.
 
 Watch the runs with the GitHub tools, read failed job logs, fix, and push.
-Then verify:
+Check every 20 to 30 seconds rather than waiting a fixed time: the Pages
+deploy usually takes about a minute and a half, and a backend deploy about
+two and a half. Then verify:
 
 - The page at `PROD_FRONTEND_ORIGIN` serves the app's `<title>`.
 
@@ -675,7 +707,11 @@ Name and "A new app, ready for its first feature."
 Open a small real PR, such as a README tweak on a new branch, and subscribe
 to its activity.
 
-- `gh pr create` fails in Claude Code sessions, because it uses GitHub's
+- The user's request to set up this app authorizes opening this PR, and
+  closing it at the end: don't ask.
+- Open it with the GitHub tools the session has (in a Claude Code cloud
+  session, the GitHub MCP tools). Where there's only a `gh` CLI:
+  `gh pr create` fails in Claude Code sessions, because it uses GitHub's
   GraphQL API, which they block. Use the REST API instead:
   `gh api repos/<owner>/<repo>/pulls -f title=… -f head=<branch> -f base=main -f body=…`.
   Close it later with `gh api -X PATCH repos/<owner>/<repo>/pulls/<n> -f state=closed`.
@@ -684,8 +720,8 @@ to its activity.
   branch has no remote, add a fetch refspec for it
   (`git config --add remote.origin.fetch +refs/heads/<branch>:refs/remotes/origin/<branch>`)
   and fetch it.
-- Keep the tweak clean: it's merged or closed at the end of this step,
-  and the user may choose either.
+- The PR exists only to prove Previews work: close it at the end of this
+  step, without merging.
 
 `frontend.yml` deploys a Pages preview at
 `https://<branch-alias>.<Pages Subdomain>` and comments its URL on the PR.
@@ -694,7 +730,8 @@ Check it serves the app's `<title>`.
 Then each chosen Module's "Step 10" section: it says what the Preview adds
 for that Module, and you run that Module's step 9 checks against the
 Preview. Have the user look at the Preview URL from the PR comment, as in
-step 9. Then merge or close the PR. Closing tears the Preview down.
+step 9. Then close the PR, and check the Preview is torn down (within a
+minute or so).
 
 ## Step 11: Custom Domain
 

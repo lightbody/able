@@ -65,7 +65,7 @@ user these steps, in your own words:
 4. Open the **API keys** tab and tap **Create new**.
 5. Choose the **Organization** key type, not **Project-scoped**. Don't
    pick a project.
-6. Name: type `<App Handle>-claude-code`. Create the key.
+6. Name: `<App Handle>-claude-code`. Create the key.
 7. The key is shown **only once**. Copy it now, and don't copy anything
    else until it's saved in the card. If the dialog closes before you
    copy it, revoke that key and create another.
@@ -127,13 +127,17 @@ that check fails, fall back to the pin.
 5. Enable Realtime on the default branch, even if it's already on. The
    command is idempotent, and the next steps need it on:
    `NEON_API_KEY=proxy-injected npx -y neon@$V realtime enable --project-id $P --branch <default>`.
-6. Verify Realtime on a throwaway branch, never the default:
-   - `neon branches create --name scratch/rt-test --parent <default>`.
+6. Verify Realtime on a throwaway branch, never the default. Every
+   `neon` command here takes `--project-id $P`, and the ones after the
+   first take `--branch scratch/rt-test`:
+   - `neon branches create --project-id $P --name scratch/rt-test --parent <default> > /dev/null`.
+     Send its output to `/dev/null`: it prints a connection string with
+     the password in it.
    - Create a table with a primary key and insert a row.
-   - Run `neon realtime subscribe --output json "SELECT * FROM items ORDER BY id"`
+   - Run `neon realtime subscribe --project-id $P --branch scratch/rt-test --output json "SELECT * FROM items ORDER BY id"`
      in the background, insert another row, and check that a second
      snapshot arrives.
-   - `neon branches delete scratch/rt-test`.
+   - `neon branches delete --project-id $P scratch/rt-test`.
 7. Check that `neon@$V env pull --service postgres --service realtime`
    still writes what `.github/actions/postgres-stage` reads, without
    printing values: pull the default branch into a file in your scratch
@@ -143,8 +147,9 @@ that check fails, fall back to the pin.
    key names, then delete the file.
 
    Two catches. **Port 5432 is blocked** from cloud containers, so
-   `neon psql` fails. Run SQL over HTTPS with `@neondatabase/serverless`:
-   get a connection string with `neon connection-string` into a variable
+   `neon psql` fails. Run SQL over HTTPS with `@neondatabase/serverless`
+   (`npm install @neondatabase/serverless` in your scratch directory, not
+   in the repo): get a connection string with `neon connection-string` into a variable
    (never print it), then `neon(url).query(sql)`. And a live query must read
    a table: `SELECT 1` is rejected ("upstream rejected").
 
@@ -171,31 +176,36 @@ command with the exact origin, no trailing slash, and retry.
 
 ## Step 6: CI Token
 
-**`NEON_API_KEY`**: the same place as Claude's Neon key in step 4.
-That's the **organization's** Settings with the project's organization
-active, **not** the profile menu's Settings. Then **API keys → Create
-new**, choose **Project-scoped**, and select the new project. Name: type
-`<App Handle>-ci`. It's shown only once, so copy it straight away. Repeat
-the navigation steps from step 4; don't assume the user remembers them.
+**`NEON_API_KEY`**: the same place as Claude's Neon key in step 4: the
+**organization's** Settings, **not** the profile menu's Settings. Give
+the direct link, `https://console.neon.tech/app/<org id>/settings`, with
+the `org_id` step 5 printed for the project. If it doesn't land on the
+organization's settings, repeat the navigation steps from step 4; don't
+assume the user remembers them. Then **API keys → Create new**, choose
+**Project-scoped**, and select the new project. Name: `<App Handle>-ci`.
+It's shown only once, so copy it straight away.
 
 **Then narrow Claude's Neon key.** The project exists, so Claude no longer
 needs an organization key. Replace it with a project-scoped one, the same
-kind as `NEON_API_KEY` but a separate key, in two turns as in step 4:
+kind as `NEON_API_KEY` but a separate key, in two turns as in step 4.
+Neon key names are unique within an organization, so the old key has to
+go first: creating the new one while it exists fails with "choose another
+unique name for api key". Nothing in this step needs Claude's Neon access
+in between.
 
-1. Same place as the CI key: **https://console.neon.tech** → the
-   organization's **Settings** (with the project's organization active in
-   the profile menu's switcher; not the profile menu's own Settings) →
-   **API keys** → **Create new** → **Project-scoped** → the app's project.
-2. Name: type `<App Handle>-claude-code`. Create it, copy it (it's shown only
-   once), and tell Claude it's copied.
+1. Same place as the CI key: the organization's **Settings → API keys**.
+2. Revoke the `<App Handle>-claude-code` key whose type is
+   **Organization**.
+3. **Create new** → **Project-scoped** → the app's project. Name:
+   `<App Handle>-claude-code`. Create it, copy it (it's shown only once),
+   and tell Claude it's copied.
 
 **After the user confirms:** call `request_credential` with host
-`console.neon.tech`; the new key replaces the organization key in the
-card. Check `GET /api/v2/projects/<NEON_PROJECT_ID>` succeeds. Then have
-the user revoke the old key: on the same **API keys** page, the
-`<App Handle>-claude-code` key whose type is **Organization** (not the new
-project-scoped one), and revoke it. Everything after this step works with
-the project-scoped key.
+`console.neon.tech`. Then check that
+`GET /api/v2/projects/<NEON_PROJECT_ID>` succeeds, and that
+`GET /api/v2/projects` is refused with "not allowed to perform actions
+outside the project". Everything after this step works with the
+project-scoped key.
 
 ## Step 8: Code
 

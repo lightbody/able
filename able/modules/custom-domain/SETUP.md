@@ -15,9 +15,17 @@ while setup needs them.
 Ask now, not later: the answer decides which permissions the Cloudflare
 token needs in step 4, and creating it with the right ones the first time
 saves the user a second trip to Cloudflare. Ask which domain, e.g.
-`todoable.example.com`, and whether its DNS is on Cloudflare, in the
-account they'll use for this app. Only then can Claude set it up;
-otherwise the user attaches it by hand in step 11.
+`todoable.example.com`.
+
+Then find out where its DNS is, without asking: look up the apex domain's
+NS records (`dig +short NS <apex>`, or
+`curl -s -H 'accept: application/dns-json' 'https://cloudflare-dns.com/dns-query?name=<apex>&type=NS'`).
+Nameservers ending in `.ns.cloudflare.com` mean the DNS is on Cloudflare.
+Then the user already has a Cloudflare account, so leave Cloudflare out of
+step 2's sign-up table, and confirm in one line that the app should use
+that same account. Only then can Claude set the domain up; if the DNS is
+elsewhere, or in another Cloudflare account, the user attaches the domain
+by hand in step 11.
 
 Tell them in a sentence or two how it goes, so they aren't left wondering
 when it'll come up: the app first goes live on its `pages.dev` address, and
@@ -61,9 +69,10 @@ what changes: the app moves to the domain, and with `backend` the
    `.github/deploy.env` and push, which redeploys with the new CORS origin.
    With `postgres`, also do that Module's "Step 11" section.
 3. **With `auth`, the user:** in WorkOS (**Production** environment → **Applications** →
-   the app's **Application details**), add `https://<domain>`, as in step
-   7: under **Redirects → Redirect URIs**, **Redirects → Sign-out URIs**
-   and **Session → Manage**. Have them make it the **default** in both
+   the app's **Application details**), add `https://<domain>` under
+   **Redirects → Sign-out URIs**. Step 7 already added it under
+   **Redirects → Redirect URIs** and **Session → Manage**; if it's
+   missing from either, add it there too. Have them make it the **default** in both
    Redirect URIs and Sign-out URIs, since it's now the Production
    Origin. As in step 7, it goes in with no trailing slash, and they
    check each saved entry for one. Then have them sign in at the domain and tap **Sign out**:
