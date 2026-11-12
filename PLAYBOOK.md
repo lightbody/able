@@ -44,7 +44,7 @@ instruction you give must work with that.
 
 | Term | Meaning | Where it's used |
 |---|---|---|
-| **App Name** | The app's human-readable name, chosen by the user before the session (it names the Agent Environment) and confirmed in step 0, e.g. "Todoable". Spaces and capitals are fine. | the Agent Environment's name; the Fly org (step 4); the Neon project (step 5); the WorkOS project (step 7); the README and `CLAUDE.md` titles and the page itself, in place of `My App` (step 8) |
+| **App Name** | The app's human-readable name, chosen by the user before the session (it names the Agent Environment) and confirmed in step 0, e.g. "Todoable". Spaces and capitals are fine. | the Agent Environment's name; the Fly org (step 4); the Neon project (step 5); the WorkOS project (step 7); the README and `AGENTS.md` titles and the page itself, in place of `My App` (step 8) |
 | **App Handle** | The app's technical name: lowercase letters, digits and hyphens, derived from the App Name, e.g. `todoable`. Wherever a service wants a name without spaces, it's this. | token names (`<App Handle>-claude-code`, `<App Handle>-ci`); the GitHub repo (made before the session; step 3); the Fly backend app (`<github-user>-<App Handle>-backend`) and the Pages project (`<App Handle>-frontend`) (step 5); the npm scope and other code names, in place of `myapp` (step 8) |
 | **App Environments** | The places the app itself runs: **Development**, **Preview** and **Production**, described below. | throughout |
 | **Development** | A developer's own copy of the app: `npm run dev` against a personal Neon branch (`dev/<you>`), as the README's "Local development" describes. | after setup |
@@ -111,7 +111,7 @@ revoking the old one.
 
 Setup ends with every Claude Code Token at the **Baseline** in
 `SECRETS.md` ("The baseline"). That table, and the rule in the app's
-`CLAUDE.md` to widen a token only for the task that needs it and then
+`AGENTS.md` to widen a token only for the task that needs it and then
 return to the Baseline, are what carry this approach into every later
 session, since this file is deleted from the app in step 8. If you change
 a token's scope here, change that table to match.
@@ -301,7 +301,7 @@ they ask for that, do it; otherwise stop here.
 Step 0 settled the App Name and App Handle. Ask the user:
 
 1. **One sentence on what it's for.** This goes into the README and
-   `CLAUDE.md`.
+   `AGENTS.md`.
 2. **Roughly where are you and your users?** A continent or country is
    enough. This picks where the database and backend run.
 3. **Do you want a Custom Domain, and if so, which one?** For example
@@ -983,7 +983,7 @@ In the cloned repo:
    `package-lock.json`:
    - `My App` → App Name
    - `myapp` → App Handle. This covers the package names, `@myapp/shared` → `@<App Handle>/shared`,
-     the token names in `SECRETS.md` and `CLAUDE.md` (`myapp-ci`, `myapp-claude-code`),
+     the token names in `SECRETS.md` and `AGENTS.md` (`myapp-ci`, `myapp-claude-code`),
      the Pages project and the Fly app placeholder.
    - In `fly.backend.toml`, set `app = "<FLY_BACKEND_APP>"` and
      `primary_region = "<Fly region from step 1>"`. Previews deploy from
@@ -998,10 +998,13 @@ In the cloned repo:
      `<!-- able:template-end -->`, and the blank line after it, so the
      file starts with `# <App Name>`. Under the title, put the user's
      one-sentence description in place of the template text.
-   - `CLAUDE.md`: delete everything from `<!-- able:template-start` through
+   - `AGENTS.md`: delete everything from `<!-- able:template-start` through
      `<!-- able:template-end -->`, and the blank line after it, the same as
      in `README.md`. Then replace "My App is a new web app." with the
      description.
+   - **Keep `CLAUDE.md`.** It's one line, `@AGENTS.md`, which is how Claude
+     Code loads the guidelines. Don't edit it, and don't copy `AGENTS.md`'s
+     content into it.
    - **Keep `SECRETS.md`.** It's the app's guide to its tokens and to
      rotating them.
 4. **Delete `PLAYBOOK.md`, and Able's own landing page:** `site/`,
@@ -1194,7 +1197,8 @@ Tell the user, briefly:
 
 If the user asks to move an app set up by an older version of this
 playbook onto an Agent Environment of its own, attach its repo, read
-`.github/deploy.env`, `CLAUDE.md` and `SECRETS.md`, then:
+`.github/deploy.env`, `AGENTS.md` (`CLAUDE.md` in an app set up before the
+rename) and `SECRETS.md`, then:
 
 1. Do step 0's Agent Environment check with the app's App Name. Its App Handle is the repo name. If the user keeps Limited network
    access, also do everything under "Limited network access" now: the
@@ -1210,7 +1214,7 @@ playbook onto an Agent Environment of its own, attach its repo, read
 3. Bring the app's docs up to date, since an older app won't have the
    Baseline or the rule for widening a token: from the template's
    versions, update `SECRETS.md`'s Claude Code Token sections, and in
-   `CLAUDE.md` the "Terms" section and the matching token bullets under
+   `AGENTS.md` (or `CLAUDE.md`, in an older app) the "Terms" section and the matching token bullets under
    "Deploys" (with `My App` replaced by the App Name and `myapp` by the
    App Handle), and open a PR.
 4. Tell the user which older tokens on other environments (for example
@@ -1221,8 +1225,8 @@ playbook onto an Agent Environment of its own, attach its repo, read
 ## Adding Observability to an existing app
 
 If the user asks to add Observability to an app set up before it was part
-of Able, attach its repo and read `.github/deploy.env`, `CLAUDE.md` and
-`SECRETS.md`. First bring in the template's observability code and docs as
+of Able, attach its repo and read `.github/deploy.env`, `AGENTS.md` (`CLAUDE.md` in
+an older app) and `SECRETS.md`. First bring in the template's observability code and docs as
 a PR (`git diff` the app against Able's `main` for
 `backend/src/telemetry.ts`, `frontend/src/telemetry.ts`, the workflows and
 `deploy-backend`, `scripts/gcx`, `.claude/skills/observability/` and
