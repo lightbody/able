@@ -22,10 +22,10 @@ agent's guidance files.
 ## A module is whole files plus a few marked lines
 
 Each module has a folder here, `able/modules/<name>/`, with a `MODULE.md`
-that lists the files it owns and what else it brings. A path listed there
-belongs to that module; where two modules list overlapping paths, the more
-specific one wins (`backend/` is `backend`'s, but `backend/src/auth.ts` is
-`auth`'s).
+that lists the files it owns and what else it brings. A file needs every
+module that lists it or a folder containing it: `backend/src/telemetry.ts`
+is listed by `observability` and sits in `backend/`, so it's kept only in
+an app with both.
 
 Shared files mark the places a module touches, with comments in the file's
 own comment syntax:
@@ -62,3 +62,18 @@ with no markers at all.
   other JSON edits a module needs.
 - **Run `node able/lint.mjs`** before committing. CI runs it too
   (`.github/workflows/able.yml`).
+- **Every combination has to build.** `able/check.sh <modules>` configures
+  a copy of the repo as an app with those modules (`none` for a static
+  site, nothing for the full app), then installs, builds, tests and lints
+  it. CI runs it for all eight valid combinations. Removing lines can leave
+  an import or a variable unused, which fails the build: when it does, move
+  the code into a file the module owns.
+
+## The scripts
+
+- `able/configure.mjs` turns the template into an app's repo: it removes
+  the modules the app doesn't want, strips the markers, edits the JSON
+  files markers can't reach, and renames `My App` and `myapp`.
+  `PLAYBOOK.md` step 8 runs it.
+- `able/lint.mjs` checks the manifests and markers.
+- `able/check.sh` proves one combination.

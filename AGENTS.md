@@ -46,9 +46,11 @@ before adding or moving a file, or touching a marked line. Keep markers
 few: give a Module one registration line in a shared file and put the rest
 in files it owns. Run `node able/lint.mjs` before committing; so does
 `.github/workflows/able.yml`. `able/configure.mjs` is what PLAYBOOK.md
-step 8 runs to remove `template` and strip the markers. After changing any
-of this, run it on a copy of the repo and check the copy still builds and
-passes its tests.
+step 8 runs to remove `template` (and any Modules the app doesn't want),
+strip the markers and rename the placeholders. Every valid combination of
+Modules has to build: `able/check.sh <modules>` proves one (`none` for a
+static site, nothing for the full app), and CI runs all eight. Run the
+ones your change touches before committing.
 
 ## Terms (template repo only)
 

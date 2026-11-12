@@ -20,6 +20,13 @@ afterAll(async () => {
   await app.close();
 });
 
+describe("GET /hello", () => {
+  it("rejects a request with no bearer token", async () => {
+    const res = await app.inject({ method: "GET", url: "/hello" });
+    expect(res.statusCode).toBe(401);
+  });
+});
+
 describe("GET /me", () => {
   it("rejects a request with no bearer token", async () => {
     const res = await app.inject({ method: "GET", url: "/me" });

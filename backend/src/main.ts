@@ -9,7 +9,7 @@ import { fileURLToPath } from "node:url";
 import dotenv from "dotenv";
 import { pino } from "pino";
 import { loadJwks } from "./auth.js"; // able:only auth
-import type { AppContext } from "./context.js";
+import type { AppContext } from "./context.js"; // able:only auth
 import { initDb } from "./db.js"; // able:only postgres
 import { buildApp } from "./server.js";
 import { shutdownTelemetry, telemetryEnabled } from "./telemetry.js"; // able:only observability
@@ -43,12 +43,18 @@ async function main(): Promise<void> {
   log.info("migrations applied");
   // able:end
 
-  // Each feature adds its share of the request context here, one line each.
+  // able:begin auth
+  // The request context. Each feature adds its share here, one line each.
   const ctx: AppContext = {
-    jwks, // able:only auth
+    jwks,
     ...db, // able:only postgres
   };
-  const app = buildApp(ctx, allowedOrigin, { logger: log });
+  // able:end
+  const app = buildApp(
+    ctx, // able:only auth
+    allowedOrigin,
+    { logger: log },
+  );
 
   // Dual-stack by default, required by Fly.io; overridable via HOST for
   // environments without IPv6.

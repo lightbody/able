@@ -23,7 +23,7 @@ use to query it.
 
 ## npm dependencies
 
-- `backend`: every `@opentelemetry/*` package
+- `backend`: `@opentelemetry/*`
 - `frontend`: `@grafana/faro-web-sdk`, `@grafana/faro-web-tracing`,
   `@opentelemetry/api`
 

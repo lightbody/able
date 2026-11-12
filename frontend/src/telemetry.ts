@@ -13,10 +13,12 @@
 
 import { BASE } from "./api"; // able:only backend
 
+// able:begin auth
 type Faro = typeof import("@grafana/faro-web-sdk").faro;
 
 let faro: Faro | undefined;
-let pendingUserId: string | null | undefined; // able:only auth
+let pendingUserId: string | null | undefined;
+// able:end
 
 // able:begin backend
 function escapeRegExp(s: string): string {
@@ -34,7 +36,7 @@ export async function initTelemetry(): Promise<void> {
   ]);
   const namespace = import.meta.env.VITE_OTEL_SERVICE_NAMESPACE || "myapp";
 
-  faro = sdk.initializeFaro({
+  sdk.initializeFaro({
     url,
     app: {
       name: `${namespace}-frontend`,
@@ -57,7 +59,10 @@ export async function initTelemetry(): Promise<void> {
     ],
   });
 
-  if (pendingUserId !== undefined) setTelemetryUser(pendingUserId); // able:only auth
+  // able:begin auth
+  faro = sdk.faro;
+  if (pendingUserId !== undefined) setTelemetryUser(pendingUserId);
+  // able:end
 }
 
 // able:begin auth

@@ -1,17 +1,30 @@
-// The server itself: health, CORS and request logging. Needs no database and
-// no sign-in, because routes only read the context when they're called.
+// The server itself: health, the hello route, CORS and request logging.
+// Needs no database.
 
 import type { FastifyInstance } from "fastify";
 import { pino } from "pino";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import type { AppContext } from "../src/context.js";
+import type { AppContext } from "../src/context.js"; // able:only auth
 import { buildApp } from "../src/server.js";
+import { mintKeys } from "./support/auth.js"; // able:only auth
 
-const ctx = {} as AppContext;
+let ctx: AppContext; // able:only auth
 let app: FastifyInstance;
+/** Headers a signed-in browser would send. */
+let headers: Record<string, string> = {};
 
 beforeAll(async () => {
-  app = buildApp(ctx, "http://localhost:5173");
+  // able:begin auth
+  // Routes only read the context when they're called, so sign-in's share
+  // of it is enough here.
+  const keys = await mintKeys();
+  ctx = { jwks: keys.jwks } as AppContext;
+  headers = { authorization: `Bearer ${await keys.token("user_123")}` };
+  // able:end
+  app = buildApp(
+    ctx, // able:only auth
+    "http://localhost:5173",
+  );
   await app.ready();
 });
 
@@ -27,6 +40,14 @@ describe("GET /health", () => {
   });
 });
 
+describe("GET /hello", () => {
+  it("greets, using the shared formatGreeting helper", async () => {
+    const res = await app.inject({ method: "GET", url: "/hello", headers });
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toEqual({ message: "Hello from the API!" });
+  });
+});
+
 describe("request logging", () => {
   // A real pino logger writing into an array, so we see exactly what would
   // reach stdout.
@@ -35,7 +56,11 @@ describe("request logging", () => {
   ): Promise<Array<Record<string, unknown>>> {
     const lines: Array<Record<string, unknown>> = [];
     const logger = pino({ level: "info" }, { write: (line: string) => void lines.push(JSON.parse(line)) });
-    const logged = buildApp(ctx, "http://localhost:5173", { logger });
+    const logged = buildApp(
+      ctx, // able:only auth
+      "http://localhost:5173",
+      { logger },
+    );
     await logged.ready();
     try {
       await fn(logged);
@@ -49,10 +74,10 @@ describe("request logging", () => {
     const lines = await withCapturedLogs(async (logged) => {
       const res = await logged.inject({
         method: "OPTIONS",
-        url: "/anything",
+        url: "/hello",
         headers: {
           origin: "http://localhost:5173",
-          "access-control-request-method": "POST",
+          "access-control-request-method": "GET",
           "access-control-request-headers": "authorization,content-type",
         },
       });
@@ -72,11 +97,9 @@ describe("request logging", () => {
 
   it("still logs ordinary requests", async () => {
     const lines = await withCapturedLogs(async (logged) => {
-      const res = await logged.inject({ method: "GET", url: "/no-such-route" });
-      expect(res.statusCode).toBe(404);
+      const res = await logged.inject({ method: "GET", url: "/hello", headers });
+      expect(res.statusCode).toBe(200);
     });
-    const messages = lines.map((l) => l.msg);
-    expect(messages).toContain("incoming request");
-    expect(messages).toContain("request completed");
+    expect(lines.map((l) => l.msg)).toEqual(["incoming request", "request completed"]);
   });
 });

@@ -26,7 +26,7 @@ It requires `auth` so stored data is never reachable without sign-in.
 
 ## npm dependencies
 
-- `backend`: `pg`, `@neon/realtime`, `@types/pg` (dev)
+- `backend`: `pg`, `@neon/realtime`, `@types/pg`
 - `frontend`: `@neon/realtime`, `@neon/realtime-react`
 
 ## Deploy

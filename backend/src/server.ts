@@ -1,10 +1,11 @@
 import cors from "@fastify/cors";
 import Fastify, { type FastifyBaseLogger, type FastifyInstance } from "fastify";
-import type { AppContext } from "./context.js";
+import type { AppContext } from "./context.js"; // able:only auth
 import { errorHandler } from "./errors.js";
 import { registerRouteNaming } from "./observability.js"; // able:only observability
 import { registerGreetingRoutes } from "./routes/greetings.js"; // able:only postgres
 import { registerHealthRoutes } from "./routes/health.js";
+import { registerHelloRoutes } from "./routes/hello.js";
 import { registerLiveRoutes } from "./routes/live.js"; // able:only postgres
 import { registerMeRoutes } from "./routes/me.js"; // able:only auth
 
@@ -27,9 +28,13 @@ function quietCorsPreflights(app: FastifyInstance): void {
   });
 }
 
-// Each feature registers its own routes here, one line each. `ctx` is only
-// read when a request arrives.
-export function buildApp(ctx: AppContext, allowedOrigin: string, opts: BuildAppOptions = {}): FastifyInstance {
+// Each feature registers its own routes here, one line each.
+export function buildApp(
+  // Only read when a request arrives.
+  ctx: AppContext, // able:only auth
+  allowedOrigin: string,
+  opts: BuildAppOptions = {},
+): FastifyInstance {
   const app = Fastify({ logger: opts.logger ?? false });
   registerRouteNaming(app); // able:only observability
   quietCorsPreflights(app);
@@ -42,6 +47,10 @@ export function buildApp(ctx: AppContext, allowedOrigin: string, opts: BuildAppO
   app.setErrorHandler(errorHandler);
 
   registerHealthRoutes(app);
+  registerHelloRoutes(
+    app,
+    ctx, // able:only auth
+  );
   registerMeRoutes(app, ctx); // able:only auth
   registerLiveRoutes(app, ctx); // able:only postgres
   registerGreetingRoutes(app, ctx); // able:only postgres

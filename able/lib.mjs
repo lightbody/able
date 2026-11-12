@@ -23,7 +23,12 @@ export function describesMarkers(file) {
   return file === "PLAYBOOK.md" || file.startsWith("able/");
 }
 
-/** { name: { requires: string[], files: string[] } } for every module. */
+/** The body of a "## <title>" section of a manifest. */
+function sectionOf(text, title) {
+  return new RegExp(`^## ${title}\\n([\\s\\S]*?)(?=^## |(?![\\s\\S]))`, "m").exec(text)?.[1] ?? "";
+}
+
+/** { name: { requires, files, npm: { workspace: packages[] } } } for every module. */
 export function loadModules() {
   const modules = {};
   const dir = path.join(root, "able/modules");
@@ -33,11 +38,19 @@ export function loadModules() {
     const text = readFileSync(manifest, "utf8");
     const front = /^---\n([\s\S]*?)\n---/.exec(text)?.[1] ?? "";
     const field = (key) => new RegExp(`^${key}:[ \\t]*(.*)$`, "m").exec(front)?.[1].trim() ?? "";
-    const section = /^## Files\n([\s\S]*?)(?=^## |(?![\s\S]))/m.exec(text)?.[1] ?? "";
+    const section = sectionOf(text, "Files");
     modules[name] = {
       declaredName: field("module"),
       requires: field("requires").split(",").map((s) => s.trim()).filter(Boolean),
       files: [...section.matchAll(/^- `([^`]+)`/gm)].map((m) => m[1]),
+      // "## npm dependencies": one bullet per workspace, its name first, then
+      // the packages (a trailing * matches a whole scope).
+      npm: Object.fromEntries(
+        [...sectionOf(text, "npm dependencies").matchAll(/^- `([^`]+)`:(.*(?:\n  .*)*)/gm)].map((m) => [
+          m[1],
+          [...m[2].matchAll(/`([^`]+)`/g)].map((p) => p[1]),
+        ]),
+      ),
     };
   }
   return modules;
@@ -52,16 +65,18 @@ export function trackedFiles() {
   return [...new Set(listed.split("\0").filter(Boolean))].filter((file) => existsSync(path.join(root, file)));
 }
 
-/** The module that owns a file (the most specific path listed wins), or undefined for core. */
-export function ownerOf(file, modules) {
-  let best;
+/**
+ * The modules a file needs: every module that lists the file or a folder
+ * containing it. Empty for core files.
+ */
+export function ownersOf(file, modules) {
+  const owners = [];
   for (const [name, mod] of Object.entries(modules)) {
-    for (const entry of mod.files) {
-      const hit = entry.endsWith("/") ? file.startsWith(entry) : file === entry;
-      if (hit && (!best || entry.length > best.entry.length)) best = { name, entry };
+    if (mod.files.some((entry) => (entry.endsWith("/") ? file.startsWith(entry) : file === entry))) {
+      owners.push(name);
     }
   }
-  return best?.name;
+  return owners;
 }
 
 export function isText(file) {

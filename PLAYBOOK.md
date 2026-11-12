@@ -980,7 +980,8 @@ key.
 
 In the cloned repo:
 
-1. **Remove Able's own files and markers.** Run `node able/configure.mjs`.
+1. **Remove Able's own files and markers, and rename the placeholders.**
+   Run `node able/configure.mjs --name "<App Name>" --handle <App Handle>`.
    It deletes what only the template needs (`PLAYBOOK.md`, `able/`, and
    Able's landing page: `site/`, `.github/workflows/site.yml`,
    `.github/workflows/able.yml` and `.github/scripts/site-comment.js`) and
@@ -990,12 +991,14 @@ In the cloned repo:
    Check `git grep -n "able:begin\|able:end\|able:only"` finds nothing.
    You've already read this playbook, so losing the file doesn't matter;
    if you need it again, read it from Able's repo.
-2. **Rename the placeholders** in every tracked file, including
+
+   Last, it renames the placeholders in every file, including
    `package-lock.json`:
    - `My App` → App Name
    - `myapp` → App Handle. This covers the package names, `@myapp/shared` → `@<App Handle>/shared`,
      the token names in `SECRETS.md` and `AGENTS.md` (`myapp-ci`, `myapp-claude-code`),
      the Pages project and the Fly app placeholder.
+2. **Set the Fly app and region.**
    - In `fly.backend.toml`, set `app = "<FLY_BACKEND_APP>"` and
      `primary_region = "<Fly region from step 1>"`. Previews deploy from
      the same file, so they land in the same region.

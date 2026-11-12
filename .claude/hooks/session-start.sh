@@ -1,8 +1,6 @@
 #!/bin/bash
-# SessionStart hook for Claude Code cloud sessions: installs dependencies and
-# starts a throwaway local Postgres so `npm test --workspace=backend` works.
-# The cloud containers have Postgres binaries but no running Docker daemon,
-# so docker-compose isn't an option there. Idempotent.
+# SessionStart hook for Claude Code cloud sessions: gets the container ready
+# to build and test the app. Idempotent.
 set -euo pipefail
 
 if [ "${CLAUDE_CODE_REMOTE:-}" != "true" ]; then
@@ -18,6 +16,9 @@ npm run build --workspace=shared
 # able:end
 
 # able:begin postgres
+# A throwaway local Postgres, so `npm test --workspace=backend` works. The
+# cloud containers have Postgres binaries but no running Docker daemon, so
+# docker-compose isn't an option there.
 # --- Postgres, matching backend/test/postgres.test.ts's default DATABASE_URL ---
 PG_BIN="$(ls -d /usr/lib/postgresql/*/bin 2>/dev/null | sort -V | tail -n1 || true)"
 if [ -z "$PG_BIN" ]; then

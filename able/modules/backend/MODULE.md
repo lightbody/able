@@ -19,6 +19,7 @@ both the backend and the frontend.
 - `.github/workflows/backend.yml`
 - `.github/actions/deploy-backend/`
 - `frontend/src/api.ts`
+- `frontend/src/Hello.tsx`
 
 ## npm dependencies
 

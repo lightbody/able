@@ -20,3 +20,53 @@ jobs:
 
       - name: Check module manifests and markers
         run: node able/lint.mjs
+
+  combinations:
+    # Every valid combination of modules: configure a copy of the template
+    # as an app with those modules, then install, build, test and lint it.
+    # This proves each one builds. It can't prove a deploy, which needs
+    # real accounts.
+    name: App with ${{ matrix.modules }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        modules:
+          - none
+          - observability
+          - backend
+          - backend,observability
+          - backend,auth
+          - backend,auth,observability
+          - backend,auth,postgres
+          - backend,auth,postgres,observability
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: app_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install actionlint
+        run: |
+          go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.7
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+      - name: Configure, build, test and lint
+        run: able/check.sh "${{ matrix.modules }}"

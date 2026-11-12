@@ -11,12 +11,12 @@ import { initTelemetry } from "./telemetry"; // able:only observability
 void initTelemetry().catch((e) => console.warn("telemetry init failed", e));
 // able:end
 
+// Each feature that wraps the whole app does it here, one line each.
+let app = <App />;
+app = <AuthGate>{app}</AuthGate>; // able:only auth
+
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <BrowserRouter>
-      <AuthGate> {/* able:only auth */}
-        <App />
-      </AuthGate> {/* able:only auth */}
-    </BrowserRouter>
+    <BrowserRouter>{app}</BrowserRouter>
   </React.StrictMode>,
 );

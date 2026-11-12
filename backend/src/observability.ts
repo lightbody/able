@@ -7,7 +7,8 @@ import { context, metrics, trace } from "@opentelemetry/api";
 import { getRPCMetadata, RPCType } from "@opentelemetry/core";
 import type { FastifyInstance } from "fastify";
 
-const meter = metrics.getMeter("myapp-backend");
+/** Create the app's own metrics from this. */
+export const meter = metrics.getMeter("myapp-backend");
 
 /**
  * The app's own metrics. Keep attribute values to small fixed sets (a view

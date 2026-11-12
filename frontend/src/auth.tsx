@@ -3,7 +3,8 @@
 // below it can call useAuth().
 
 import { AuthKitProvider, useAuth } from "@workos-inc/authkit-react";
-import { useEffect, type ReactNode } from "react";
+import { useEffect } from "react"; // able:only observability
+import type { ReactNode } from "react";
 import { useReturnPathRedirect } from "./authReturn";
 import { Landing } from "./pages/Landing";
 import { setTelemetryUser } from "./telemetry"; // able:only observability

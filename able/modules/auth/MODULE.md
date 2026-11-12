@@ -8,10 +8,13 @@ requires: backend
 
 Sign-in. The frontend signs in with WorkOS AuthKit and sends a bearer token
 with every backend call; the backend checks it against WorkOS's JWKS.
+It also brings the request context (`AppContext`), which holds what routes
+need to check a token, and later the database.
 
 ## Files
 
 - `backend/src/auth.ts`
+- `backend/src/context.ts`
 - `backend/src/routes/me.ts`
 - `backend/test/auth.test.ts`
 - `backend/test/support/auth.ts`

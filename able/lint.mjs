@@ -5,7 +5,7 @@
 
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
-import { ANY, BEGIN, END, ONLY, describesMarkers, isText, loadModules, ownerOf, root, trackedFiles } from "./lib.mjs";
+import { ANY, BEGIN, END, ONLY, describesMarkers, isText, loadModules, ownersOf, root, trackedFiles } from "./lib.mjs";
 
 const errors = [];
 const fail = (where, message) => errors.push(`${where}: ${message}`);
@@ -43,8 +43,8 @@ function allRequired(name, seen = new Set()) {
 let markerCount = 0;
 for (const file of trackedFiles()) {
   if (!isText(file) || describesMarkers(file)) continue;
-  const owner = ownerOf(file, modules);
-  const implied = owner ? new Set([owner, ...allRequired(owner)]) : new Set();
+  const owners = ownersOf(file, modules);
+  const implied = new Set(owners.flatMap((owner) => [owner, ...allRequired(owner)]));
   const open = [];
   const lines = readFileSync(path.join(root, file), "utf8").split("\n");
   lines.forEach((line, i) => {
@@ -65,7 +65,7 @@ for (const file of trackedFiles()) {
     if (name === undefined) return;
     if (!names.includes(name)) fail(where, `unknown module "${name}"`);
     else if (implied.has(name)) {
-      fail(where, `redundant: this file belongs to ${owner}, which already needs ${name}`);
+      fail(where, `redundant: this file belongs to ${owners.join(" and ")}, which already needs ${name}`);
     } else if (open.slice(0, begin ? -1 : undefined).some((b) => b.name === name || allRequired(b.name).has(name))) {
       fail(where, `redundant: already inside a block that needs ${name}`);
     }
