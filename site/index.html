@@ -107,7 +107,7 @@
       <div class="wrap">
         <p class="eyebrow">After setup</p>
         <h2 class="tight">The factory stays in your repo.</h2>
-        <p class="section-lede">Setup doesn't just wire up five services. It leaves your agent
+        <p class="section-lede">Setup doesn't just wire up your services. It leaves your agent
           a workshop in your repo, so every later session starts out knowing how your
           app works and what it may touch.</p>
         <ul class="files">
@@ -115,9 +115,11 @@
           <li><code>SECRETS.md</code><span>Which tokens exist, what each can do, and how to rotate or revoke them.</span></li>
           <li><strong>Skills</strong><span>Repeatable jobs your agent knows how to do, like querying your Production and Preview telemetry before it guesses. Able adds more over time, and you can write your own.</span></li>
           <li><strong>Workflows</strong><span>Automation for the routine: running the tests, deploying Production, spinning up a Preview for every pull request, and getting each cloud session ready with its dependencies and a test database.</span></li>
+          <li><strong>Evolving</strong><span>Able keeps learning new skills and workflows. Ask your agent what's new in Able, and it walks you through each change and brings over what fits your app, as a pull request you can preview like any other. You can add a part you skipped at setup the same way.</span></li>
         </ul>
         <p class="fine">Able is a template, not a framework: there's no library to depend on, and
-          nothing in your app changes unless you ask. All of it is yours to edit as your app grows.</p>
+          nothing in your app changes unless you ask. All of it is yours to edit as your app grows.
+          Learn from Able whenever you like.</p>
       </div>
     </section>
 
@@ -223,6 +225,10 @@
       <div class="wrap">
         <p class="eyebrow">Under the hood</p>
         <h2>Best-in-class platforms, already wired together.</h2>
+        <p class="section-lede">Take only what your app needs. Every app gets the
+          frontend. During setup Claude asks which of the rest you want, sets up
+          only those, and leaves the others out of your repo. You can add one
+          later by asking.</p>
         <ul class="platforms">
           <li>
             <span class="role">Frontend</span>
@@ -258,7 +264,7 @@
 
         <ul class="gets">
           <li><strong>Production on day one</strong>Merge to <code>main</code> and it deploys.</li>
-          <li><strong>Sign-in and live data already working</strong>You start on features, not plumbing.</li>
+          <li><strong>Everything you chose, already working</strong>You start on features, not plumbing.</li>
         </ul>
       </div>
     </section>
@@ -286,6 +292,12 @@
             <summary>What does Able leave in my repo?</summary>
             <p>Able is a template, not a framework. Setup copies it into your own repo, and from then on the code is yours: there's no Able library to depend on, and nothing in your app changes unless you ask.</p>
             <p>What it does leave is the agent's workshop: an <code>AGENTS.md</code> of guidelines, <code>SECRETS.md</code>, skills, and workflows. Every later session starts from them. They're yours to edit as your app grows.</p>
+            <p>Your app can still learn from Able. Ask your agent what's new in Able, and it compares your app with Able's latest, explains each change, and opens a pull request with the ones you take.</p>
+          </details>
+          <details>
+            <summary>Do I have to use the whole stack?</summary>
+            <p>No. Every app gets a React frontend on Cloudflare Pages, with a Preview for every pull request. The rest is optional: a backend on Fly.io, sign-in with WorkOS, a Postgres database with live updates on Neon (which needs sign-in), observability in Grafana Cloud, and a custom domain. Setup asks what you want, and what you skip never lands in your repo. A static site needs only GitHub and Cloudflare.</p>
+            <p>It isn't a one-way choice. Later you can ask your agent to add a part from Able, and it brings in the code and walks you through the accounts and tokens.</p>
           </details>
           <details>
             <summary>Why no staging environment?</summary>
@@ -356,8 +368,8 @@
           </details>
           <details>
             <summary>What do I need to get started?</summary>
-            <p>A coding agent, plus accounts on GitHub, Neon, Fly.io, Cloudflare,
-              WorkOS and Grafana Cloud. Your agent walks you through creating each one and the API tokens
+            <p>A coding agent, plus accounts on GitHub and Cloudflare, and one for each
+              part you choose: Fly.io, WorkOS, Neon and Grafana Cloud. Your agent walks you through creating each one and the API tokens
               it needs, one step at a time.</p>
             <p>With Claude Code on the web, a session starts from a repo, so you make
               your app's repo from the template first, and a cloud environment of its own,
