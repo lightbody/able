@@ -1,8 +1,6 @@
 #!/bin/bash
-# SessionStart hook for Claude Code cloud sessions: installs dependencies and
-# starts a throwaway local Postgres so `npm test --workspace=backend` works.
-# The cloud containers have Postgres binaries but no running Docker daemon,
-# so docker-compose isn't an option there. Idempotent.
+# SessionStart hook for Claude Code cloud sessions: gets the container ready
+# to build and test the app. Idempotent.
 set -euo pipefail
 
 if [ "${CLAUDE_CODE_REMOTE:-}" != "true" ]; then
@@ -12,10 +10,16 @@ fi
 cd "$CLAUDE_PROJECT_DIR"
 
 npm install --no-audit --no-fund
+# able:begin backend
 # backend consumes shared's compiled dist/.
 npm run build --workspace=shared
+# able:end
 
-# --- Postgres, matching backend/test/api.test.ts's default DATABASE_URL ---
+# able:begin postgres
+# A throwaway local Postgres, so `npm test --workspace=backend` works. The
+# cloud containers have Postgres binaries but no running Docker daemon, so
+# docker-compose isn't an option there.
+# --- Postgres, matching backend/test/postgres.test.ts's default DATABASE_URL ---
 PG_BIN="$(ls -d /usr/lib/postgresql/*/bin 2>/dev/null | sort -V | tail -n1 || true)"
 if [ -z "$PG_BIN" ]; then
   echo "session-start: no Postgres binaries found; backend tests will need a DATABASE_URL" >&2
@@ -39,3 +43,4 @@ psql -h 127.0.0.1 -U postgres -qtAc "ALTER USER postgres PASSWORD 'password'"
 if [ "$(psql -h 127.0.0.1 -U postgres -qtAc "SELECT 1 FROM pg_database WHERE datname = 'app_test'")" != "1" ]; then
   psql -h 127.0.0.1 -U postgres -qc "CREATE DATABASE app_test"
 fi
+# able:end

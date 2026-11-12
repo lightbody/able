@@ -2,7 +2,7 @@
 # gcx -- Grafana's CLI (github.com/grafana/gcx), pinned and pre-configured for
 # this app's Grafana Cloud stack. Use this instead of a bare `gcx`:
 #
-#   scripts/gcx logs query '{service_name="myapp-backend"}' --since 1h
+#   scripts/gcx logs query '{service_name="myapp-frontend"}' --since 1h
 #
 # Installed just in time, not at session start: the first call in a fresh
 # container downloads the pinned release (~35 MB, a couple of seconds),

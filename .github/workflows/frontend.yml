@@ -5,11 +5,13 @@ on:
     branches: [main]
     paths:
       - frontend/**
-      - shared/**
+      - shared/** # able:only backend
       - .github/deploy.env
       - .github/workflows/frontend.yml
-  # No paths filter on PRs: every PR gets a full preview stack, so the
-  # frontend must always be rebuilt against the PR's backend app.
+  # No paths filter on PRs: every PR gets a Preview.
+  # able:begin backend
+  # The frontend must always be rebuilt against the PR's own backend app.
+  # able:end
   pull_request:
 
 concurrency:
@@ -43,22 +45,32 @@ jobs:
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
+          # Each feature exports the build settings it needs, then one build.
+
+          # able:begin backend
           # A PR's frontend talks to that PR's preview backend app.
-          app="$FLY_BACKEND_APP${PR_NUMBER:+-pr-$PR_NUMBER}"
-          # The app, and which Preview: "<APP_HANDLE>" or "<APP_HANDLE>-pr<n>".
-          deploy_env="$APP_HANDLE${PR_NUMBER:+-pr$PR_NUMBER}"
+          export VITE_API_URL="https://$FLY_BACKEND_APP${PR_NUMBER:+-pr-$PR_NUMBER}.fly.dev"
+          # able:end
+
+          # able:begin auth
           # Same WorkOS Production Client ID for prod and every PR preview
           # (with a wildcard redirect URI registered in the WorkOS
           # dashboard) so prod and preview share one user pool/IDs.
+          export VITE_WORKOS_CLIENT_ID="$WORKOS_CLIENT_ID"
+          # able:end
+
+          # able:begin observability
           # Telemetry (Grafana Faro) is off while GRAFANA_FARO_URL is empty.
-          # Environment and version match the backend's, so a frontend
-          # session and the backend spans it caused filter the same way.
-          VITE_API_URL="https://$app.fly.dev" VITE_WORKOS_CLIENT_ID="$WORKOS_CLIENT_ID" \
-          VITE_GRAFANA_FARO_URL="$GRAFANA_FARO_URL" \
-          VITE_OTEL_SERVICE_NAMESPACE="$APP_HANDLE" \
-          VITE_DEPLOY_ENVIRONMENT="$deploy_env" \
-          VITE_APP_VERSION="$GITHUB_SHA" \
-            npm run build --workspace=frontend
+          # Environment ("<APP_HANDLE>" or "<APP_HANDLE>-pr<n>") and version
+          # are the same on everything the app sends, so one filter finds
+          # all of a deploy's telemetry.
+          export VITE_GRAFANA_FARO_URL="$GRAFANA_FARO_URL"
+          export VITE_OTEL_SERVICE_NAMESPACE="$APP_HANDLE"
+          export VITE_DEPLOY_ENVIRONMENT="$APP_HANDLE${PR_NUMBER:+-pr$PR_NUMBER}"
+          export VITE_APP_VERSION="$GITHUB_SHA"
+          # able:end
+
+          npm run build --workspace=frontend
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4

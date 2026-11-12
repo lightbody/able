@@ -4,13 +4,6 @@ import { useAuth } from "@workos-inc/authkit-react";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { BASE } from "./api";
 
-export interface Greeting {
-  id: string;
-  message: string;
-  created_by: string | null;
-  created_at: Date;
-}
-
 // Live data comes from Neon Realtime: the browser holds one WebSocket to
 // Neon's Live SQL API, but can only subscribe to queries the backend has
 // sealed (POST /live/<view>, see backend/src/routes/live.ts). Sealed queries

@@ -8,7 +8,7 @@ on:
       - shared/**
       - fly.backend.toml
       - .github/deploy.env
-      - .github/actions/deploy-backend/**
+      - .github/actions/**
       - .github/workflows/backend.yml
   pull_request:
     paths:
@@ -16,7 +16,7 @@ on:
       - shared/**
       - fly.backend.toml
       - .github/deploy.env
-      - .github/actions/deploy-backend/**
+      - .github/actions/**
       - .github/workflows/backend.yml
 
 jobs:
@@ -27,6 +27,7 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
 
+    # able:begin postgres
     services:
       postgres:
         image: postgres:16-alpine
@@ -44,6 +45,7 @@ jobs:
 
     env:
       DATABASE_URL: postgresql://postgres:password@localhost:5432/app_test?sslmode=disable
+    # able:end
 
     steps:
       - uses: actions/checkout@v4
@@ -85,9 +87,9 @@ jobs:
         uses: ./.github/actions/deploy-backend
         with:
           app: ${{ env.FLY_BACKEND_APP }}
-          neon-branch: ${{ env.NEON_PROD_BRANCH }}
           allowed-origin: ${{ env.PROD_FRONTEND_ORIGIN }}
-          neon-api-key: ${{ secrets.NEON_API_KEY }}
           fly-api-token: ${{ secrets.FLY_API_TOKEN }}
-          environment: ${{ env.APP_HANDLE }}
-          grafana-otlp-token: ${{ secrets.GRAFANA_OTLP_TOKEN }}
+          neon-branch: ${{ env.NEON_PROD_BRANCH }} # able:only postgres
+          neon-api-key: ${{ secrets.NEON_API_KEY }} # able:only postgres
+          environment: ${{ env.APP_HANDLE }} # able:only observability
+          grafana-otlp-token: ${{ secrets.GRAFANA_OTLP_TOKEN }} # able:only observability

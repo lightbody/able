@@ -1,0 +1,51 @@
+name: Stage telemetry credentials
+description: >-
+  Turn on OpenTelemetry export (traces, metrics, logs) to Grafana Cloud for
+  the backend deploy that follows. Without the token the backend still
+  deploys, with telemetry off and a warning. Called by deploy-backend.
+  Expects .github/deploy.env to be loaded into the environment already.
+
+inputs:
+  app:
+    description: Fly app name
+    required: true
+  environment:
+    description: >-
+      deployment.environment.name on all telemetry: "<APP_HANDLE>" for
+      Production, "<APP_HANDLE>-pr<n>" for a Preview
+    required: true
+  grafana-otlp-token:
+    description: Grafana Cloud access policy token (metrics:write, logs:write, traces:write)
+    required: false
+    default: ""
+  fly-api-token:
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Stage Grafana Cloud credentials as a Fly secret
+      shell: bash
+      env:
+        FLY_API_TOKEN: ${{ inputs.fly-api-token }}
+        APP: ${{ inputs.app }}
+        GRAFANA_OTLP_TOKEN: ${{ inputs.grafana-otlp-token }}
+        DEPLOY_ENVIRONMENT: ${{ inputs.environment }}
+      run: |
+        if [ -z "${GRAFANA_OTLP_ENDPOINT:-}" ] || [ -z "${GRAFANA_OTLP_INSTANCE_ID:-}" ] || [ -z "$GRAFANA_OTLP_TOKEN" ]; then
+          echo "::warning::Telemetry is off: the GRAFANA_OTLP_TOKEN secret is missing (or deploy.env's GRAFANA_OTLP_* values are empty)."
+          exit 0
+        fi
+        # OTLP/HTTP Basic auth: <instance id>:<token>. The SDK URL-decodes
+        # OTEL_EXPORTER_OTLP_HEADERS values, hence %20 for the space.
+        basic="$(printf '%s:%s' "$GRAFANA_OTLP_INSTANCE_ID" "$GRAFANA_OTLP_TOKEN" | base64 -w0)"
+        echo "::add-mask::$basic"
+        flyctl secrets set --app "$APP" --stage \
+          OTEL_EXPORTER_OTLP_HEADERS="Authorization=Basic%20$basic"
+        # Without OTEL_EXPORTER_OTLP_ENDPOINT the backend never starts the
+        # SDK (backend/src/telemetry.ts), so this is the on/off switch.
+        {
+          echo "OTEL_EXPORTER_OTLP_ENDPOINT=$GRAFANA_OTLP_ENDPOINT"
+          echo "OTEL_SERVICE_NAME=$APP_HANDLE-backend"
+          echo "OTEL_RESOURCE_ATTRIBUTES=service.namespace=$APP_HANDLE,deployment.environment.name=$DEPLOY_ENVIRONMENT,service.version=$GITHUB_SHA"
+        } >> "$RUNNER_TEMP/backend.env"

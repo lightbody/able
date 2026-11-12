@@ -1,40 +1,18 @@
-// HTTP integration tests. Requires a Postgres reachable via DATABASE_URL
-// (defaults to the local docker-compose service). Auth is exercised with a
-// locally minted RS256 JWT whose public key is injected into the app's
-// AppContext.jwks map, so no WorkOS network dependency is needed; Realtime
-// sealing is local crypto under a locally minted secret, so no Neon either.
+// Database and live-query tests. Requires a Postgres reachable via
+// DATABASE_URL (defaults to the local docker-compose service). Realtime
+// sealing is local crypto under a locally minted secret, so no Neon is
+// needed; sign-in uses the locally minted keys in support/auth.ts.
 
-import { generateKeyPairSync, randomBytes } from "node:crypto";
+import { randomBytes } from "node:crypto";
 import { createRealtime } from "@neon/realtime/server";
 import type { FastifyInstance } from "fastify";
-import { compactDecrypt, exportJWK, importJWK, SignJWT, type KeyLike } from "jose";
+import { compactDecrypt } from "jose";
 import { Pool } from "pg";
-import { pino } from "pino";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import type { AppContext } from "../src/context.js";
 import { runMigrations } from "../src/migrate.js";
 import { buildApp } from "../src/server.js";
-
-const KID = "test-key";
-
-async function mintKeys(): Promise<{ privateKey: KeyLike; jwks: Map<string, KeyLike> }> {
-  const { privateKey, publicKey } = generateKeyPairSync("rsa", { modulusLength: 2048 });
-  const jwk = await exportJWK(publicKey);
-  jwk.kid = KID;
-  jwk.alg = "RS256";
-  const importedPublic = await importJWK(jwk, "RS256");
-  const jwks = new Map<string, KeyLike>();
-  jwks.set(KID, importedPublic as KeyLike);
-  return { privateKey: privateKey as unknown as KeyLike, jwks };
-}
-
-async function token(privateKey: KeyLike, sub: string): Promise<string> {
-  return new SignJWT({})
-    .setProtectedHeader({ alg: "RS256", kid: KID })
-    .setSubject(sub)
-    .setExpirationTime("10y")
-    .sign(privateKey);
-}
+import { mintKeys } from "./support/auth.js";
 
 /** A well-formed Realtime secret: the SDK's prefix plus 32 random bytes, base64url. */
 function mintRealtimeSecret(): { secret: string; key: Uint8Array } {
@@ -45,7 +23,7 @@ function mintRealtimeSecret(): { secret: string; key: Uint8Array } {
 let pool: Pool;
 let ctx: AppContext;
 let app: FastifyInstance;
-let privateKey: KeyLike;
+let token: (sub: string) => Promise<string>;
 let realtimeKey: Uint8Array;
 
 const REALTIME_URL = "wss://realtime.example.test/v1";
@@ -57,7 +35,7 @@ beforeAll(async () => {
   await runMigrations(pool, new URL("../migrations", import.meta.url).pathname);
 
   const keys = await mintKeys();
-  privateKey = keys.privateKey;
+  token = keys.token;
 
   const { secret, key } = mintRealtimeSecret();
   realtimeKey = key;
@@ -77,28 +55,6 @@ beforeEach(async () => {
   await pool.query("TRUNCATE greetings RESTART IDENTITY CASCADE");
 });
 
-describe("GET /health", () => {
-  it("reports ok without auth", async () => {
-    const res = await app.inject({ method: "GET", url: "/health" });
-    expect(res.statusCode).toBe(200);
-    expect(res.json()).toEqual({ status: "ok" });
-  });
-});
-
-describe("GET /me", () => {
-  it("rejects a request with no bearer token", async () => {
-    const res = await app.inject({ method: "GET", url: "/me" });
-    expect(res.statusCode).toBe(401);
-  });
-
-  it("returns the authenticated user's id", async () => {
-    const jwt = await token(privateKey, "user_123");
-    const res = await app.inject({ method: "GET", url: "/me", headers: { authorization: `Bearer ${jwt}` } });
-    expect(res.statusCode).toBe(200);
-    expect(res.json()).toEqual({ id: "user_123" });
-  });
-});
-
 describe("POST /greetings", () => {
   it("rejects an unauthenticated request", async () => {
     const res = await app.inject({ method: "POST", url: "/greetings", payload: { message: "hi" } });
@@ -106,7 +62,7 @@ describe("POST /greetings", () => {
   });
 
   it("normalizes the message via the shared formatGreeting helper and attributes it to the caller", async () => {
-    const jwt = await token(privateKey, "user_123");
+    const jwt = await token("user_123");
     const res = await app.inject({
       method: "POST",
       url: "/greetings",
@@ -120,7 +76,7 @@ describe("POST /greetings", () => {
   });
 
   it("rejects an empty message", async () => {
-    const jwt = await token(privateKey, "user_123");
+    const jwt = await token("user_123");
     const res = await app.inject({
       method: "POST",
       url: "/greetings",
@@ -138,7 +94,7 @@ describe("GET /live/config", () => {
   });
 
   it("returns the branch's Live SQL API URL", async () => {
-    const jwt = await token(privateKey, "user_123");
+    const jwt = await token("user_123");
     const res = await app.inject({ method: "GET", url: "/live/config", headers: { authorization: `Bearer ${jwt}` } });
     expect(res.statusCode).toBe(200);
     expect(res.json()).toEqual({ url: REALTIME_URL });
@@ -152,7 +108,7 @@ describe("POST /live/:view", () => {
   });
 
   it("seals the view's server-defined query", async () => {
-    const jwt = await token(privateKey, "user_123");
+    const jwt = await token("user_123");
     const res = await app.inject({
       method: "POST",
       url: "/live/greetings",
@@ -178,57 +134,12 @@ describe("POST /live/:view", () => {
   });
 
   it.each(["nope", "__proto__", "toString"])("rejects unknown view %s", async (view) => {
-    const jwt = await token(privateKey, "user_123");
+    const jwt = await token("user_123");
     const res = await app.inject({
       method: "POST",
       url: `/live/${view}`,
       headers: { authorization: `Bearer ${jwt}` },
     });
     expect(res.statusCode).toBe(400);
-  });
-});
-
-describe("request logging", () => {
-  // A real pino logger writing into an array, so we see exactly what would
-  // reach stdout (and, in production, Loki).
-  async function withCapturedLogs(
-    fn: (logged: FastifyInstance) => Promise<void>,
-  ): Promise<Array<Record<string, unknown>>> {
-    const lines: Array<Record<string, unknown>> = [];
-    const logger = pino({ level: "info" }, { write: (line: string) => void lines.push(JSON.parse(line)) });
-    const logged = buildApp(ctx, "http://localhost:5173", { logger });
-    await logged.ready();
-    try {
-      await fn(logged);
-    } finally {
-      await logged.close();
-    }
-    return lines;
-  }
-
-  it("keeps CORS preflights out of the logs", async () => {
-    const lines = await withCapturedLogs(async (logged) => {
-      const res = await logged.inject({
-        method: "OPTIONS",
-        url: "/greetings",
-        headers: {
-          origin: "http://localhost:5173",
-          "access-control-request-method": "POST",
-          "access-control-request-headers": "authorization,content-type",
-        },
-      });
-      expect(res.statusCode).toBe(204);
-      expect(res.headers["access-control-allow-origin"]).toBe("http://localhost:5173");
-    });
-    expect(lines.filter((l) => (l.req as { method?: string } | undefined)?.method === "OPTIONS")).toEqual([]);
-    expect(lines.filter((l) => l.msg === "request completed")).toEqual([]);
-  });
-
-  it("still logs ordinary requests", async () => {
-    const lines = await withCapturedLogs(async (logged) => {
-      const res = await logged.inject({ method: "GET", url: "/me" });
-      expect(res.statusCode).toBe(401);
-    });
-    expect(lines.map((l) => l.msg)).toEqual(["incoming request", "request completed"]);
   });
 });

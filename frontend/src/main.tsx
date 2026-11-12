@@ -1,29 +1,22 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
-import { AuthKitProvider } from "@workos-inc/authkit-react";
 import App from "./App";
 import "./App.css";
-import { initTelemetry } from "./telemetry";
+import { AuthGate } from "./auth"; // able:only auth
+import { initTelemetry } from "./telemetry"; // able:only observability
 
-const clientId = import.meta.env.VITE_WORKOS_CLIENT_ID;
-if (!clientId) {
-  throw new Error("VITE_WORKOS_CLIENT_ID is not set");
-}
-
+// able:begin observability
 // Not awaited: telemetry must never delay or break the first render.
 void initTelemetry().catch((e) => console.warn("telemetry init failed", e));
+// able:end
+
+// Each feature that wraps the whole app does it here, one line each.
+let app = <App />;
+app = <AuthGate>{app}</AuthGate>; // able:only auth
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    {/* WorkOS validates redirect_uri as an exact string against a fixed
-        allowlist (no path wildcards), so this must stay pinned to the bare
-        origin -- see authReturn.ts for how deep links still return the user
-        to where they started after signing in. */}
-    <AuthKitProvider clientId={clientId} redirectUri={window.location.origin} devMode={true}>
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>
-    </AuthKitProvider>
+    <BrowserRouter>{app}</BrowserRouter>
   </React.StrictMode>,
 );

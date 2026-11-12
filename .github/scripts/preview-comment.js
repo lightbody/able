@@ -5,11 +5,13 @@ const MARKER_PREFIX = '<!-- preview-env-data:';
 
 function render(data) {
   const row = (label, value) => `| ${label} | ${value || '⏳ pending'} |`;
+  // able:begin postgres
   const neonCell = data.neonBranch
     ? data.neonProjectId
       ? `[\`${data.neonBranch}\`](https://console.neon.tech/app/projects/${data.neonProjectId}/branches)`
       : `\`${data.neonBranch}\``
     : null;
+  // able:end
 
   return [
     `${MARKER_PREFIX}${JSON.stringify(data)} -->`,
@@ -18,8 +20,9 @@ function render(data) {
     '| Service | URL |',
     '|---|---|',
     row('Frontend', data.frontendUrl),
-    row('Backend', data.backendUrl),
-    row('Neon branch', neonCell),
+    row('Backend', data.backendUrl), // able:only backend
+    row('Neon branch', neonCell), // able:only postgres
+    // able:begin observability
     // Only once Grafana is configured: an unconfigured app has no telemetry.
     ...(data.grafanaStackUrl && data.deployEnvironment
       ? [
@@ -27,6 +30,7 @@ function render(data) {
             `· filter \`deployment.environment.name=${data.deployEnvironment}\` |`,
         ]
       : []),
+    // able:end
   ].join('\n');
 }
 

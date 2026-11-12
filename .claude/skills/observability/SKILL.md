@@ -5,10 +5,14 @@ description: Query My App's production and PR-preview telemetry (logs, traces, m
 
 # Observability with gcx
 
-My App sends OpenTelemetry to a Grafana Cloud stack. The backend sends
-traces, metrics and logs to Tempo, Mimir and Loki. The frontend sends Grafana
-Faro sessions, and its fetch spans join the backend's traces. AGENTS.md
-"Observability" covers what's instrumented. This skill covers reading it.
+My App sends its telemetry to a Grafana Cloud stack. The frontend sends
+Grafana Faro sessions.
+<!-- able:begin backend -->
+The backend sends OpenTelemetry traces, metrics and logs to Tempo, Mimir
+and Loki, and the frontend's fetch spans join the backend's traces.
+<!-- able:end -->
+AGENTS.md "Observability" covers what's instrumented. This skill covers
+reading it.
 
 ## Running gcx
 
@@ -29,9 +33,13 @@ If it fails, report the failure. Don't guess at production behavior.
   `curl -sS -H "Authorization: Bearer proxy-injected" $GRAFANA_STACK_URL/api/user`:
   it should show a service-account login (`sa-…`) and no admin.
 - **Queries succeed but return nothing:** check the time range, and whether
-  telemetry is flowing at all (the Grafana values in `.github/deploy.env`,
-  and the deploy log has no "Telemetry is off" warning; README
-  "Observability"). An empty
+  telemetry is flowing at all (the Grafana values in `.github/deploy.env`;
+  README "Observability").
+<!-- able:begin backend -->
+  The backend's deploy log shows a "Telemetry is off" warning when its
+  token is missing.
+<!-- able:end -->
+  An empty
   result isn't evidence that a bug didn't happen. Metrics export every 60s,
   so activity from the last minute may not be there yet. Logs and traces
   arrive within seconds.
@@ -42,10 +50,12 @@ If it fails, report the failure. Don't guess at production behavior.
 
 Grafana Cloud stacks name their built-in datasources `grafanacloud-logs`
 (Loki), `grafanacloud-traces` (Tempo) and `grafanacloud-prom` (Mimir).
+<!-- able:begin backend -->
 `myapp-fly-prometheus`, if the app has it (README "Observability"), is Fly's own
 platform metrics for the app's Fly org. Use it for things the app can't see about
 itself: machine memory/CPU, restarts, and requests Fly's edge handled,
 including ones that never reached the app.
+<!-- able:end -->
 Pass them with `-d`. If one isn't found, run `scripts/gcx datasources list`
 and use the UID it shows.
 
@@ -59,10 +69,11 @@ Loki and Prometheus, `resource.service.namespace="myapp"` (or a
 | Attribute | Loki label / TraceQL | Values |
 |---|---|---|
 | `service.namespace` | `service_namespace` / `resource.service.namespace` | `myapp` (the App Handle) |
-| `service.name` | `service_name` / `resource.service.name` | `myapp-backend`, `myapp-frontend` |
+| `service.name` | `service_name` / `resource.service.name` | `myapp-frontend` |
+| | | `myapp-backend` | <!-- able:only backend -->
 | `deployment.environment.name` | `deployment_environment_name` / `resource.deployment.environment.name` | `myapp` (Production), `myapp-pr<n>` (a Preview) (a PR preview) |
 | `service.version` | `service_version` / `resource.service.version` | the deployed commit SHA |
-| `user.id` (spans only) | `span.user.id` | the opaque WorkOS user id |
+| `user.id` (spans only) | `span.user.id` | the opaque WorkOS user id | <!-- able:only auth -->
 
 Discover before guessing: `scripts/gcx logs labels -d grafanacloud-logs`,
 `scripts/gcx metrics labels -d grafanacloud-prom`, `scripts/gcx traces labels -d grafanacloud-traces`.
@@ -73,6 +84,11 @@ Add `--since 1h` (or `--from/--to`) to bound the time range. Start narrow
 and widen if needed.
 
 ```bash
+# Everything the frontend sent in production: sessions, page loads, errors
+scripts/gcx logs query -d grafanacloud-logs \
+  '{service_name="myapp-frontend", deployment_environment_name="myapp"}' --since 1h
+
+# able:begin backend
 # Errors in production, newest first
 scripts/gcx logs query -d grafanacloud-logs \
   '{service_name="myapp-backend", deployment_environment_name="myapp"} | detected_level=~"error|fatal"' --since 24h
@@ -86,13 +102,17 @@ scripts/gcx traces query -d grafanacloud-traces \
 # One request end to end. The trace_id comes from a log line, a trace search,
 # or `fly logs` (same JSON). --llm returns a compact agent-friendly format.
 scripts/gcx traces get -d grafanacloud-traces <trace_id> --since 24h --llm -o json
+# able:end
 
+# able:begin auth
 # Everything one user did (e.g. from a bug report)
 scripts/gcx traces query -d grafanacloud-traces '{resource.service.namespace="myapp" && span.user.id="user_..."}' --since 24h
+# able:end
 
 # A PR preview: same queries, with environment myapp-pr<n>
 scripts/gcx logs query -d grafanacloud-logs '{service_namespace="myapp", deployment_environment_name="myapp-pr12"}' --since 2h
 
+# able:begin backend
 # p95 latency and error rate by route
 scripts/gcx metrics query -d grafanacloud-prom \
   'histogram_quantile(0.95, sum by (le, http_route) (rate(http_server_request_duration_seconds_bucket{job="myapp/myapp-backend"}[5m])))' --since 6h
@@ -104,9 +124,12 @@ scripts/gcx metrics query -d myapp-fly-prometheus \
   'sum by (app, status) (increase(fly_edge_http_responses_count[1h]))' --since 24h
 scripts/gcx metrics query -d myapp-fly-prometheus \
   'max by (app) (max_over_time(fly_instance_memory_mem_total[1h]))' --since 24h
+# able:end
 
+# able:begin postgres
 # App counters: live-query renewals (≈ active viewers) and writes
 scripts/gcx metrics query -d grafanacloud-prom 'sum by (view) (rate(app_live_seals_total{job="myapp/myapp-backend"}[5m]))' --since 6h
+# able:end
 ```
 
 Trace *search* (`traces query`) lags ingestion by a few minutes, but

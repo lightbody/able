@@ -1,7 +1,7 @@
 // OpenTelemetry bootstrap: traces, metrics and logs over OTLP (Grafana Cloud
-// in production). Loaded *before* the app with `node --import` (see the
-// Dockerfile and package.json scripts) so instrumentation can patch `http`,
-// `pg` and `pino` before anything imports them. main.ts imports it again for
+// in production). Loaded *before* the app with `node --import` (NODE_OPTIONS
+// in the Dockerfile, and the package.json scripts) so instrumentation can patch `http`,
+// and `pino` before anything imports them. main.ts imports it again for
 // shutdownTelemetry(); that's the same module instance, not a second SDK.
 //
 // Configured entirely by the standard OTEL_* environment variables, which
@@ -20,7 +20,7 @@ import { OTLPLogExporter } from "@opentelemetry/exporter-logs-otlp-proto";
 import { OTLPMetricExporter } from "@opentelemetry/exporter-metrics-otlp-proto";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-proto";
 import { HttpInstrumentation } from "@opentelemetry/instrumentation-http";
-import { PgInstrumentation } from "@opentelemetry/instrumentation-pg";
+import { PgInstrumentation } from "@opentelemetry/instrumentation-pg"; // able:only postgres
 import { PinoInstrumentation } from "@opentelemetry/instrumentation-pino";
 import { RuntimeNodeInstrumentation } from "@opentelemetry/instrumentation-runtime-node";
 import { UndiciInstrumentation } from "@opentelemetry/instrumentation-undici";
@@ -36,8 +36,8 @@ function startTelemetry(): NodeSDK | undefined {
     return undefined;
   }
 
-  // The backend is ESM, so `import pg from "pg"` needs the import-in-the-middle
-  // loader hook for the pg instrumentation to see it.
+  // The backend is ESM, so an instrumentation needs the
+  // import-in-the-middle loader hook to see a package being imported.
   register("@opentelemetry/instrumentation/hook.mjs", import.meta.url);
 
   const sdk = new NodeSDK({
@@ -60,8 +60,9 @@ function startTelemetry(): NodeSDK | undefined {
         ignoreIncomingRequestHook: (req: IncomingMessage) =>
           req.method === "OPTIONS" || UNTRACED_PATHS.has((req.url ?? "").split("?")[0]),
       }),
-      // fetch() -- e.g. the WorkOS JWKS load at boot.
+      // Outgoing fetch().
       new UndiciInstrumentation(),
+      // able:begin postgres
       new PgInstrumentation({
         // Spans for queries made while serving a request only, so boot-time
         // migrations and pool housekeeping don't create orphan root traces.
@@ -70,6 +71,7 @@ function startTelemetry(): NodeSDK | undefined {
         // WorkOS user ids).
         enhancedDatabaseReporting: false,
       }),
+      // able:end
       // Ships every Fastify/pino log line as an OTLP log record, and stamps
       // trace_id/span_id onto the stdout copy too, so `fly logs` lines can be
       // pasted into Grafana's trace search.

@@ -18,7 +18,7 @@ import type { FastifyInstance } from "fastify";
 import { authenticate } from "../auth.js";
 import type { AppContext } from "../context.js";
 import { AppError } from "../errors.js";
-import { appMetrics } from "../observability.js";
+import { appMetrics } from "../observability.js"; // able:only observability
 
 export const VIEWS: Record<string, (userId: string) => RawSqlQuery<unknown>> = {
   greetings: () =>
@@ -40,7 +40,7 @@ export function registerLiveRoutes(app: FastifyInstance, ctx: AppContext): void 
     if (!view) throw AppError.badRequest("unknown_view");
 
     const sealed = await ctx.realtime.seal({ query: view(userId) });
-    appMetrics.liveSeals.add(1, { view: req.params.view });
+    appMetrics.liveSeals.add(1, { view: req.params.view }); // able:only observability
     // A sealed query is a bearer token: never let anything cache it.
     reply.header("cache-control", "no-store");
     return reply.send(sealed);
