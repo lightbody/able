@@ -14,7 +14,6 @@ removes them from every new app.
 - `PLAYBOOK.md`
 - `able/`
 - `site/`
-- `hero.png`
 - `.github/workflows/site.yml`
 - `.github/workflows/able.yml`
 - `.github/scripts/site-comment.js`
