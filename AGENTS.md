@@ -9,7 +9,7 @@ This file holds the guidelines for any coding agent working on the app.
 `CLAUDE.md` is a one-line file that imports it (`@AGENTS.md`), which is how
 Claude Code loads it. Edit this file, not that one.
 
-<!-- able:template-start -- PLAYBOOK.md removes this block in new apps -->
+<!-- able:begin template -->
 ## Able's landing page (template repo only)
 
 `site/` is Able's own marketing page, served at https://able.lightbody.net
@@ -20,7 +20,8 @@ production, and a PR that touches `site/` gets a preview at
 `<branch>.able-site.pages.dev`, linked from a PR comment and deleted when
 the PR closes. It uses the `SITE_CLOUDFLARE_API_TOKEN` secret (Pages Edit
 only), and only runs on `lightbody/able`. PLAYBOOK.md step 8 deletes
-`site/`, `site.yml` and `.github/scripts/site-comment.js` from new apps, so
+`site/`, `site.yml` and `.github/scripts/site-comment.js` from new apps
+(they're in the `template` Module), so
 nothing else may depend on them. Keep the page's claims in step with what
 the template and playbook actually do.
 The `lightbody.net` zone makes browsers cache static files for a day
@@ -34,17 +35,32 @@ one per step), are covered by it: it versions any `src="screens/….jpg"`.
 versions too, so a Preview's card only resolves once the file is on `main`.
 Redraw it when the headline changes.
 
+## Modules (template repo only)
+
+The app's optional parts are **Modules**: `backend`, `auth`, `postgres`,
+`observability` and `custom-domain`, plus `template` for Able's own files.
+Each owns whole files, listed in `able/modules/<name>/MODULE.md`, and a few
+marked lines in shared files (comments that start with `able:`, around a
+block or at the end of a line). Read `able/README.md`, which shows them,
+before adding or moving a file, or touching a marked line. Keep markers
+few: give a Module one registration line in a shared file and put the rest
+in files it owns. Run `node able/lint.mjs` before committing; so does
+`.github/workflows/able.yml`. `able/configure.mjs` is what PLAYBOOK.md
+step 8 runs to remove `template` and strip the markers. After changing any
+of this, run it on a copy of the repo and check the copy still builds and
+passes its tests.
+
 ## Terms (template repo only)
 
 The "Terms" table in `PLAYBOOK.md` is Able's glossary: App Name, App
 Handle, the App Environments (Development, Preview, Production), Agent
-Environment, Claude Code Tokens, CI Tokens, Baseline and the rest. Use
+Environment, Claude Code Tokens, CI Tokens, Module, Baseline and the rest. Use
 those terms, capitalized as proper nouns, in the playbook, `README.md`,
 `SECRETS.md`, this file and `site/`. If you add or rename one, update the
 table and every file that uses it in the same change. The "Terms" section
 below is the subset that stays in new apps, so keep it in step too.
 
-<!-- able:template-end -->
+<!-- able:end -->
 
 ## Terms
 
@@ -70,8 +86,8 @@ below is the subset that stays in new apps, so keep it in step too.
 
 - `frontend/` -- React 18 + TypeScript + Vite. Data sync via Neon Realtime
   live queries (`useSealedView` + `useLiveQuery`, in `frontend/src/realtime.tsx`
-  and `App.tsx`). It holds a WebSocket straight to Neon's Live SQL API, using
-  queries sealed by the backend. Auth via WorkOS AuthKit (`frontend/src/main.tsx`,
+  and `Greetings.tsx`). It holds a WebSocket straight to Neon's Live SQL API, using
+  queries sealed by the backend. Auth via WorkOS AuthKit (`frontend/src/auth.tsx`,
   `frontend/src/pages/Landing.tsx`).
 - `backend/` -- Node + TypeScript (Fastify, `pg`), Postgres. `authenticate()`
   in `backend/src/auth.ts` validates the WorkOS bearer token on every
@@ -134,7 +150,7 @@ asserts the SQL and params, like the existing `POST /live/:view` test.
 - The only GitHub secrets are a few API tokens, this app's narrowly scoped
   CI Tokens (`NEON_API_KEY`, `FLY_API_TOKEN`, `CLOUDFLARE_API_TOKEN` and
   `GRAFANA_OTLP_TOKEN`). See
-  `SECRETS.md` for scopes and rotation. `.github/actions/deploy-backend` pulls the DB URL
+  `SECRETS.md` for scopes and rotation. `.github/actions/postgres-stage` (a step of `deploy-backend`) pulls the DB URL
   and Realtime credentials from Neon on every deploy, so never set those on
   Fly by hand.
 - Cloud sessions on the Agent Environment (Full or Limited network
@@ -166,7 +182,7 @@ asserts the SQL and params, like the existing `POST /live/:view` test.
   Baseline: if the app needs it permanently, update the Baseline table in
   the same change, and say so.
 - Never print connection strings or Realtime secrets. When checking
-  `neon env pull` output, match on shape (as `deploy-backend` does)
+  `neon env pull` output, match on shape (as `postgres-stage` does)
   instead of echoing values.
 
 ## Observability (Grafana Cloud)
@@ -182,7 +198,7 @@ Development export nothing.
   `backend/src/observability.ts`) and logs (every pino line, carrying
   `trace_id`/`span_id`). These go over OTLP to the stack's gateway, so they
   land in Tempo, Mimir and Loki. Turned on by `OTEL_EXPORTER_OTLP_ENDPOINT`,
-  which `deploy-backend` sets when `deploy.env`'s Grafana values and the
+  which `deploy-backend`'s `observability-stage` step sets when `deploy.env`'s Grafana values and the
   `GRAFANA_OTLP_TOKEN` CI Token are all there (otherwise it warns).
 - **Frontend** (`frontend/src/telemetry.ts`): Grafana Faro sends page
   loads, Web Vitals, JS errors and `fetch` spans. It adds a `traceparent`

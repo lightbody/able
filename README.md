@@ -1,4 +1,4 @@
-<!-- able:template-start -- PLAYBOOK.md removes this block in new apps -->
+<!-- able:begin template -->
 # Able
 
 A TypeScript app skeleton, plus a playbook that Claude Code follows to turn
@@ -48,13 +48,17 @@ done, so later sessions can debug the app without setup-level access.
 The landing page at **https://able.lightbody.net** lives in `site/` and
 deploys with `.github/workflows/site.yml`. New apps don't get either.
 
+The app's optional parts (`backend`, `auth`, `postgres`, `observability`)
+are **Modules**. `able/README.md` describes how the template marks them,
+for anyone changing Able itself; new apps don't get `able/` either.
+
 Everything below describes the app that results, with `My App` / `myapp`
 as placeholder names. `PLAYBOOK.md` opens with a glossary ("Terms") of the
 names it uses: the App Name, the App Handle, the App Environments
 (Development, Preview, Production) and the Agent Environment.
 
 ---
-<!-- able:template-end -->
+<!-- able:end -->
 
 # My App
 
@@ -174,10 +178,11 @@ Pages → Edit), and
 and how to rotate it.
 
 Nothing else is copied by hand. On every deploy,
-`.github/actions/deploy-backend` pulls the target Neon branch's pooled
+`.github/actions/deploy-backend` runs one step per feature, then deploys.
+Its `postgres-stage` step pulls the target Neon branch's pooled
 `DATABASE_URL` and its `NEON_REALTIME_URL`/`NEON_REALTIME_SECRET` with
-`neon env pull`, stages them as Fly secrets, and passes the non-secret
-runtime config (`NEON_DB_NAME`, `WORKOS_JWKS_URL`, `ALLOWED_ORIGIN`) as
+`neon env pull` and stages them as Fly secrets. The non-secret
+runtime config (`NEON_DB_NAME`, `WORKOS_JWKS_URL`, `ALLOWED_ORIGIN`) is passed as
 `--env`. Rotating the Neon password or Realtime secret therefore needs only
 a redeploy.
 

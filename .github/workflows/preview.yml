@@ -1,5 +1,8 @@
 name: Preview Environment
 
+# One Preview per pull request. The frontend's Pages preview is deployed by
+# frontend.yml; this workflow brings up everything behind it, one step per
+# feature, and tears it all down when the PR closes.
 on:
   pull_request:
     types: [opened, reopened, synchronize, closed]
@@ -8,13 +11,16 @@ concurrency:
   group: preview-${{ github.event.pull_request.number }}
   cancel-in-progress: false
 
+# able:begin postgres
 env:
   NEON_BRANCH: preview/pr-${{ github.event.pull_request.number }}
+# able:end
 
 jobs:
   config:
     uses: ./.github/workflows/deploy-config.yml
 
+  # able:begin backend
   deploy:
     name: Deploy preview
     needs: config
@@ -33,45 +39,26 @@ jobs:
       - name: Set preview names
         run: echo "BACKEND_APP=$FLY_BACKEND_APP-pr-${{ github.event.pull_request.number }}" >> "$GITHUB_ENV"
 
-      - name: Create Neon branch
-        uses: neondatabase/create-branch-action@v6
+      # able:begin postgres
+      - name: Create the Preview's database
+        uses: ./.github/actions/postgres-preview-up
         with:
-          project_id: ${{ env.NEON_PROJECT_ID }}
-          parent_branch: ${{ env.NEON_PROD_BRANCH }}
-          branch_name: ${{ env.NEON_BRANCH }}
-          # The action looks up connection info for these (defaults:
-          # neondb/neondb_owner) and fails if they don't exist.
-          database: ${{ env.NEON_DB_NAME }}
-          role: ${{ env.NEON_DB_ROLE }}
-          api_key: ${{ secrets.NEON_API_KEY }}
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-
-      - name: Enable Neon Realtime
-        env:
-          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
-        run: |
-          # The branch already inherits Realtime from its parent, but also the
-          # parent's prod-only allowed origins, and every PR's Pages preview has
-          # its own origin -- so allow any. Origins are defense in depth only:
-          # the sealed query is the real authorization. Idempotent on re-runs.
-          npx -y "$NEON_CLI" realtime enable \
-            --project-id "$NEON_PROJECT_ID" --branch "$NEON_BRANCH" --allowed-origin '*'
+          neon-branch: ${{ env.NEON_BRANCH }}
+          neon-api-key: ${{ secrets.NEON_API_KEY }}
+      # able:end
 
       - name: Deploy backend
         uses: ./.github/actions/deploy-backend
         with:
           app: ${{ env.BACKEND_APP }}
-          neon-branch: ${{ env.NEON_BRANCH }}
           # Preview-only: swap this for a real per-PR origin check once the
           # app sends credentialed requests.
           allowed-origin: '*'
-          neon-api-key: ${{ secrets.NEON_API_KEY }}
           fly-api-token: ${{ secrets.FLY_API_TOKEN }}
-          environment: ${{ env.APP_HANDLE }}-pr${{ github.event.pull_request.number }}
-          grafana-otlp-token: ${{ secrets.GRAFANA_OTLP_TOKEN }}
+          neon-branch: ${{ env.NEON_BRANCH }} # able:only postgres
+          neon-api-key: ${{ secrets.NEON_API_KEY }} # able:only postgres
+          environment: ${{ env.APP_HANDLE }}-pr${{ github.event.pull_request.number }} # able:only observability
+          grafana-otlp-token: ${{ secrets.GRAFANA_OTLP_TOKEN }} # able:only observability
 
       - name: Update preview environment comment
         uses: actions/github-script@v7
@@ -80,11 +67,12 @@ jobs:
             const { upsertPreviewComment } = require('./.github/scripts/preview-comment.js');
             await upsertPreviewComment(github, context, {
               backendUrl: `https://${process.env.BACKEND_APP}.fly.dev/health`,
-              neonBranch: process.env.NEON_BRANCH,
-              neonProjectId: process.env.NEON_PROJECT_ID,
-              grafanaStackUrl: process.env.GRAFANA_STACK_URL,
-              deployEnvironment: `${process.env.APP_HANDLE}-pr${{ github.event.pull_request.number }}`,
+              neonBranch: process.env.NEON_BRANCH, // able:only postgres
+              neonProjectId: process.env.NEON_PROJECT_ID, // able:only postgres
+              grafanaStackUrl: process.env.GRAFANA_STACK_URL, // able:only observability
+              deployEnvironment: `${process.env.APP_HANDLE}-pr${{ github.event.pull_request.number }}`, // able:only observability
             });
+  # able:end
 
   cleanup:
     name: Tear down preview
@@ -98,6 +86,7 @@ jobs:
       - name: Load deploy config
         run: grep -Ev '^\s*(#|$)' .github/deploy.env >> "$GITHUB_ENV"
 
+      # able:begin backend
       - uses: superfly/flyctl-actions/setup-flyctl@master
 
       - name: Destroy Fly app
@@ -106,7 +95,9 @@ jobs:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
         run: |
           flyctl apps destroy "$FLY_BACKEND_APP-pr-${{ github.event.pull_request.number }}" --yes || true
+      # able:end
 
+      # able:begin postgres
       - name: Delete Neon branch
         continue-on-error: true
         uses: neondatabase/delete-branch-action@v3
@@ -114,6 +105,7 @@ jobs:
           project_id: ${{ env.NEON_PROJECT_ID }}
           branch: ${{ env.NEON_BRANCH }}
           api_key: ${{ secrets.NEON_API_KEY }}
+      # able:end
 
       - name: Delete Cloudflare Pages preview deployments
         continue-on-error: true

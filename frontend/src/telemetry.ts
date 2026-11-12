@@ -1,23 +1,28 @@
 // Real-user monitoring with Grafana Faro (Grafana Cloud Frontend
 // Observability): page loads, Web Vitals, JS errors, console errors, and
-// fetch() traces whose `traceparent` header joins each API call to the
-// backend's own trace in Tempo.
+// fetch() traces.
+// able:begin backend
+// Their `traceparent` header joins each API call to the backend's own trace
+// in Tempo.
+// able:end
 //
 // Off unless VITE_GRAFANA_FARO_URL is set at build time (frontend.yml passes
 // deploy.env's GRAFANA_FARO_URL). The collector URL is public by design: it
 // only accepts data for this one app, and it ships in the bundle. Faro is
 // loaded as a separate chunk so an unconfigured build doesn't pay for it.
 
-import { BASE } from "./api";
+import { BASE } from "./api"; // able:only backend
 
 type Faro = typeof import("@grafana/faro-web-sdk").faro;
 
 let faro: Faro | undefined;
-let pendingUserId: string | null | undefined;
+let pendingUserId: string | null | undefined; // able:only auth
 
+// able:begin backend
 function escapeRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
+// able:end
 
 export async function initTelemetry(): Promise<void> {
   const url = import.meta.env.VITE_GRAFANA_FARO_URL;
@@ -41,18 +46,21 @@ export async function initTelemetry(): Promise<void> {
       ...sdk.getWebInstrumentations(),
       new TracingInstrumentation({
         instrumentationOptions: {
+          // able:begin backend
           // Cross-origin, so only calls to our own backend get a traceparent
           // header (never WorkOS or Neon). The backend's CORS reflects
           // requested headers, so the preflight allows it.
           propagateTraceHeaderCorsUrls: [new RegExp(`^${escapeRegExp(BASE)}`)],
+          // able:end
         },
       }),
     ],
   });
 
-  if (pendingUserId !== undefined) setTelemetryUser(pendingUserId);
+  if (pendingUserId !== undefined) setTelemetryUser(pendingUserId); // able:only auth
 }
 
+// able:begin auth
 /**
  * Tags the session with the signed-in WorkOS user id (the same `user.id` the
  * backend puts on its spans), or clears it on sign-out. Only the opaque id:
@@ -66,3 +74,4 @@ export function setTelemetryUser(userId: string | null): void {
   if (userId) faro.api.setUser({ id: userId });
   else faro.api.resetUser();
 }
+// able:end

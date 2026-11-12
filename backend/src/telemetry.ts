@@ -1,6 +1,6 @@
 // OpenTelemetry bootstrap: traces, metrics and logs over OTLP (Grafana Cloud
-// in production). Loaded *before* the app with `node --import` (see the
-// Dockerfile and package.json scripts) so instrumentation can patch `http`,
+// in production). Loaded *before* the app with `node --import` (NODE_OPTIONS
+// in the Dockerfile, and the package.json scripts) so instrumentation can patch `http`,
 // `pg` and `pino` before anything imports them. main.ts imports it again for
 // shutdownTelemetry(); that's the same module instance, not a second SDK.
 //

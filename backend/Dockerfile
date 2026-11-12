@@ -21,4 +21,9 @@ COPY --from=builder /app/backend/dist ./backend/dist
 COPY --from=builder /app/backend/migrations ./backend/migrations
 COPY --from=builder /app/backend/package.json ./backend/package.json
 EXPOSE 8080
-CMD ["node", "--import", "./backend/dist/telemetry.js", "backend/dist/main.js"]
+# able:begin observability
+# Preload OpenTelemetry before the app, so it can patch http, pg and pino
+# (see backend/src/telemetry.ts).
+ENV NODE_OPTIONS="--import=/app/backend/dist/telemetry.js"
+# able:end
+CMD ["node", "backend/dist/main.js"]

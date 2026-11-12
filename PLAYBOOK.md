@@ -58,6 +58,7 @@ instruction you give must work with that.
 | **Claude Code Tokens** | Claude's own API tokens for Neon, Fly, Cloudflare and Grafana, each named `<App Handle>-claude-code` and saved on the Agent Environment. | steps 4, 5, 6, 12 |
 | **CI Tokens** | GitHub Actions' API tokens for the same services, each named `<App Handle>-ci` and saved as GitHub secrets. | step 6 |
 | **Observability** | The app's telemetry (traces, metrics and logs from the backend, real-user data from the frontend) in a **Grafana Stack**: a Grafana Cloud instance, `GRAFANA_STACK_URL`, usually shared by all of the user's apps. Each app's telemetry is labelled with its App Handle. | steps 2, 4, 5, 6, 9, 10 |
+| **Module** | One optional part of an app, with its own files, deploy steps and setup: `backend` (Fly), `auth` (WorkOS), `postgres` (Neon), `observability` (Grafana Cloud) and `custom-domain`. `able/README.md` describes how they're marked in the template. This playbook still sets up all of them. | step 8 |
 | **Baseline** | The permissions the Claude Code Tokens keep between tasks, listed in `SECRETS.md`. | step 12 |
 
 Two words from the services mean something else, so always qualify them:
@@ -680,7 +681,7 @@ that check fails, fall back to the pin.
      snapshot arrives.
    - `neon branches delete scratch/rt-test`.
 7. Check that `neon@$V env pull --service postgres --service realtime`
-   still writes what `.github/actions/deploy-backend` reads, without
+   still writes what `.github/actions/postgres-stage` reads, without
    printing values: pull the default branch into a file in your scratch
    directory, check `DATABASE_URL` has the `postgresql://*-pooler.*`
    shape and `NEON_REALTIME_URL` and `NEON_REALTIME_SECRET` are
@@ -979,7 +980,17 @@ key.
 
 In the cloned repo:
 
-1. **Rename the placeholders** in every tracked file, including
+1. **Remove Able's own files and markers.** Run `node able/configure.mjs`.
+   It deletes what only the template needs (`PLAYBOOK.md`, `able/`, and
+   Able's landing page: `site/`, `.github/workflows/site.yml`,
+   `.github/workflows/able.yml` and `.github/scripts/site-comment.js`) and
+   the template-only blocks at the top of `README.md` and in `AGENTS.md`.
+   It also strips the Module markers (`able:begin`, `able:end` and
+   `able:only` comments) from every file, keeping the code between them.
+   Check `git grep -n "able:begin\|able:end\|able:only"` finds nothing.
+   You've already read this playbook, so losing the file doesn't matter;
+   if you need it again, read it from Able's repo.
+2. **Rename the placeholders** in every tracked file, including
    `package-lock.json`:
    - `My App` → App Name
    - `myapp` → App Handle. This covers the package names, `@myapp/shared` → `@<App Handle>/shared`,
@@ -991,26 +1002,18 @@ In the cloned repo:
 
    Leave `app_test` alone. It's the local test database, named so it never
    needs renaming.
-2. **Fill in `.github/deploy.env`.** Every value from the table above. Set
+3. **Fill in `.github/deploy.env`.** Every value from the table above. Set
    `NEON_CLI` to `neon@$V`, the version you checked in step 5.
-3. **Docs:**
-   - `README.md`: delete everything from `<!-- able:template-start` through
-     `<!-- able:template-end -->`, and the blank line after it, so the
-     file starts with `# <App Name>`. Under the title, put the user's
-     one-sentence description in place of the template text.
-   - `AGENTS.md`: delete everything from `<!-- able:template-start` through
-     `<!-- able:template-end -->`, and the blank line after it, the same as
-     in `README.md`. Then replace "My App is a new web app." with the
+4. **Docs:**
+   - `README.md`: it now starts with `# <App Name>`. Under the title, put
+     the user's one-sentence description in place of the template text.
+   - `AGENTS.md`: replace "My App is a new web app." with the
      description.
    - **Keep `CLAUDE.md`.** It's one line, `@AGENTS.md`, which is how Claude
      Code loads the guidelines. Don't edit it, and don't copy `AGENTS.md`'s
      content into it.
    - **Keep `SECRETS.md`.** It's the app's guide to its tokens and to
      rotating them.
-4. **Delete `PLAYBOOK.md`, and Able's own landing page:** `site/`,
-   `.github/workflows/site.yml` and `.github/scripts/site-comment.js`. The
-   new app needs none of them. (The workflow checks the repo name and never
-   deploys outside `lightbody/able`, but the files are clutter.)
 5. Run `npm install`, which regenerates the lockfile for the new names.
    Then run the same checks CI runs:
    - `npm run build --workspace=shared && npm test --workspace=shared`
@@ -1229,8 +1232,8 @@ of Able, attach its repo and read `.github/deploy.env`, `AGENTS.md` (`CLAUDE.md`
 an older app) and `SECRETS.md`. First bring in the template's observability code and docs as
 a PR (`git diff` the app against Able's `main` for
 `backend/src/telemetry.ts`, `frontend/src/telemetry.ts`, the workflows and
-`deploy-backend`, `scripts/gcx`, `.claude/skills/observability/` and
-`observability/`, plus the Grafana values in `deploy.env`). Then do the
+the `deploy-backend` and `observability-stage` actions, `scripts/gcx`,
+`.claude/skills/observability/` and `observability/`, plus the Grafana values in `deploy.env`). Then do the
 Grafana parts of this playbook in order: the Grafana Stack (step 2), Claude's
 Grafana token (step 4), "Grafana" in step 5, `GRAFANA_OTLP_TOKEN` (step 6),
 and the telemetry checks in step 9. Use the user's existing Grafana Stack if

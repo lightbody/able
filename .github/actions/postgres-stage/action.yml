@@ -1,0 +1,58 @@
+name: Stage database credentials
+description: >-
+  Wire a Fly app to one Neon branch, for the deploy that follows. Pulls the
+  branch's pooled DATABASE_URL and Realtime URL/secret from Neon on every
+  deploy (so nothing is copied by hand, and rotated credentials are picked up
+  automatically) and stages them as Fly secrets. Called by deploy-backend.
+  Expects .github/deploy.env to be loaded into the environment already.
+
+inputs:
+  app:
+    description: Fly app name
+    required: true
+  neon-branch:
+    description: Neon branch the backend reads and writes
+    required: true
+  neon-api-key:
+    required: true
+  fly-api-token:
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 22
+
+    - name: Stage Neon credentials as Fly secrets
+      shell: bash
+      env:
+        NEON_API_KEY: ${{ inputs.neon-api-key }}
+        FLY_API_TOKEN: ${{ inputs.fly-api-token }}
+        APP: ${{ inputs.app }}
+        NEON_BRANCH: ${{ inputs.neon-branch }}
+      run: |
+        # Waits for Realtime provisioning if the branch is brand new. Each
+        # branch has its own URL and secret, so always pull this branch's.
+        env_file="$RUNNER_TEMP/neon.env"
+        trap 'rm -f "$env_file"' EXIT
+        npx -y "$NEON_CLI" env pull --project-id "$NEON_PROJECT_ID" --branch "$NEON_BRANCH" \
+          --service postgres --service realtime --file "$env_file" > /dev/null
+        read_var() { sed -n "s/^$1=//p" "$env_file" | tail -n1 | sed -e "s/^[\"']//" -e "s/[\"']\$//"; }
+        database_url="$(read_var DATABASE_URL)"
+        realtime_url="$(read_var NEON_REALTIME_URL)"
+        realtime_secret="$(read_var NEON_REALTIME_SECRET)"
+        for v in database_url realtime_url realtime_secret; do
+          if [ -z "${!v}" ]; then
+            echo "::error::neon env pull did not produce ${v^^} for branch $NEON_BRANCH"
+            exit 1
+          fi
+        done
+        echo "::add-mask::$database_url"
+        echo "::add-mask::$realtime_secret"
+        flyctl secrets set --app "$APP" --stage \
+          DATABASE_URL="$database_url" \
+          NEON_REALTIME_URL="$realtime_url" \
+          NEON_REALTIME_SECRET="$realtime_secret"
+        echo "NEON_DB_NAME=$NEON_DB_NAME" >> "$RUNNER_TEMP/backend.env"

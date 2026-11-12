@@ -1,0 +1,44 @@
+name: Create a Preview's database
+description: >-
+  Create (or reuse) the Neon branch for one pull request's Preview, and
+  enable Neon Realtime on it for any origin. Idempotent on re-runs. Expects
+  .github/deploy.env to be loaded into the environment already.
+
+inputs:
+  neon-branch:
+    description: Name of the Preview's Neon branch
+    required: true
+  neon-api-key:
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Create Neon branch
+      uses: neondatabase/create-branch-action@v6
+      with:
+        project_id: ${{ env.NEON_PROJECT_ID }}
+        parent_branch: ${{ env.NEON_PROD_BRANCH }}
+        branch_name: ${{ inputs.neon-branch }}
+        # The action looks up connection info for these (defaults:
+        # neondb/neondb_owner) and fails if they don't exist.
+        database: ${{ env.NEON_DB_NAME }}
+        role: ${{ env.NEON_DB_ROLE }}
+        api_key: ${{ inputs.neon-api-key }}
+
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 22
+
+    - name: Enable Neon Realtime
+      shell: bash
+      env:
+        NEON_API_KEY: ${{ inputs.neon-api-key }}
+        NEON_BRANCH: ${{ inputs.neon-branch }}
+      run: |
+        # The branch already inherits Realtime from its parent, but also the
+        # parent's prod-only allowed origins, and every PR's Pages preview has
+        # its own origin -- so allow any. Origins are defense in depth only:
+        # the sealed query is the real authorization.
+        npx -y "$NEON_CLI" realtime enable \
+          --project-id "$NEON_PROJECT_ID" --branch "$NEON_BRANCH" --allowed-origin '*'
