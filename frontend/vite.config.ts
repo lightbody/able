@@ -8,7 +8,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export default defineConfig({
   plugins: [react()],
   resolve: {
-    // able:begin observability
+    // able:begin backend,observability
     // One copy of the OpenTelemetry API in the bundle. The backend's newer
     // @opentelemetry/api is hoisted to the root node_modules, and Faro's
     // tracing packages would otherwise mix it with their own. OTel's global

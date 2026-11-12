@@ -2,6 +2,7 @@
 module: observability
 provider: Grafana Cloud
 requires:
+mentions: grafana|opentelemetry|\botel|telemetry|faro|gcx|observability
 ---
 
 # observability

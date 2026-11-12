@@ -2,6 +2,7 @@
 module: backend
 provider: Fly.io
 requires:
+mentions: \bfly\b|flyctl|fly\.io|fly\.dev|backend|fastify
 ---
 
 # backend
@@ -18,6 +19,7 @@ both the backend and the frontend.
 - `.dockerignore`
 - `.github/workflows/backend.yml`
 - `.github/actions/deploy-backend/`
+- `.github/actions/observability-stage/` (also listed by `observability`: it needs both)
 - `frontend/src/api.ts`
 - `frontend/src/Hello.tsx`
 

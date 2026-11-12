@@ -18,7 +18,9 @@ ENV NODE_ENV=production PORT=8080
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/shared ./shared
 COPY --from=builder /app/backend/dist ./backend/dist
+# able:begin postgres
 COPY --from=builder /app/backend/migrations ./backend/migrations
+# able:end
 COPY --from=builder /app/backend/package.json ./backend/package.json
 EXPOSE 8080
 # able:begin observability

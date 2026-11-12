@@ -1,5 +1,4 @@
 // The server itself: health, the hello route, CORS and request logging.
-// Needs no database.
 
 import type { FastifyInstance } from "fastify";
 import { pino } from "pino";
@@ -10,7 +9,7 @@ import { mintKeys } from "./support/auth.js"; // able:only auth
 
 let ctx: AppContext; // able:only auth
 let app: FastifyInstance;
-/** Headers a signed-in browser would send. */
+/** Headers every request sends. */
 let headers: Record<string, string> = {};
 
 beforeAll(async () => {

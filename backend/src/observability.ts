@@ -1,9 +1,10 @@
-// App-side telemetry: request route naming, the signed-in user on spans, and
-// the app's own (business) metrics. Everything here goes through
+// App-side telemetry: request route naming and the app's own (business)
+// metrics. Everything here goes through
 // @opentelemetry/api, which is a no-op until telemetry.ts starts the SDK, so
 // it's safe to call in tests and in local dev.
 
-import { context, metrics, trace } from "@opentelemetry/api";
+import { context, metrics } from "@opentelemetry/api";
+import { trace } from "@opentelemetry/api"; // able:only auth
 import { getRPCMetadata, RPCType } from "@opentelemetry/core";
 import type { FastifyInstance } from "fastify";
 
@@ -28,10 +29,12 @@ export const appMetrics = {
   // able:end
 };
 
+// able:begin auth
 /** Records the authenticated WorkOS user id on the current request's span. */
 export function setSpanUser(userId: string): void {
   trace.getActiveSpan()?.setAttribute("user.id", userId);
 }
+// able:end
 
 /**
  * Names each request's server span and http.server.request.duration series by

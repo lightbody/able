@@ -1,5 +1,4 @@
-// Sign-in: bearer tokens are checked against the JWKS in the context. Needs
-// no database.
+// Sign-in: bearer tokens are checked against the JWKS in the context.
 
 import type { FastifyInstance } from "fastify";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";

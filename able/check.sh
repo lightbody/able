@@ -23,6 +23,15 @@ done
 
 cd "$copy"
 git init -q && git add -A
+# Words that name the services of the modules this app won't have.
+left_out="$(node -e '
+  import("./able/lib.mjs").then(({ loadModules }) => {
+    const arg = process.argv[1];
+    const all = Object.entries(loadModules()).filter(([name]) => name !== "template");
+    const keep = arg === "" ? all.map(([name]) => name) : arg === "none" ? [] : arg.split(",");
+    console.log(all.filter(([name, mod]) => !keep.includes(name) && mod.mentions).map(([, mod]) => mod.mentions).join("|"));
+  });
+' "$modules")"
 if [ -n "$modules" ]; then
   node able/configure.mjs --name "Todoable" --handle todoable --modules "$modules"
 else
@@ -39,6 +48,10 @@ fi
 if git grep -n -i -E "myapp|my app" -- . > /dev/null; then
   git grep -n -i -E "myapp|my app" -- . >&2
   fail "placeholder names are left"
+fi
+if [ -n "$left_out" ] && git grep -n -i -E "$left_out" -- . ':!package-lock.json' > /dev/null; then
+  git grep -n -i -E "$left_out" -- . ':!package-lock.json' >&2
+  fail "the app still mentions a module it doesn't have (mark those lines in the template)"
 fi
 [ ! -e able ] && [ ! -e PLAYBOOK.md ] && [ ! -e site ] || fail "Able's own files are left"
 

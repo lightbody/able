@@ -11,7 +11,8 @@ export const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "
 
 const OPEN = String.raw`(?:\/\/|#|<!--|\{\/\*|\/\*)`;
 const CLOSE = String.raw`(?:-->|\*\/\}|\*\/)?`;
-const NAME = String.raw`([a-z][a-z-]*)`;
+// One module, or several separated by commas (all of them are needed).
+const NAME = String.raw`([a-z][a-z,-]*)`;
 export const BEGIN = new RegExp(String.raw`^\s*${OPEN}\s*able:begin ${NAME}\s*${CLOSE}\s*$`);
 export const END = new RegExp(String.raw`^\s*${OPEN}\s*able:end\s*${CLOSE}\s*$`);
 export const ONLY = new RegExp(String.raw`\s*${OPEN}\s*able:only ${NAME}\s*${CLOSE}\s*$`);
@@ -42,6 +43,9 @@ export function loadModules() {
     modules[name] = {
       declaredName: field("module"),
       requires: field("requires").split(",").map((s) => s.trim()).filter(Boolean),
+      // A regular expression for words that name this module's service. An
+      // app without the module shouldn't contain them (able/check.sh).
+      mentions: field("mentions"),
       files: [...section.matchAll(/^- `([^`]+)`/gm)].map((m) => m[1]),
       // "## npm dependencies": one bullet per workspace, its name first, then
       // the packages (a trailing * matches a whole scope).

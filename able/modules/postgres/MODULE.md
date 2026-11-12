@@ -2,6 +2,7 @@
 module: postgres
 provider: Neon (Postgres and Neon Realtime)
 requires: backend, auth
+mentions: neon|postgres|realtime|live quer|migration|database
 ---
 
 # postgres
@@ -26,7 +27,7 @@ It requires `auth` so stored data is never reachable without sign-in.
 
 ## npm dependencies
 
-- `backend`: `pg`, `@neon/realtime`, `@types/pg`
+- `backend`: `pg`, `@neon/realtime`, `@types/pg`, `@opentelemetry/instrumentation-pg`
 - `frontend`: `@neon/realtime`, `@neon/realtime-react`
 
 ## Deploy

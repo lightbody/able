@@ -21,8 +21,14 @@ agent's guidance files.
 
 ## A module is whole files plus a few marked lines
 
-Each module has a folder here, `able/modules/<name>/`, with a `MODULE.md`
-that lists the files it owns and what else it brings. A file needs every
+Each module has a folder here, `able/modules/<name>/`, with two files:
+
+- `MODULE.md` lists the files the module owns and what else it brings.
+- `SETUP.md` is the module's part of `PLAYBOOK.md`: one section per
+  playbook step, which the playbook runs only for an app that has the
+  module.
+
+On the files: A file needs every
 module that lists it or a folder containing it: `backend/src/telemetry.ts`
 is listed by `observability` and sits in `backend/`, so it's kept only in
 an app with both.
@@ -46,6 +52,11 @@ registerMeRoutes(app, ctx); // able:only auth
   table. In JSX, write `{/* able:only auth */}`.
 - A marker inside a file that a module owns needs both: the file's module
   and the marker's.
+- A marker can name several modules, separated by commas
+  (`able:only backend,observability`): the line needs all of them.
+- Inside a fenced code block in Markdown, use the code's own comment
+  syntax (`# able:only auth` in a shell block), since an HTML comment would
+  show up in the rendered page.
 
 Removing a module means deleting its files and its marked regions. Keeping
 one means deleting only the marker comments. Either way, an app ends up
@@ -62,6 +73,14 @@ with no markers at all.
   other JSON edits a module needs.
 - **Run `node able/lint.mjs`** before committing. CI runs it too
   (`.github/workflows/able.yml`).
+- **Docs are marked too.** `README.md`, `AGENTS.md`, `SECRETS.md` and the
+  skills carry markers, so an app's guidance never describes a service it
+  doesn't have. `MODULE.md`'s `mentions:` line is a pattern for words that
+  name the module's service; `able/check.sh` fails if an app without the
+  module still contains one.
+- **Setup steps for a service go in its module's `SETUP.md`,** not in
+  `PLAYBOOK.md`, which holds only the core steps (GitHub, the Agent
+  Environment, Cloudflare Pages).
 - **Every combination has to build.** `able/check.sh <modules>` configures
   a copy of the repo as an app with those modules (`none` for a static
   site, nothing for the full app), then installs, builds, tests and lints

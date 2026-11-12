@@ -55,7 +55,8 @@ for (const name of keep) {
     if (!keep.has(dep)) usage(`Module "${name}" requires "${dep}". Add it, or leave "${name}" out.`);
   }
 }
-const kept = (name) => keep.has(name);
+// A marker can name several modules, separated by commas: it needs them all.
+const kept = (names) => names.split(",").every((name) => keep.has(name));
 
 /** Drops removed modules' regions and strips the markers of kept ones. */
 function strip(text) {

@@ -1,8 +1,7 @@
 # My App
 
 My App is a new web app. Currently a skeleton -- no domain features exist
-yet, just the plumbing (Postgres -> Neon Realtime -> React, a REST write
-path, and WorkOS auth gating all of it), generated from the
+yet, just the plumbing, generated from the
 [Able](https://github.com/lightbody/able) template.
 
 This file holds the guidelines for any coding agent working on the app.
@@ -39,12 +38,15 @@ Redraw it when the headline changes.
 
 The app's optional parts are **Modules**: `backend`, `auth`, `postgres`,
 `observability` and `custom-domain`, plus `template` for Able's own files.
-Each owns whole files, listed in `able/modules/<name>/MODULE.md`, and a few
-marked lines in shared files (comments that start with `able:`, around a
+Each owns whole files, listed in `able/modules/<name>/MODULE.md`, its part
+of the playbook, `able/modules/<name>/SETUP.md` (`PLAYBOOK.md` itself holds
+only the core steps), and a few marked lines in shared files (comments that start with `able:`, around a
 block or at the end of a line). Read `able/README.md`, which shows them,
 before adding or moving a file, or touching a marked line. Keep markers
 few: give a Module one registration line in a shared file and put the rest
-in files it owns. Run `node able/lint.mjs` before committing; so does
+in files it owns. Docs are marked too (this file, `README.md`,
+`SECRETS.md`, the skills), so an app's guidance never mentions a service
+it doesn't have. Run `node able/lint.mjs` before committing; so does
 `.github/workflows/able.yml`. `able/configure.mjs` is what PLAYBOOK.md
 step 8 runs to remove `template` (and any Modules the app doesn't want),
 strip the markers and rename the placeholders. Every valid combination of
@@ -67,66 +69,99 @@ below is the subset that stays in new apps, so keep it in step too.
 ## Terms
 
 - **App Environments** -- where the app runs: **Development** (`npm run
-  dev` against your own Neon branch, see README "Local development"),
+  dev` on your own machine, see README "Local development"),
   **Preview** (one per open PR, deleted when it closes) and **Production**
   (deployed from `main`). There's no shared staging environment: Previews
-  take its place. Production and every Preview sign in against the
-  **WorkOS Production environment**; WorkOS's own Staging and Development
-  environments aren't used.
+  take its place.
+<!-- able:begin auth -->
+- **WorkOS Production environment** -- Production and every Preview sign
+  in against it. WorkOS's own Staging and Development environments aren't
+  used, and aren't App Environments.
+<!-- able:end -->
 - **Agent Environment** -- the Claude Code cloud environment for this app,
   named "My App" and used for nothing else. It holds the Claude Code Tokens.
 - **Claude Code Tokens** (`myapp-claude-code`) and **CI Tokens**
   (`myapp-ci`) -- Claude's and GitHub Actions' separate API tokens for
-  Neon, Fly, Cloudflare and Grafana Cloud. **Baseline** -- the
+  the services the app runs on. **Baseline** -- the
   permissions the Claude Code Tokens keep between tasks. See `SECRETS.md`.
+<!-- able:begin observability -->
 - **Grafana Stack** -- the Grafana Cloud instance the app sends its
   telemetry to, `GRAFANA_STACK_URL`. One stack usually serves several
   apps; each app's telemetry carries its own `service.namespace` (the App
   Handle).
+<!-- able:end -->
 
 ## Stack
 
-- `frontend/` -- React 18 + TypeScript + Vite. Data sync via Neon Realtime
-  live queries (`useSealedView` + `useLiveQuery`, in `frontend/src/realtime.tsx`
-  and `Greetings.tsx`). It holds a WebSocket straight to Neon's Live SQL API, using
-  queries sealed by the backend. Auth via WorkOS AuthKit (`frontend/src/auth.tsx`,
-  `frontend/src/pages/Landing.tsx`).
-- `backend/` -- Node + TypeScript (Fastify, `pg`), Postgres. `authenticate()`
-  in `backend/src/auth.ts` validates the WorkOS bearer token on every
-  protected route.
+- `frontend/` -- React 18 + TypeScript + Vite, on Cloudflare Pages.
+  `src/App.tsx` is the page; each feature adds one line to it.
+<!-- able:begin backend -->
+- `backend/` -- Node + TypeScript (Fastify), on Fly.io. `src/server.ts`
+  registers each feature's routes, and `src/main.ts` boots it.
 - `shared/` -- `@myapp/shared`, an npm workspace package. Consumed by
   `backend/` (compiled `shared/dist`) and by `frontend/` (via a Vite/tsconfig
   path alias straight to `shared/src`, no build step).
-- Observability -- OpenTelemetry from the backend and Grafana Faro
-  from the frontend, to the Grafana Stack. See "Observability" below.
+<!-- able:end -->
+<!-- able:begin auth -->
+- Sign-in -- WorkOS AuthKit. The frontend's `<AuthGate>`
+  (`frontend/src/auth.tsx`, `frontend/src/pages/Landing.tsx`) shows the app
+  only to a signed-in user. `authenticate()` in `backend/src/auth.ts`
+  validates the WorkOS bearer token on every protected route.
+<!-- able:end -->
+<!-- able:begin postgres -->
+- Database -- Postgres on Neon (`pg`; `backend/src/db.ts`, migrations in
+  `backend/migrations/`). Data sync via Neon Realtime live queries
+  (`useSealedView` + `useLiveQuery`, in `frontend/src/realtime.tsx` and
+  `Greetings.tsx`): the browser holds a WebSocket straight to Neon's Live
+  SQL API, using queries sealed by the backend.
+<!-- able:end -->
+<!-- able:begin observability -->
+- Observability -- Grafana Faro from the frontend,
+  and OpenTelemetry from the backend, <!-- able:only backend -->
+  to the Grafana Stack. See "Observability" below.
+<!-- able:end -->
 
-This repo is an npm workspaces monorepo (`"workspaces": ["shared", "frontend",
-"backend"]` in the root `package.json`) -- run `npm install` once from the
-repo root before working in any workspace, so `frontend`'s and `backend`'s
-`node_modules/@myapp/shared` symlinks exist.
+This repo is an npm workspaces monorepo (see `workspaces` in the root
+`package.json`) -- run `npm install` once from the repo root before
+working in any workspace.
 
 ## Commands
 
+<!-- able:begin backend -->
 Backend, from `backend/`:
-- `npm run dev` -- tsx watch, runs migrations on startup, listens on :8080.
-  Needs a Realtime-enabled Neon branch in `.env.local`. There is no local
-  live query engine, so see README "Local development".
+- `npm run dev` -- tsx watch, listens on :8080.
+<!-- able:begin postgres -->
+  It runs migrations on startup, and needs a Realtime-enabled Neon branch
+  in `.env.local`. There is no local live query engine, so see README
+  "Local development".
+<!-- able:end -->
 - `npm run build` -- `tsc -p tsconfig.json`.
-- `npm test` -- vitest (needs Postgres on 127.0.0.1:5432: `docker compose up`
-  locally; in Claude Code cloud sessions `.claude/hooks/session-start.sh`
-  starts one at session start). It needs no Neon: sealing is local crypto, and the tests mint their
-  own Realtime secret and decrypt the capability to check the sealed SQL.
+- `npm test` -- vitest.
+<!-- able:begin postgres -->
+  It needs Postgres on 127.0.0.1:5432: `docker compose up` locally; in
+  Claude Code cloud sessions `.claude/hooks/session-start.sh` starts one
+  at session start. It needs no Neon: sealing is local crypto, and the
+  tests mint their own Realtime secret and decrypt the capability to check
+  the sealed SQL.
+<!-- able:end -->
 
+<!-- able:end -->
 Frontend, from `frontend/`:
-- `npm run dev` -- Vite dev server on :5173, proxies `/api` -> :8080.
+- `npm run dev` -- Vite dev server on :5173.
+  It proxies `/api` -> :8080. <!-- able:only backend -->
 - `npx tsc --noEmit` -- typecheck.
 - `npm run build` -- `tsc && vite build`, the full gate before calling a
   frontend change done.
 
+<!-- able:begin auth -->
 ## Auth gates access, not rows yet
 
 Every route except `/health` requires a valid WorkOS bearer token
-(`authenticate()` in `backend/src/auth.ts`). Live reads are authorized at *seal time*. `POST /live/:view` in
+(`authenticate()` in `backend/src/auth.ts`). A new route calls it first,
+and uses the user id it returns.
+
+<!-- able:begin postgres -->
+Live reads are authorized at *seal time*. `POST /live/:view` in
 `backend/src/routes/live.ts` looks the view up in a fixed `VIEWS` registry,
 builds that view's SQL from the authenticated userId, and seals it. The
 client only ever names a view, and can't change the sealed SQL or its
@@ -142,78 +177,119 @@ read-only, deterministic `SELECT`s (no `now()`, no `gen_random_uuid()`), on
 tables with a primary key. Add a test that decrypts the capability and
 asserts the SQL and params, like the existing `POST /live/:view` test.
 
+<!-- able:end -->
+<!-- able:end -->
 ## Deploys
 
-- Non-secret deploy config (Neon project/branch/db, Fly org/app, Cloudflare
-  account/project, prod origin, WorkOS client ID, Grafana Stack) lives in
+- Non-secret deploy config (the Cloudflare account and Pages project, the
+  prod origin, and each other service's IDs) lives in
   `.github/deploy.env`. Change it there, not in workflow files. Deploy jobs
   skip themselves while any value in it is empty
   (`.github/workflows/deploy-config.yml`).
 - The only GitHub secrets are a few API tokens, this app's narrowly scoped
-  CI Tokens (`NEON_API_KEY`, `FLY_API_TOKEN`, `CLOUDFLARE_API_TOKEN` and
-  `GRAFANA_OTLP_TOKEN`). See
-  `SECRETS.md` for scopes and rotation. `.github/actions/postgres-stage` (a step of `deploy-backend`) pulls the DB URL
-  and Realtime credentials from Neon on every deploy, so never set those on
-  Fly by hand.
+  CI Tokens: `CLOUDFLARE_API_TOKEN`,
+  `FLY_API_TOKEN`, <!-- able:only backend -->
+  `NEON_API_KEY`, <!-- able:only postgres -->
+  `GRAFANA_OTLP_TOKEN`, <!-- able:only observability -->
+  and nothing else. See `SECRETS.md` for scopes and rotation.
+<!-- able:begin backend -->
+- `.github/actions/deploy-backend` deploys the backend, for Production and
+  for each Preview. Each feature the backend uses has one step in it,
+  which stages that feature's Fly secrets and settings. A new feature that
+  needs a secret at runtime adds a step there.
+<!-- able:end -->
+<!-- able:begin postgres -->
+- `.github/actions/postgres-stage` (a step of `deploy-backend`) pulls the
+  DB URL and Realtime credentials from Neon on every deploy, so never set
+  those on Fly by hand.
+<!-- able:end -->
 - Cloud sessions on the Agent Environment (Full or Limited network
   access: see `SECRETS.md`) have the `myapp-claude-code` Claude Code
   Tokens, injected by the network proxy and separate from the CI Tokens:
-  `console.neon.tech` (project-scoped), `api.fly.io` and `api.machines.dev`
-  (an org deploy token for `FLY_ORG`, so Production and every Preview app),
-  `api.cloudflare.com` (Pages Edit, Account Settings and Account Analytics
-  Read, plus DNS and Zone Read for a custom domain), and the Grafana
-  Stack's host (a Viewer service account: see "Observability"). They may
-  be missing or revoked, so check with a read-only call first. If a host is refused on a
-  Limited Agent Environment, propose adding that exact host rather than working
-  around it. To use the CLIs, set
-  the key variable to the placeholder `proxy-injected`, e.g.
-  `NEON_API_KEY=proxy-injected npx neon@<NEON_CLI version> ...`,
-  `FLY_API_TOKEN=proxy-injected flyctl ...`. Direct Postgres connections
-  (port 5432) are blocked from these containers, so use Neon's HTTPS SQL
-  endpoint (`@neondatabase/serverless`) if you need to query a branch.
+  - `api.cloudflare.com` (Pages Edit, Account Settings and Account
+    Analytics Read, plus DNS and Zone Read for a custom domain)
+<!-- able:begin backend -->
+  - `api.fly.io` and `api.machines.dev` (an org deploy token for
+    `FLY_ORG`, so Production and every Preview app)
+<!-- able:end -->
+<!-- able:begin postgres -->
+  - `console.neon.tech` (project-scoped)
+<!-- able:end -->
+<!-- able:begin observability -->
+  - the Grafana Stack's host (a Viewer service account: see
+    "Observability")
+<!-- able:end -->
+
+  They may be missing or revoked, so check with a read-only call first.
+  If a host is refused on a Limited Agent Environment, propose adding that
+  exact host rather than working around it. To use a service's CLI, set
+  its key variable to the placeholder `proxy-injected`.
+<!-- able:begin backend -->
+  For Fly: `FLY_API_TOKEN=proxy-injected flyctl ...`.
+<!-- able:end -->
+<!-- able:begin postgres -->
+  For Neon: `NEON_API_KEY=proxy-injected npx neon@<NEON_CLI version> ...`.
+  Direct Postgres connections (port 5432) are blocked from these
+  containers, so use Neon's HTTPS SQL endpoint
+  (`@neondatabase/serverless`) if you need to query a branch.
+<!-- able:end -->
 - **Claude Code Tokens stay at their Baseline** (the table in `SECRETS.md`,
   "The baseline"). If a task needs more than that, such as creating or
   updating a Cloudflare Worker, say so before starting, name the exact
   permission, and guide the user through widening only that, following
   `SECRETS.md`, "Widening a token for a task". When the task is done, guide
   them back to the Baseline and check the narrowing took (a read the
-  removed permission allowed should now fail; for Grafana, where reads stay
-  allowed, a write aimed at something that doesn't exist should be
-  refused). Never work around a missing permission, for example with a CI
+  removed permission allowed should now fail).
+<!-- able:begin observability -->
+  For Grafana, where reads stay allowed, a write aimed at something that
+  doesn't exist should be refused.
+<!-- able:end -->
+  Never work around a missing permission, for example with a CI
   token or a broader key, and don't treat a temporary widening as the new
   Baseline: if the app needs it permanently, update the Baseline table in
   the same change, and say so.
+<!-- able:begin postgres -->
 - Never print connection strings or Realtime secrets. When checking
   `neon env pull` output, match on shape (as `postgres-stage` does)
   instead of echoing values.
+<!-- able:end -->
 
+<!-- able:begin observability -->
 ## Observability (Grafana Cloud)
 
-Telemetry is the fifth column next to frontend, backend, database and auth,
-sending everything to the **Grafana Stack**. It's standard
-OpenTelemetry, and it's **off wherever its config is missing**: tests and
+Telemetry sits next to the app's other parts, sending everything to the
+**Grafana Stack**. It's **off wherever its config is missing**: tests and
 Development export nothing.
 
+- **Frontend** (`frontend/src/telemetry.ts`): Grafana Faro sends page
+  loads, Web Vitals, JS errors and `fetch` spans. On only when built with
+  `VITE_GRAFANA_FARO_URL`.
+<!-- able:begin backend -->
+  It adds a `traceparent` header to calls to our own backend, so one trace
+  runs from the browser through the backend.
 - **Backend** (`backend/src/telemetry.ts`, preloaded with `node --import`):
-  traces (incoming HTTP, `pg` queries, outgoing `fetch`), metrics (HTTP
-  RED, pg pool, Node runtime, plus the app's own counters in
+  standard OpenTelemetry. Traces (incoming HTTP and outgoing `fetch`),
+  metrics (HTTP RED, Node runtime, plus the app's own counters in
   `backend/src/observability.ts`) and logs (every pino line, carrying
   `trace_id`/`span_id`). These go over OTLP to the stack's gateway, so they
   land in Tempo, Mimir and Loki. Turned on by `OTEL_EXPORTER_OTLP_ENDPOINT`,
   which `deploy-backend`'s `observability-stage` step sets when `deploy.env`'s Grafana values and the
   `GRAFANA_OTLP_TOKEN` CI Token are all there (otherwise it warns).
-- **Frontend** (`frontend/src/telemetry.ts`): Grafana Faro sends page
-  loads, Web Vitals, JS errors and `fetch` spans. It adds a `traceparent`
-  header to calls to our own backend, so one trace runs from the browser
-  through Fastify into Postgres. On only when built with
-  `VITE_GRAFANA_FARO_URL`.
+<!-- able:end -->
+<!-- able:begin postgres -->
+  Traces also cover `pg` queries and metrics the pg pool, so a trace runs
+  on into Postgres.
+<!-- able:end -->
 - **Shared resource attributes**, used to filter everything:
-  `service.namespace=<APP_HANDLE>`; `service.name=<APP_HANDLE>-backend` /
-  `<APP_HANDLE>-frontend`; `deployment.environment.name=<APP_HANDLE>` for
+  `service.namespace=<APP_HANDLE>`; `service.name=<APP_HANDLE>-frontend`
+  (and `<APP_HANDLE>-backend`); <!-- able:only backend -->
+  `deployment.environment.name=<APP_HANDLE>` for
   Production or `<APP_HANDLE>-pr<n>` for a Preview (e.g. `myapp-pr3`), so
   every deploy is identifiable on a shared stack; `service.version=<commit
-  sha>`. Spans for
-  signed-in requests carry `user.id` (the opaque WorkOS id).
+  sha>`.
+<!-- able:begin auth -->
+  Spans for signed-in requests carry `user.id` (the opaque WorkOS id).
+<!-- able:end -->
 
 ### Querying it from a session
 
@@ -226,6 +302,7 @@ and reads the stack from `deploy.env`. The proxy supplies the
 setup is needed and no key appears anywhere. If a query fails or comes back
 empty, say so rather than guessing at Production behavior.
 
+<!-- able:begin backend -->
 ### Adding telemetry
 
 - Logs: use `req.log` in handlers (keeps the request's trace id) or the
@@ -235,15 +312,17 @@ empty, say so rather than guessing at Production behavior.
   Attribute values must come from small fixed sets (a view name, an
   outcome), never ids or user input. The free tier caps active series at
   ~10k for the whole Grafana Stack, across every app that uses it.
-- Spans: auto-instrumentation covers HTTP, pg and fetch. For a meaningful
+- Spans: auto-instrumentation covers incoming HTTP and outgoing fetch. For a meaningful
   in-process step, use `trace.getTracer("myapp-backend").startActiveSpan(...)`.
 - Infra polled by machines (like `/health`) stays out of traces and logs. Add new
   paths of that kind to `UNTRACED_PATHS` in `telemetry.ts`.
 
+<!-- able:end -->
+<!-- able:end -->
 ## Verifying UI changes in this sandbox
 
-No harness exists yet -- the app is small enough that `npm run dev` in both
-`backend/` and `frontend/` and opening the page directly is enough. If the UI
+No harness exists yet -- the app is small enough that `npm run dev` and
+opening the page directly is enough. If the UI
 grows complex enough to need auth/routing to reach the screen under test,
 add a harness page (`frontend/<name>-harness.html` + a matching `.tsx`
 that renders the component with stubbed data, added to Vite's

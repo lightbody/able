@@ -14,7 +14,6 @@ const modules = loadModules();
 const names = Object.keys(modules);
 
 // --- Manifests ---
-const claimed = new Map();
 for (const [name, mod] of Object.entries(modules)) {
   const manifest = `able/modules/${name}/MODULE.md`;
   if (mod.declaredName !== name) fail(manifest, `front matter says "module: ${mod.declaredName}", expected "${name}"`);
@@ -23,8 +22,6 @@ for (const [name, mod] of Object.entries(modules)) {
   }
   for (const entry of mod.files) {
     if (!existsSync(path.join(root, entry))) fail(manifest, `lists ${entry}, which doesn't exist`);
-    if (claimed.has(entry)) fail(manifest, `lists ${entry}, which ${claimed.get(entry)} also lists`);
-    claimed.set(entry, name);
   }
 }
 
@@ -53,24 +50,26 @@ for (const file of trackedFiles()) {
     markerCount += 1;
     const begin = BEGIN.exec(line);
     const only = ONLY.exec(line);
-    const name = begin?.[1] ?? only?.[1];
+    const named = begin?.[1] ?? only?.[1];
     if (begin) {
-      open.push({ name, where });
+      open.push({ names: named.split(","), where });
     } else if (END.test(line)) {
       if (!open.pop()) fail(where, "able:end without a matching able:begin");
     } else if (!only) {
       fail(where, "looks like a marker but isn't well formed (see able/README.md)");
       return;
     }
-    if (name === undefined) return;
-    if (!names.includes(name)) fail(where, `unknown module "${name}"`);
-    else if (implied.has(name)) {
-      fail(where, `redundant: this file belongs to ${owners.join(" and ")}, which already needs ${name}`);
-    } else if (open.slice(0, begin ? -1 : undefined).some((b) => b.name === name || allRequired(b.name).has(name))) {
-      fail(where, `redundant: already inside a block that needs ${name}`);
+    for (const name of named?.split(",") ?? []) {
+      const enclosing = open.slice(0, begin ? -1 : undefined).flatMap((b) => b.names);
+      if (!names.includes(name)) fail(where, `unknown module "${name}"`);
+      else if (implied.has(name)) {
+        fail(where, `redundant: this file belongs to ${owners.join(" and ")}, which already needs ${name}`);
+      } else if (enclosing.some((outer) => outer === name || allRequired(outer).has(name))) {
+        fail(where, `redundant: already inside a block that needs ${name}`);
+      }
     }
   });
-  for (const block of open) fail(block.where, `able:begin ${block.name} is never closed`);
+  for (const block of open) fail(block.where, `able:begin ${block.names.join(",")} is never closed`);
 }
 
 if (errors.length > 0) {

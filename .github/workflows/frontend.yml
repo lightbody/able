@@ -8,8 +8,10 @@ on:
       - shared/** # able:only backend
       - .github/deploy.env
       - .github/workflows/frontend.yml
-  # No paths filter on PRs: every PR gets a full preview stack, so the
-  # frontend must always be rebuilt against the PR's backend app.
+  # No paths filter on PRs: every PR gets a Preview.
+  # able:begin backend
+  # The frontend must always be rebuilt against the PR's own backend app.
+  # able:end
   pull_request:
 
 concurrency:
@@ -60,8 +62,8 @@ jobs:
           # able:begin observability
           # Telemetry (Grafana Faro) is off while GRAFANA_FARO_URL is empty.
           # Environment ("<APP_HANDLE>" or "<APP_HANDLE>-pr<n>") and version
-          # match the backend's, so a frontend session and the backend spans
-          # it caused filter the same way.
+          # are the same on everything the app sends, so one filter finds
+          # all of a deploy's telemetry.
           export VITE_GRAFANA_FARO_URL="$GRAFANA_FARO_URL"
           export VITE_OTEL_SERVICE_NAMESPACE="$APP_HANDLE"
           export VITE_DEPLOY_ENVIRONMENT="$APP_HANDLE${PR_NUMBER:+-pr$PR_NUMBER}"

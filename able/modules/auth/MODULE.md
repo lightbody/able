@@ -2,6 +2,7 @@
 module: auth
 provider: WorkOS AuthKit
 requires: backend
+mentions: workos|authkit|jwks|sign[- ]in|signed[- ]in|sign[- ]out
 ---
 
 # auth

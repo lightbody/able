@@ -50,7 +50,7 @@ export async function initTelemetry(): Promise<void> {
         instrumentationOptions: {
           // able:begin backend
           // Cross-origin, so only calls to our own backend get a traceparent
-          // header (never WorkOS or Neon). The backend's CORS reflects
+          // header (never another service). The backend's CORS reflects
           // requested headers, so the preflight allows it.
           propagateTraceHeaderCorsUrls: [new RegExp(`^${escapeRegExp(BASE)}`)],
           // able:end
