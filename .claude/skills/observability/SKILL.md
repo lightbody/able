@@ -7,7 +7,7 @@ description: Query My App's production and PR-preview telemetry (logs, traces, m
 
 My App sends OpenTelemetry to a Grafana Cloud stack. The backend sends
 traces, metrics and logs to Tempo, Mimir and Loki. The frontend sends Grafana
-Faro sessions, and its fetch spans join the backend's traces. CLAUDE.md
+Faro sessions, and its fetch spans join the backend's traces. AGENTS.md
 "Observability" covers what's instrumented. This skill covers reading it.
 
 ## Running gcx

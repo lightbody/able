@@ -85,7 +85,7 @@
           <li><strong>Tests on every change</strong>CI type-checks and builds the app and runs the backend tests on each pull request. Production deploys only after they pass.</li>
           <li><strong>A live Preview for every pull request</strong>Its own Fly app, its own Neon branch forked from Production, and a URL to try. It's deleted when the pull request closes.</li>
           <li><strong>Telemetry your agent can read</strong>One trace follows a click from the browser through the backend into Postgres. A built-in skill teaches Claude to query it, so bugs get fixed from evidence.</li>
-          <li><strong>Keys kept narrow</strong>The Claude Code Tokens and the CI Tokens that deploy are separate, and the Claude Code Tokens stay at a minimal Baseline between tasks. An agent working on your app can't reach beyond it.</li>
+          <li><strong>Keys kept narrow</strong>The Claude Code Tokens and the CI Tokens that deploy are separate, and the Claude Code Tokens are kept to minimal permissions between tasks. An agent working on your app can't reach beyond it.</li>
         </ul>
         <p class="fine">Able sets everything up for AI-driven development in the cloud. But ultimately you're in control and can evolve the code however you want, including with an IDE and classic development workflows.</p>
       </div>
@@ -111,14 +111,13 @@
           a workshop in your repo, so every later session starts out knowing how your
           app works and what it may touch.</p>
         <ul class="files">
-          <li><code>CLAUDE.md</code><span>The agent's guidelines: how sign-in works, how deploys work, what to log, and the rules for its own tokens.</span></li>
-          <li><code>.claude/skills/observability</code><span>A skill that teaches Claude to query your Production and Preview telemetry before it guesses.</span></li>
-          <li><code>.claude/hooks/session-start.sh</code><span>Every cloud session installs dependencies and starts a test database, so the tests just run.</span></li>
-          <li><code>SECRETS.md</code><span>Which tokens exist, what each can do, the Baseline, and how to rotate or revoke them.</span></li>
-          <li><code>.github/workflows</code><span>Tests, Production deploys, and a Preview for every pull request.</span></li>
+          <li><code>AGENTS.md</code><span>The agent's guidelines for your app: how sign-in and deploys work, what to log, how to treat its own tokens, and anything else you teach it.</span></li>
+          <li><code>SECRETS.md</code><span>Which tokens exist, what each can do, and how to rotate or revoke them.</span></li>
+          <li><strong>Skills</strong><span>Repeatable jobs your agent knows how to do, like querying your Production and Preview telemetry before it guesses. Able adds more over time, and you can write your own.</span></li>
+          <li><strong>Workflows</strong><span>Automation for the routine: running the tests, deploying Production, spinning up a Preview for every pull request, and getting each cloud session ready with its dependencies and a test database.</span></li>
         </ul>
         <p class="fine">Able is a template, not a framework: no library to depend on and no
-          updates to pull. These files are yours to edit as your app grows.</p>
+          updates to pull. All of it is yours to edit as your app grows.</p>
       </div>
     </section>
 
@@ -286,7 +285,7 @@
           <details>
             <summary>What does Able leave in my repo?</summary>
             <p>Able is a template, not a framework. Setup copies it into your own repo, and from then on the code is yours: there's no Able library to depend on and no updates to pull.</p>
-            <p>What it does leave is the agent's workshop: a <code>CLAUDE.md</code> of guidelines, an <code>observability</code> skill, a session-start hook, <code>SECRETS.md</code>, and the CI and Preview workflows. Every later session starts from them. They're yours to edit as your app grows.</p>
+            <p>What it does leave is the agent's workshop: an <code>AGENTS.md</code> of guidelines, <code>SECRETS.md</code>, skills, and workflows. Every later session starts from them. They're yours to edit as your app grows.</p>
           </details>
           <details>
             <summary>Why no staging environment?</summary>
@@ -373,7 +372,7 @@
             <p>Able's setup has been tested most with Claude Code, including its
               browser and mobile versions, which let you do the whole thing from your
               phone. The setup is a plain-text playbook, so Codex and other capable
-              coding agents will likely work well too.</p>
+              coding agents will likely work well too. The agent's guidelines live in <code>AGENTS.md</code>, a file format many coding agents read.</p>
           </details>
         </div>
       </div>
