@@ -281,6 +281,22 @@ name is the App Handle. Work in this clone from here on.
 those copies from here on. They match the code in this repo, and step 8
 removes both from it while later steps still need them.
 
+**Note which Able commit the repo was made from.** The app records it, so
+it can later ask what's new in Able. A repo made from the template holds
+exactly the files of one Able commit, so match its first commit's tree
+against Able's history:
+
+```bash
+git clone --quiet https://github.com/lightbody/able <scratch>/able-history
+tree="$(git rev-parse "$(git rev-list --max-parents=0 HEAD)^{tree}")"
+git -C <scratch>/able-history log --format='%H %T' | awk -v t="$tree" '$2 == t { print $1; exit }'
+```
+
+That prints the Able commit. If it prints nothing (the repo wasn't made
+straight from the template), use
+`git -C <scratch>/able-history rev-parse HEAD` and tell the user the
+record is approximate. Keep the commit for step 8.
+
 If there's no repo, or it's some other repo, don't set up there. If its `deploy.env` is already filled in, it's an app that's
 already set up: ask what they want. Otherwise give the user "Before the
 session" step 2 (and step 3 if GitHub isn't connected), wait until
@@ -587,12 +603,13 @@ In the cloned repo:
    `able/` is in your scratch directory (step 0), then run:
 
    ```bash
-   node able/configure.mjs --name "<App Name>" --handle <App Handle> --modules <the app's Modules>
+   node able/configure.mjs --name "<App Name>" --handle <App Handle> \
+     --modules <the app's Modules> --able-commit <the Able commit from step 0>
    ```
 
    `--modules` takes the chosen Modules separated by commas, e.g.
    `backend,auth`, or `none` for a static site. Leave `--modules` out for
-   every Module. It does three things:
+   every Module. It does four things:
    - **Removes what the app doesn't have:** the files and marked lines of
      every Module left out, and always Able's own files (`PLAYBOOK.md`,
      `able/`, and Able's landing page and checks: `site/`,
@@ -604,6 +621,11 @@ In the cloned repo:
      `package-lock.json`: `My App` → App Name and `myapp` → App Handle.
      This covers the package names, the token names in `SECRETS.md` and
      `AGENTS.md`, and the Pages project.
+
+   - **Writes `ABLE.md`:** the app's record of the Able commit it was
+     made from and the Modules it has. The `able` skill
+     (`.claude/skills/able/`), which stays in the app, uses it later to
+     bring over what's new in Able.
 
    Check `git grep -n "able:begin\|able:end\|able:only"` finds nothing.
 2. **Fill in `.github/deploy.env`.** Every key it now has, from "Values
@@ -710,7 +732,11 @@ Tell the user, briefly:
 
 - the Production Origin, the repo, and how Previews work
 - which Modules the app has, in plain words, and that others can be added
-  later
+  later by asking, e.g. "add sign-in from Able"
+- that Able keeps improving, and the app can learn from it whenever they
+  like: "what's new in Able?" or "pull latest Able" makes Claude walk
+  them through what changed and open a pull request with what they take.
+  Nothing changes unless they ask.
 - that this Agent Environment, named with the App Name, is where to start
   every future session on it. Its `<App Handle>-claude-code` tokens let Claude build
   and debug the app, including looking into Production and Previews
@@ -730,20 +756,6 @@ Tell the user, briefly:
   now, with the steps under "Limited network access", so Claude can reach
   Previews. Setting **Network access** to **Full** is the simpler
   alternative.
-
-## Adding Observability to an existing app
-
-If the user asks to add Observability to an app set up before it was part
-of Able, attach its repo and read `.github/deploy.env`, `AGENTS.md` (`CLAUDE.md` in
-an older app) and `SECRETS.md`. First bring in the template's observability code and docs as
-a PR (`git diff` the app against Able's `main` for
-`backend/src/telemetry.ts`, `frontend/src/telemetry.ts`, the workflows and
-the `deploy-backend` and `observability-stage` actions, `scripts/gcx`,
-`.claude/skills/observability/` and `observability/`, plus the Grafana values in `deploy.env`). Then do the
-Grafana parts of this playbook in order: the Grafana Stack (step 2), Claude's
-Grafana token (step 4), "Grafana" in step 5, `GRAFANA_OTLP_TOKEN` (step 6),
-and the telemetry checks in step 9. Use the user's existing Grafana Stack if
-they have one.
 
 ## Limited network access
 
@@ -784,9 +796,10 @@ why:
 |---|---|
 | `api.cloudflare.com` | the Cloudflare Claude Code Token's API (a card also allows its host, but list it anyway) |
 | `developers.cloudflare.com` | Cloudflare's docs |
+| `github.com` | step 0 reads Able's history, and the `able` skill fetches Able later |
 | each chosen Module's hosts | listed under "Limited network access" in its setup file |
 
-In step 0 the Modules aren't chosen yet, so add the two Cloudflare rows
+In step 0 the Modules aren't chosen yet, so add the rows above
 then, and each Module's hosts right after step 1.
 
 **Wildcard hosts** (after step 1, once the App Handle and region are known).

@@ -33,9 +33,9 @@ left_out="$(node -e '
   });
 ' "$modules")"
 if [ -n "$modules" ]; then
-  node able/configure.mjs --name "Todoable" --handle todoable --modules "$modules"
+  node able/configure.mjs --name "Todoable" --handle todoable --able-commit 0123abc --modules "$modules"
 else
-  node able/configure.mjs --name "Todoable" --handle todoable
+  node able/configure.mjs --name "Todoable" --handle todoable --able-commit 0123abc
 fi
 
 fail() { echo "able/check.sh: $*" >&2; exit 1; }
@@ -53,6 +53,7 @@ if [ -n "$left_out" ] && git grep -n -i -E "$left_out" -- . ':!package-lock.json
   git grep -n -i -E "$left_out" -- . ':!package-lock.json' >&2
   fail "the app still mentions a module it doesn't have (mark those lines in the template)"
 fi
+grep -q "Learned up to:\*\* 0123abc" ABLE.md || fail "ABLE.md doesn't record the Able commit"
 [ ! -e able ] && [ ! -e PLAYBOOK.md ] && [ ! -e site ] || fail "Able's own files are left"
 
 npm install --no-audit --no-fund > /dev/null

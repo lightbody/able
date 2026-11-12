@@ -4,10 +4,12 @@
 //
 //   node able/configure.mjs --name "Todoable" --handle todoable
 //   node able/configure.mjs --name "Todoable" --handle todoable --modules backend,auth
+//   node able/configure.mjs ... --able-commit <the Able commit this repo was made from>
 //
 // It removes the modules the app doesn't want (and always Able's own files,
-// the `template` module), strips every module marker from what's left, and
-// renames the placeholders `My App` and `myapp`. Without --modules the app
+// the `template` module), strips every module marker from what's left,
+// renames the placeholders `My App` and `myapp`, and writes ABLE.md, the
+// app's record of what it has learned from Able. Without --modules the app
 // keeps every module; `--modules none` makes a static site. Without --name
 // and --handle the placeholders stay.
 //
@@ -25,7 +27,7 @@ const optional = Object.keys(modules).filter((name) => name !== "template");
 function usage(problem) {
   console.error(problem);
   console.error(
-    `usage: node able/configure.mjs [--name "<App Name>" --handle <app-handle>] [--modules ${optional.join(",")} | none]`,
+    `usage: node able/configure.mjs [--name "<App Name>" --handle <app-handle>] [--modules ${optional.join(",")} | none] [--able-commit <sha>]`,
   );
   process.exit(2);
 }
@@ -33,7 +35,7 @@ function usage(problem) {
 const options = {};
 const args = process.argv.slice(2);
 for (let i = 0; i < args.length; i += 2) {
-  const key = /^--(name|handle|modules)$/.exec(args[i])?.[1];
+  const key = /^--(name|handle|modules|able-commit)$/.exec(args[i])?.[1];
   if (!key || args[i + 1] === undefined) usage(`Unexpected argument "${args[i]}".`);
   options[key] = args[i + 1];
 }
@@ -163,6 +165,31 @@ if (!kept("observability")) {
     }
   });
 }
+
+// --- ABLE.md: the app's record of what it has learned from Able ---
+const commit = options["able-commit"];
+if (commit !== undefined && !/^[0-9a-f]{7,40}$/.test(commit)) usage(`"${commit}" isn't a commit id.`);
+const today = new Date().toISOString().slice(0, 10);
+writeFileSync(
+  path.join(root, "ABLE.md"),
+  `# Learned from Able
+
+This app was made from Able, a template. Nothing in it depends on Able:
+this repo is the source of truth. Able keeps improving, though, and this
+file is the app's record of what it has taken from it so far.
+
+To bring over what's new, ask your coding agent to "pull latest Able". It
+looks at what changed in Able since the commit below, walks you through
+each change, and opens a pull request with the ones you take. The same
+goes for adding one of Able's Modules later. The steps it follows are in
+\`.claude/skills/able/SKILL.md\`.
+
+- **Source:** https://github.com/lightbody/able
+- **Learned up to:** ${commit ?? "unknown (find the Able commit this app was made from, and put it here)"} (${today})
+- **Modules:** ${[...keep].join(", ") || "none"}
+- **Deferred:** none
+`,
+);
 
 // --- The app's own names ---
 let renamed = 0;

@@ -96,3 +96,18 @@ with no markers at all.
   `PLAYBOOK.md` step 8 runs it.
 - `able/lint.mjs` checks the manifests and markers.
 - `able/check.sh` proves one combination.
+- `able/changes-check.mjs` checks a pull request has change notes.
+
+## Change notes
+
+Apps made from Able can ask their agent to "pull latest Able". The agent
+reads what changed since the app last looked, and the notes that explain
+it: `able/CHANGES.md` for the core and `able/modules/<name>/CHANGES.md`
+for each module. Any change to a file apps receive needs an entry, written
+for the app's owner: what changed, why, what it touches, and what it needs
+from them. `able/CHANGES.md` shows the format. CI fails a pull request
+that's missing one.
+
+The skill apps use is `.claude/skills/able/SKILL.md`. It's a core file, so
+every app has it, and it describes this folder's layout to the app's
+agent. Keep the two in step.

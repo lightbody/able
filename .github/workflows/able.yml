@@ -21,6 +21,26 @@ jobs:
       - name: Check module manifests and markers
         run: node able/lint.mjs
 
+  changes:
+    # A pull request that changes files apps receive has to say so in the
+    # change notes, which apps read when they pull in what's new.
+    name: Change notes
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Check for change notes
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: node able/changes-check.mjs "origin/$BASE_REF"
+
   combinations:
     # Every valid combination of modules: configure a copy of the template
     # as an app with those modules, then install, build, test and lint it.
