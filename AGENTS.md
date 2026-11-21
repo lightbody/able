@@ -37,7 +37,7 @@ Redraw it when the headline changes.
 ## Modules (template repo only)
 
 The app's optional parts are **Modules**: `backend`, `auth`, `postgres`,
-`observability` and `custom-domain`, plus `template` for Able's own files.
+`observability`, `issue-tracking` and `custom-domain`, plus `template` for Able's own files.
 Each owns whole files, listed in `able/modules/<name>/MODULE.md`, its part
 of the playbook, `able/modules/<name>/SETUP.md` (`PLAYBOOK.md` itself holds
 only the core steps), and a few marked lines in shared files (comments that start with `able:`, around a
@@ -54,7 +54,7 @@ checks for them. `able/configure.mjs` is what PLAYBOOK.md
 step 8 runs to remove `template` (and any Modules the app doesn't want),
 strip the markers and rename the placeholders. Every valid combination of
 Modules has to build: `able/check.sh <modules>` proves one (`none` for a
-static site, nothing for the full app), and CI runs all eight. Run the
+static site, nothing for the full app), and CI runs all eleven. Run the
 ones your change touches before committing.
 
 ## Terms (template repo only)
@@ -123,6 +123,10 @@ below is the subset that stays in new apps, so keep it in step too.
   and OpenTelemetry from the backend, <!-- able:only backend -->
   to the Grafana Stack. See "Observability" below.
 <!-- able:end -->
+<!-- able:begin issue-tracking -->
+- Issue tracking -- Linear, over its MCP server (`.mcp.json`), for Claude
+  Code sessions. See "Issue tracking" below.
+<!-- able:end -->
 
 This repo is an npm workspaces monorepo (see `workspaces` in the root
 `package.json`) -- run `npm install` once from the repo root before
@@ -190,11 +194,13 @@ asserts the SQL and params, like the existing `POST /live/:view` test.
   skip themselves while any value in it is empty
   (`.github/workflows/deploy-config.yml`).
 - The only GitHub secrets are a few API tokens, this app's narrowly scoped
-  CI Tokens: `CLOUDFLARE_API_TOKEN`,
-  `FLY_API_TOKEN`, <!-- able:only backend -->
-  `NEON_API_KEY`, <!-- able:only postgres -->
-  `GRAFANA_OTLP_TOKEN`, <!-- able:only observability -->
-  and nothing else. See `SECRETS.md` for scopes and rotation.
+  CI Tokens, and nothing else:
+  - `CLOUDFLARE_API_TOKEN`
+  - `FLY_API_TOKEN` <!-- able:only backend -->
+  - `NEON_API_KEY` <!-- able:only postgres -->
+  - `GRAFANA_OTLP_TOKEN` <!-- able:only observability -->
+
+  See `SECRETS.md` for scopes and rotation.
 <!-- able:begin backend -->
 - `.github/actions/deploy-backend` deploys the backend, for Production and
   for each Preview. Each feature the backend uses has one step in it,
@@ -221,6 +227,10 @@ asserts the SQL and params, like the existing `POST /live/:view` test.
 <!-- able:begin observability -->
   - the Grafana Stack's host (a Viewer service account: see
     "Observability")
+<!-- able:end -->
+<!-- able:begin issue-tracking -->
+  - `mcp.linear.app` (a personal API key for the app's Linear team: see
+    "Issue tracking")
 <!-- able:end -->
 
   They may be missing or revoked, so check with a read-only call first.
@@ -322,6 +332,42 @@ empty, say so rather than guessing at Production behavior.
 
 <!-- able:end -->
 <!-- able:end -->
+<!-- able:begin issue-tracking -->
+## Issue tracking (Linear)
+
+The app's work is tracked in Linear, not GitHub Issues (GitHub only links
+to Linear). The workspace and team are `LINEAR_WORKSPACE_URL` and
+`LINEAR_TEAM_KEY` in `.github/deploy.env`. Use the **`issue-tracking`
+skill** (`.claude/skills/issue-tracking/SKILL.md`) for anything involving
+issues, and before starting a branch.
+
+- **The tools.** `.mcp.json` registers Linear's MCP server as `linear`, so
+  its tools are `mcp__linear__*` (deferred: load them with `ToolSearch`).
+  Its API key is the `myapp-claude-code` token for `mcp.linear.app`,
+  injected by the network proxy: it's never in the repo, and you never see
+  it. **MCP servers load when a session starts**, so a session that began
+  before the key was saved, or from a branch without `.mcp.json`, has no
+  Linear tools and never will. Say so and ask for a new session; don't
+  invent issues or results. `check-connection.sh` in the skill's folder
+  tells you whether the key works.
+- **Branches.** Every change that will be a pull request starts from an
+  issue, and uses the branch name Linear gives it (`gitBranchName`, such as
+  `sam/abc-12-add-chore-reminders`), exactly as returned. Linear's
+  GitHub integration links the branch and pull request to the issue by the
+  key in the name. A session starts on a `claude/...` branch, and a session
+  can't delete a pushed branch, so rename it **before the first push**:
+  `git branch -m <name>` then `git push -u origin <name>`. This is the
+  user's standing permission to push that branch instead of the `claude/`
+  one. If the `claude/` branch is already pushed, leave it and say it's
+  safe to delete. Trivial fixes (a typo) can skip the issue.
+- **Who writes.** The key belongs to a person, so issues and comments you
+  create show as them. Sign what you write `Claude Code`, and never put
+  tokens or user data in an issue.
+- **The key is a Claude Code Token**, at its Baseline in `SECRETS.md`
+  (Read + Write, one team). If a task
+  needs more, follow "Widening a token for a task" there.
+<!-- able:end -->
+
 ## Learning from Able
 
 This app was made from the Able template and doesn't depend on it.

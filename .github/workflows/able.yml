@@ -60,6 +60,9 @@ jobs:
           - backend,auth,observability
           - backend,auth,postgres
           - backend,auth,postgres,observability
+          - issue-tracking
+          - backend,issue-tracking
+          - backend,auth,postgres,observability,issue-tracking
 
     services:
       postgres:

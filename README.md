@@ -42,8 +42,8 @@ Claude checks the repo and the Agent Environment (and helps fix either),
 asks what the app needs, walks you through creating accounts and API
 tokens, and does the rest. Every app gets a page on Cloudflare Pages. You
 choose what goes behind it: an API (Fly), sign-in (WorkOS), a database
-with live updates (Neon), observability (Grafana Cloud) and a custom
-domain. Claude removes what you didn't choose, provisions the rest,
+with live updates (Neon), observability (Grafana Cloud), issue tracking
+(Linear) and a custom domain. Claude removes what you didn't choose, provisions the rest,
 configures CI, and verifies Production and Previews. Claude asks for each token with only the
 permissions it needs at the time, and has you narrow them once setup is
 done, so later sessions can debug the app without setup-level access.
@@ -51,7 +51,8 @@ done, so later sessions can debug the app without setup-level access.
 The landing page at **https://able.lightbody.net** lives in `site/` and
 deploys with `.github/workflows/site.yml`. New apps don't get either.
 
-The app's optional parts (`backend`, `auth`, `postgres`, `observability`)
+The app's optional parts (`backend`, `auth`, `postgres`, `observability`,
+`issue-tracking`)
 are **Modules**. `able/README.md` describes how the template marks them,
 for anyone changing Able itself; new apps don't get `able/` either.
 
@@ -80,6 +81,7 @@ end to end. Replace it with real features as they land.
 | Realtime | Neon Realtime live SQL queries, sealed by the backend | <!-- able:only postgres -->
 | Observability | Grafana Faro → Grafana Cloud (Frontend Observability) | <!-- able:only observability -->
 | | OpenTelemetry from the backend → Grafana Cloud (Tempo, Loki, Mimir) | <!-- able:only backend,observability -->
+| Issue tracking | Linear, over its MCP server (`.mcp.json`) | <!-- able:only issue-tracking -->
 | CI/CD | GitHub Actions, with a Preview for every pull request |
 
 ### How it fits together
@@ -129,6 +131,7 @@ end to end. Replace it with real features as they land.
 | `shared/` | `@myapp/shared` -- placeholder shared logic (used by backend + frontend) | <!-- able:only backend -->
 | `observability/` | Grafana Frontend Observability app spec | <!-- able:only observability -->
 | `scripts/` | `gcx` -- Grafana's CLI, installed on first use, for querying telemetry | <!-- able:only observability -->
+| `.mcp.json` | Linear's MCP server, for Claude Code sessions (no secret in it) | <!-- able:only issue-tracking -->
 | `docker-compose.yml` | Postgres for backend tests | <!-- able:only postgres -->
 | `.github/` | CI workflows and the scripts they use |
 
@@ -357,4 +360,26 @@ It's an org token because Fly's dashboard can't make read-only ones;
 SECRETS.md ("Tokens held by other services") says why that's acceptable and
 how to rotate it.
 <!-- able:end -->
+<!-- able:end -->
+
+<!-- able:begin issue-tracking -->
+## Issue tracking
+
+The app's work is tracked in **Linear**, not GitHub Issues. Claude Code
+sessions read and update it through Linear's MCP server, registered in
+`.mcp.json`. The API key is a Claude Code Token saved on the Agent
+Environment, never in the repo. `.github/deploy.env` names the workspace and
+team (`LINEAR_WORKSPACE_URL`, `LINEAR_TEAM_KEY`).
+
+- **Start each change from an issue**, on the branch name Linear gives it:
+  Linear's GitHub integration links the branch and pull request to the
+  issue and closes it on merge. `AGENTS.md` ("Issue tracking") has the rules
+  for sessions, and the `issue-tracking` skill the steps.
+- **The tools load when a session starts.** After the key is saved, start a
+  new session on the Agent Environment to get them. A session that began
+  earlier can't have them.
+- What Claude writes in Linear shows as the key's owner, signed
+  `Claude Code`.
+- GitHub Issues stay available but only point to Linear (blank issues are
+  off).
 <!-- able:end -->
