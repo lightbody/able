@@ -1,0 +1,6 @@
+# Work is tracked in Linear, so GitHub Issues stay closed to blank issues.
+blank_issues_enabled: false
+contact_links:
+  - name: Linear
+    url: https://linear.app/myapp
+    about: This app's issues live in Linear.

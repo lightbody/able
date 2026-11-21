@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Able — a software factory that fits in your pocket</title>
-  <meta name="description" content="Able sets up your cloud, your pipeline and your agent's playbook from a phone or a browser. Describe what you want, preview it live, ship it. Built on Cloudflare, Neon, Fly.io, WorkOS and Grafana Cloud.">
+  <meta name="description" content="Able sets up your cloud, your pipeline and your agent's playbook from a phone or a browser. Describe what you want, preview it live, ship it. Built on Cloudflare, Neon, Fly.io, WorkOS, Grafana Cloud and Linear.">
   <meta property="og:title" content="Able — a software factory that fits in your pocket">
   <meta property="og:description" content="Able sets up your cloud, your pipeline and your agent's playbook from a phone or a browser. Describe it, preview it live, ship it. You review the running app, not the code.">
   <meta property="og:url" content="https://able.lightbody.net/">
@@ -259,6 +259,12 @@
             <p>Traces, logs and metrics for every request, from browser to database, for you and your agent.</p>
             <span class="tier">Free tier</span>
           </li>
+          <li>
+            <span class="role">Issue tracking</span>
+            <strong>Linear</strong>
+            <p>Your app's work in one place that you and your agent both use, with each branch and pull request linked to its issue.</p>
+            <span class="tier">Free tier</span>
+          </li>
         </ul>
 
         <ul class="gets">
@@ -295,7 +301,7 @@
           </details>
           <details>
             <summary>Do I have to use the whole stack?</summary>
-            <p>No. Every app gets a React frontend on Cloudflare Pages, with a Preview for every pull request. The rest is optional: a backend on Fly.io, sign-in with WorkOS, a Postgres database with live updates on Neon (which needs sign-in), observability in Grafana Cloud, and a custom domain. Setup asks what you want, and what you skip never lands in your repo. A static site needs only GitHub and Cloudflare.</p>
+            <p>No. Every app gets a React frontend on Cloudflare Pages, with a Preview for every pull request. The rest is optional: a backend on Fly.io, sign-in with WorkOS, a Postgres database with live updates on Neon (which needs sign-in), observability in Grafana Cloud, issue tracking in Linear, and a custom domain. Setup asks what you want, and what you skip never lands in your repo. A static site needs only GitHub and Cloudflare.</p>
             <p>It isn't a one-way choice. Later you can ask your agent to add a part from Able, and it brings in the code and walks you through the accounts and tokens.</p>
           </details>
           <details>
@@ -324,8 +330,8 @@
           </details>
           <details>
             <summary>What does it cost?</summary>
-            <p>For a low-traffic app, close to nothing. Cloudflare Pages, Neon, WorkOS
-              and Grafana Cloud all have free tiers that cover it. Fly.io has no free plan but bills by
+            <p>For a low-traffic app, close to nothing. Cloudflare Pages, Neon, WorkOS,
+              Grafana Cloud and Linear all have free tiers that cover it. Fly.io has no free plan but bills by
               usage, which for a quiet app is usually nothing (see below). Check each
               platform's pricing page for current limits.</p>
           </details>
@@ -368,7 +374,7 @@
           <details>
             <summary>What do I need to get started?</summary>
             <p>A coding agent, plus accounts on GitHub and Cloudflare, and one for each
-              part you choose: Fly.io, WorkOS, Neon and Grafana Cloud. Your agent walks you through creating each one and the API tokens
+              part you choose: Fly.io, WorkOS, Neon, Grafana Cloud and Linear. Your agent walks you through creating each one and the API tokens
               it needs, one step at a time.</p>
             <p>With Claude Code on the web, a session starts from a repo, so you make
               your app's repo from the template first, and a cloud environment of its own,

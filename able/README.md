@@ -12,6 +12,7 @@ grouped into **modules**, so a new app can take only the ones it wants:
 | `auth` | WorkOS AuthKit | `backend` |
 | `postgres` | Neon, with Neon Realtime | `backend`, `auth` |
 | `observability` | Grafana Cloud | |
+| `issue-tracking` | Linear | |
 | `custom-domain` | Cloudflare (setup steps only, no code) | |
 | `template` | Able's own files, removed from every new app | |
 
@@ -84,7 +85,7 @@ with no markers at all.
 - **Every combination has to build.** `able/check.sh <modules>` configures
   a copy of the repo as an app with those modules (`none` for a static
   site, nothing for the full app), then installs, builds, tests and lints
-  it. CI runs it for all eight valid combinations. Removing lines can leave
+  it. CI runs it for every valid combination it lists. Removing lines can leave
   an import or a variable unused, which fails the build: when it does, move
   the code into a file the module owns.
 

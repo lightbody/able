@@ -78,5 +78,11 @@ if command -v actionlint > /dev/null; then
   actionlint
 fi
 bash -n .claude/hooks/session-start.sh
+if [ -e .mcp.json ]; then
+  node -e 'JSON.parse(require("fs").readFileSync(".mcp.json", "utf8"))' || fail ".mcp.json isn't valid JSON"
+fi
+if [ -e .claude/skills/issue-tracking/check-connection.sh ]; then
+  bash -n .claude/skills/issue-tracking/check-connection.sh
+fi
 
 echo "able/check.sh: ok (${modules:-full app})"
