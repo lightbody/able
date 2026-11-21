@@ -180,10 +180,12 @@ Call `create_session` with:
 - `extra_allowed_tools`: `mcp__linear__save_issue`, `mcp__linear__get_issue`,
   `mcp__linear__list_issues` and `mcp__linear__list_teams`, so the session
   isn't held up by prompts nobody is watching for.
-- `prompt`, exactly:
+- `prompt`: the text below, with `<LINEAR_TEAM_KEY>` replaced by the app's
+  real team key (for example `TES`) before you send it. Never send, or show
+  the user, a placeholder.
 
   ```
-  Create a new Linear issue with the title "Change to dark theme" and a description of "Let's change the app from black text on white background to a smooth dark theme with a dark grey background and very light (but not white) text." Once the issue is created, spin up a PR that resolves that issue and report back to the user the preview URL when it is ready.
+  Create a new Linear issue in the <LINEAR_TEAM_KEY> team with the title "Change to dark theme" and a description of "Let's change the app from black text on white background to a smooth dark theme with a dark grey background and very light (but not white) text." Once the issue is created, spin up a PR that resolves that issue and report back to the user the preview URL when it is ready.
   ```
 
 Check that it started: `list_events` for the new session, with `kinds` of
@@ -192,8 +194,8 @@ prompt wasn't delivered shows neither after about half a minute: send the
 same prompt with `send_message` and `priority` `now`.
 
 If you have no `create_session` (another coding agent, or not a cloud
-session), skip the monitoring below, give the user the prompt above in a code
-block, and have them start a new session on the Agent Environment with the
+session), skip the monitoring below, give the user the prompt above, with the
+real team key filled in, in a code block, and have them start a new session on the Agent Environment with the
 app's repo selected and paste it.
 
 ### 2. Tell the user, and ask
@@ -206,7 +208,8 @@ Say, briefly, as the last thing in your turn (ground rule 8):
 - That's how they'll work from now on: describe the work as an issue, then
   ask a session to take it. To work on an existing issue, start a session on
   the Agent Environment and say, for example, "Spin up a PR to address
-  `<LINEAR_TEAM_KEY>`-123". They can also ask a session to file issues, or to
+  `TES-123`". Write it with the app's real team key (and, once the demo issue
+  exists, a real issue number), not a placeholder. They can also ask a session to file issues, or to
   say what's in the backlog.
 - **Ask them to open that session, look at what it did, and tell you when
   they have.**
