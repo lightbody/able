@@ -49,12 +49,12 @@ Get both values from **one pasted link**, so nobody has to find them
 separately. Ask the user to open the team's **Home** in Linear (in the
 sidebar, **Your teams → the team → Home**) and paste the address from the
 browser's address bar. It looks like
-`https://linear.app/lightbody/team/TES/overview`. From it:
+`https://linear.app/acme/team/ENG/overview`. From it:
 
 1. **`LINEAR_WORKSPACE_URL`** is `https://linear.app/<slug>`, here
-   `https://linear.app/lightbody`.
-2. **`LINEAR_TEAM_KEY`** is the part after `/team/`, here `TES`: the
-   short uppercase prefix of the team's issues (`TES-12`).
+   `https://linear.app/acme`.
+2. **`LINEAR_TEAM_KEY`** is the part after `/team/`, here `ENG`: the
+   short uppercase prefix of the team's issues (`ENG-12`).
 
 Neither is a secret, so chat is fine. Say both back in one line.
 
@@ -181,7 +181,7 @@ Call `create_session` with:
   `mcp__linear__list_issues` and `mcp__linear__list_teams`, so the session
   isn't held up by prompts nobody is watching for.
 - `prompt`: the text below, with `<LINEAR_TEAM_KEY>` replaced by the app's
-  real team key (for example `TES`) before you send it. Never send, or show
+  real team key (for example `ENG`) before you send it. Never send, or show
   the user, a placeholder.
 
   ```
@@ -208,7 +208,7 @@ Say, briefly, as the last thing in your turn (ground rule 8):
 - That's how they'll work from now on: describe the work as an issue, then
   ask a session to take it. To work on an existing issue, start a session on
   the Agent Environment and say, for example, "Spin up a PR to address
-  `TES-123`". Write it with the app's real team key (and, once the demo issue
+  `ENG-123`". Write it with the app's real team key (and, once the demo issue
   exists, a real issue number), not a placeholder. They can also ask a session to file issues, or to
   say what's in the backlog.
 - **Ask them to open that session, look at what it did, and tell you when
@@ -221,7 +221,7 @@ it succeeds. Where you have `send_later`, schedule a check a minute or two
 out (and again after each check, until they confirm), then end your turn with
 the question. At each check, `get_session` and `list_events` (`assistant`
 and `result`) for the demo session, and look for the issue, the pull request
-and the Preview URL (also in the PR's comment: use the GitHub tools).
+and the Preview URL (also in the PR's comment: use the GitHub tools, and share the URL exactly as the comment gives it).
 
 - **They've confirmed:** stop checking, and delete any check you still have
   scheduled (`delete_trigger`). Go on to the playbook's closing points.

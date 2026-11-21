@@ -736,6 +736,12 @@ to its activity.
   GraphQL API, which they block. Use the REST API instead:
   `gh api repos/<owner>/<repo>/pulls -f title=… -f head=<branch> -f base=main -f body=…`.
   Close it later with `gh api -X PATCH repos/<owner>/<repo>/pulls/<n> -f state=closed`.
+- If the session's own instructions name the one branch it may push, as a
+  Claude Code cloud session's do (`claude/...`), use that branch for this PR:
+  bring it up to date with `main` first, and don't create another. Otherwise
+  push a new branch. This PR is a setup check, so `AGENTS.md`'s rule to
+  rename the branch to Linear's name (with `issue-tracking`) doesn't apply
+  to it.
 - The session's clone may be shallow and track only `main`. Push the new
   branch with `git push -u origin <branch>`. If a hook still says the
   branch has no remote, add a fetch refspec for it
@@ -750,9 +756,10 @@ to its activity.
 - Sessions can't delete a pushed branch, so after closing the PR tell the
   user its branch is still on GitHub and is safe to delete.
 
-`frontend.yml` deploys a Pages preview at
-`https://<branch-alias>.<Pages Subdomain>` and comments its URL on the PR.
-Check it serves the app's `<title>`.
+`frontend.yml` deploys a Pages preview and comments its URL on the PR. Use
+the URL in that comment, as given: it can be the deployment's own address
+(`https://<hash>.<Pages Subdomain>`) rather than a branch alias. Check it
+serves the app's `<title>`.
 
 Then each chosen Module's "Step 10" section: it says what the Preview adds
 for that Module, and you run that Module's step 9 checks against the
