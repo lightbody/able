@@ -21,8 +21,8 @@ through Linear's MCP server.
   - A Linear workspace and a team for the app, and their values in
     `.github/deploy.env`: `LINEAR_WORKSPACE_URL` and `LINEAR_TEAM_KEY`.
     Fill both in in the same pull request, or deploys skip themselves.
-  - A Linear API key for Claude (Read, Write, Create issues and Create
-    comments, no Admin, limited to the app's team), saved on the Agent
+  - A Linear API key for Claude (Read + Write, no Admin, limited to the
+    app's team), saved on the Agent
     Environment for the host `mcp.linear.app`, through a card. `SETUP.md`
     in Able has the steps. No CI token.
   - In Linear: connect the GitHub integration to the repo.

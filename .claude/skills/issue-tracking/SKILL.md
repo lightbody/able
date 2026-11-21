@@ -35,14 +35,19 @@ causes, in order:
 3. The tools exist but fail with 401: the key was revoked or replaced. The
    user rotates it (`SECRETS.md`).
 
-To tell which, run `.claude/skills/issue-tracking/check-connection.sh`. It
-reaches Linear through the proxy without the tools and lists the teams the
-key can see. It's for diagnosis only: do the actual work with the tools, in
+To tell which, run `.claude/skills/issue-tracking/check-connection.sh
+[TEAM_KEY]`. It reaches Linear through the proxy without the tools and lists
+the teams the key can see (it checks `LINEAR_TEAM_KEY` from
+`.github/deploy.env` unless you pass a key). It's for diagnosis only: do the actual work with the tools, in
 a session that has them.
 
 ## 2. Work from an issue
 
-Every change that will become a pull request starts from an issue.
+Every change that will become a pull request starts from an issue. A request
+like "Spin up a PR to address ABC-123" means this whole section: read the
+issue, get on its branch, make the change, open the pull request, and report
+back with the issue's link and the Preview URL once it's ready (the Preview
+comment on the pull request has it).
 
 1. **Find it.** If the user gave a key (`ABC-123`), `get_issue`. Otherwise
    search the team's open issues first, so you don't file a duplicate.

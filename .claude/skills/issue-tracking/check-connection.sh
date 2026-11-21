@@ -8,11 +8,18 @@
 # placeholder: the proxy replaces it with the key saved for mcp.linear.app,
 # so no secret is read, sent or printed here.
 #
-#   .claude/skills/issue-tracking/check-connection.sh
+#   .claude/skills/issue-tracking/check-connection.sh [TEAM_KEY]
+#
+# TEAM_KEY is the app's team (for example TODO). Without it, the script uses
+# LINEAR_TEAM_KEY from .github/deploy.env, which is still empty during setup
+# until step 8: pass the key explicitly then.
 set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
-want="$(sed -n 's/^LINEAR_TEAM_KEY=//p' "$root/.github/deploy.env" 2>/dev/null | head -1 | tr -d '[:space:]')"
+want="${1:-}"
+if [ -z "$want" ]; then
+  want="$(sed -n 's/^LINEAR_TEAM_KEY=//p' "$root/.github/deploy.env" 2>/dev/null | head -1 | tr -d '[:space:]')"
+fi
 
 url=https://mcp.linear.app/mcp
 curl_args=(-sS -m 30
@@ -58,9 +65,11 @@ if [ -n "$want" ]; then
   if echo "$keys" | grep -qx "$want"; then
     echo "The app's team ($want) is there."
   else
-    echo "The app's team ($want, from .github/deploy.env) is NOT among them." >&2
+    echo "The app's team ($want) is NOT among them." >&2
     exit 1
   fi
+else
+  echo "Not checked: the app's team. Pass its key as an argument (LINEAR_TEAM_KEY in .github/deploy.env is empty)."
 fi
 if [ "$(echo "$keys" | wc -l)" -gt 1 ]; then
   echo "Note: more than one team is visible. A key limited to the app's team lists only that one."

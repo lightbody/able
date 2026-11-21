@@ -2,5 +2,5 @@
 blank_issues_enabled: false
 contact_links:
   - name: Linear
-    url: https://linear.app/myapp
+    url: https://linear.app
     about: This app's issues live in Linear.

@@ -29,6 +29,9 @@ mention Modules now know about it.
   `AGENTS.md`, `README.md`, `SECRETS.md` and `.github/deploy.env`, which an
   app receives only if it takes the Module (its own notes:
   `able/modules/issue-tracking/CHANGES.md`).
+- **Also:** `AGENTS.md`'s list of CI Tokens is now a bullet list, so removing
+  a part no longer leaves a stray comma ("`CLOUDFLARE_API_TOKEN`, and nothing
+  else").
 - **Needs from you:** nothing, unless you take the Module.
 
 ## 2026-11-12: Modules, and learning from Able

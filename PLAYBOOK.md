@@ -27,7 +27,8 @@ instruction you give must work with that.
    token is the last thing copied. Give each name the user needs (a token
    name, a secret name) alone in its own code block, so one tap copies it:
    names in running text are hard to select on a phone, and typing one
-   invites autocapitalization.
+   invites autocapitalization. Links are the opposite: give every URL as a
+   plain link, never inside a code block, which makes it unclickable.
 3. **Deep links.** Use the links given here. Don't invent URLs. Where this
    playbook gives a menu path instead of a link, give the menu path.
 4. **Secrets never go through chat.** Never ask for a token in chat.
@@ -157,7 +158,7 @@ Only the rows for services the app uses apply: Cloudflare always, Fly with
 | Fly | **org deploy token** for **this app's own org** (personal access tokens no longer work) | a second org deploy token for the same org (Previews create apps) |
 | Cloudflare | Pages Edit + Account Settings Read (+ DNS Edit and Zone Read on the Custom Domain's zone) during setup; narrowed in step 12 to Pages Edit, Account Settings Read and Account Analytics Read (+ DNS Read and Zone Read) | Pages Edit only |
 | Grafana | a service account `<App Handle>-claude-code` on the Grafana Stack: **Viewer** plus **Frontend Observability → Editor** while it creates the Faro app (step 4), narrowed to Viewer in step 5 | `GRAFANA_OTLP_TOKEN`, write-only telemetry ingest |
-| Linear | a personal API key `<App Handle>-claude-code` (Read, Write, Create issues and Create comments; one team), saved in step 4 and already at its Baseline | none: Linear needs no CI Token |
+| Linear | a personal API key `<App Handle>-claude-code` (Read + Write; one team), saved in step 4 and already at its Baseline | none: Linear needs no CI Token |
 
 **Least privilege as you go.** Ask for each token with the permissions the
 coming steps need, no more, and narrow it as soon as they're done: the
@@ -395,11 +396,16 @@ a time:
    - **Site plus API:** a page and an API of its own, with sign-in if they
      want it. Accounts: Cloudflare and Fly, plus WorkOS for sign-in.
      Modules: `backend`, and `auth` if they want sign-in.
-   - **Static site:** just the page. Account: Cloudflare only. No Modules.
+   - **Static site:** just the page. Account: Cloudflare only. No backend
+     Modules.
 
    Say that it isn't a one-way choice: a Module can be added later, so
    when they're unsure, less is fine. A database needs sign-in (`postgres`
    requires `auth`), so don't offer one without the other.
+
+   Observability and issue tracking are asked separately below and go with
+   any of the three. Issue tracking is on by default, so each starting point
+   also needs a Linear account unless they say no.
 3. **Do you want Observability?** That's the `observability` Module:
    traces, logs and metrics in Grafana Cloud (the free tier is enough),
    which later sessions read to find bugs and check deploys. Recommend it
@@ -466,8 +472,9 @@ account:
 | Cloudflare | frontend hosting (Pages) | https://dash.cloudflare.com/sign-up |
 
 Add the row from each chosen Module's "Step 2" section, and show the user
-one table. Ask which of these they already have. For the rest, give the
-sign-up links and wait. Signing in with GitHub is fine wherever it's
+one table. Ask which of these they already have, and don't go on until
+every row has an answer: if the reply covers only some, ask about the rest
+first. For the rest, give the sign-up links and wait. Signing in with GitHub is fine wherever it's
 offered. Then do the rest of each Module's "Step 2" section.
 
 ## Step 3: The app's repo
@@ -647,6 +654,10 @@ In the cloned repo:
      --modules <the app's Modules> --able-commit <the Able commit from step 0>
    ```
 
+   Run the repo's own `able/configure.mjs`. It deletes the repo's `able/`
+   when it finishes, which is why you kept a copy in your scratch directory
+   for the later steps.
+
    `--modules` takes the chosen Modules separated by commas, e.g.
    `backend,auth`, or `none` for a static site. Leave `--modules` out for
    every Module. It does four things:
@@ -732,6 +743,12 @@ to its activity.
   and fetch it.
 - The PR exists only to prove Previews work: close it at the end of this
   step, without merging.
+- With `issue-tracking`: this PR is exempt from the app's Linear rules
+  (every PR starts from an issue, on its branch name, and the PR template's
+  Linear section). This session has no Linear tools, so say in the
+  description that it's a setup check.
+- Sessions can't delete a pushed branch, so after closing the PR tell the
+  user its branch is still on GitHub and is safe to delete.
 
 `frontend.yml` deploys a Pages preview at
 `https://<branch-alias>.<Pages Subdomain>` and comments its URL on the PR.

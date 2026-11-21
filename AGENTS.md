@@ -194,11 +194,13 @@ asserts the SQL and params, like the existing `POST /live/:view` test.
   skip themselves while any value in it is empty
   (`.github/workflows/deploy-config.yml`).
 - The only GitHub secrets are a few API tokens, this app's narrowly scoped
-  CI Tokens: `CLOUDFLARE_API_TOKEN`,
-  `FLY_API_TOKEN`, <!-- able:only backend -->
-  `NEON_API_KEY`, <!-- able:only postgres -->
-  `GRAFANA_OTLP_TOKEN`, <!-- able:only observability -->
-  and nothing else. See `SECRETS.md` for scopes and rotation.
+  CI Tokens, and nothing else:
+  - `CLOUDFLARE_API_TOKEN`
+  - `FLY_API_TOKEN` <!-- able:only backend -->
+  - `NEON_API_KEY` <!-- able:only postgres -->
+  - `GRAFANA_OTLP_TOKEN` <!-- able:only observability -->
+
+  See `SECRETS.md` for scopes and rotation.
 <!-- able:begin backend -->
 - `.github/actions/deploy-backend` deploys the backend, for Production and
   for each Preview. Each feature the backend uses has one step in it,
@@ -362,7 +364,7 @@ issues, and before starting a branch.
   create show as them. Sign what you write `Claude Code`, and never put
   tokens or user data in an issue.
 - **The key is a Claude Code Token**, at its Baseline in `SECRETS.md`
-  (Read, Write, Create issues and Create comments, one team). If a task
+  (Read + Write, one team). If a task
   needs more, follow "Widening a token for a task" there.
 <!-- able:end -->
 
