@@ -206,6 +206,7 @@ h2 { font-size: clamp(1.8rem, 4vw, 2.6rem); line-height: 1.1; letter-spacing: -.
 }
 @media (min-width: 960px) {
   .platforms li { grid-column: span 2; }
+  .platforms li:nth-child(n+4) { grid-column: span 3; }
 }
 
 .gets { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 12px; grid-template-columns: 1fr; }

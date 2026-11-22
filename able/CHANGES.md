@@ -15,25 +15,6 @@ the app's owner:
 - **Needs from you:** anything the owner must do (a token, an account, a
   dashboard setting, a value in `.github/deploy.env`), or "nothing"
 
-## 2026-11-21: A Module can register an MCP server, and issue tracking arrives
-
-Able has a new Module, `issue-tracking` (Linear), and the shared files that
-mention Modules now know about it.
-
-- **Why:** some capabilities reach Claude as MCP tools. Those tools load only
-  when a session starts, so after adding such a Module the owner has to start
-  a new session before the tools appear. The `able` skill now says so. An app
-  without the new Module sees only the generic wording.
-- **Touches:** the `able` skill's "Adding a Module" steps
-  (`.claude/skills/able/SKILL.md`), and the marked "Issue tracking" lines in
-  `AGENTS.md`, `README.md`, `SECRETS.md` and `.github/deploy.env`, which an
-  app receives only if it takes the Module (its own notes:
-  `able/modules/issue-tracking/CHANGES.md`).
-- **Also:** `AGENTS.md`'s list of CI Tokens is now a bullet list, so removing
-  a part no longer leaves a stray comma ("`CLOUDFLARE_API_TOKEN`, and nothing
-  else").
-- **Needs from you:** nothing, unless you take the Module.
-
 ## 2026-11-12: Modules, and learning from Able
 
 Able is now built from Modules, and an app can pull in what's new.

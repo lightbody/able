@@ -150,12 +150,6 @@ When the user asks for a capability Able offers as a Module:
    written for a new app, so skip what this app already has, and follow
    the ground rules at the top of Able's `PLAYBOOK.md` for anything
    involving the user's accounts and tokens.
-5. If the Module registers an MCP server (its `MODULE.md` says so), that
-   server's tools load only when a session starts. A session that began
-   before the Module's key was saved, or from a branch without its config
-   file, never gets them. Tell the user, and have them start a new session
-   on the Agent Environment, from the pull request's branch or from `main`
-   once it's merged.
-6. Add the Module to "Modules" in `ABLE.md`, then check, record and open
-   the pull request as in section 6. Some setup can only finish once the PR
+5. Add the Module to "Modules" in `ABLE.md`, then check, record and open
+   the pull request as in step 6. Some setup can only finish once the PR
    is merged (a first Production deploy, for one): say which.

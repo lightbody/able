@@ -27,8 +27,7 @@ instruction you give must work with that.
    token is the last thing copied. Give each name the user needs (a token
    name, a secret name) alone in its own code block, so one tap copies it:
    names in running text are hard to select on a phone, and typing one
-   invites autocapitalization. Links are the opposite: give every URL as a
-   plain link, never inside a code block, which makes it unclickable.
+   invites autocapitalization.
 3. **Deep links.** Use the links given here. Don't invent URLs. Where this
    playbook gives a menu path instead of a link, give the menu path.
 4. **Secrets never go through chat.** Never ask for a token in chat.
@@ -74,10 +73,10 @@ instruction you give must work with that.
 | **Custom Domain** | An optional domain of the user's for Production, e.g. `todoable.example.com`: the `custom-domain` Module. Asked about in step 1, switched on in step 11. | steps 1, 4, 11 |
 | **Region Trio** | The Neon region, the Fly region next to it, and the Grafana Cloud region next to those (used only if the user creates a new Grafana Stack), chosen in step 1. Only the parts the app's Modules use apply. | steps 1, 2, 5, 8 |
 | **Agent Environment** | The Claude Code cloud environment for this app, named with the App Name and used for nothing else. This setup session and every later Claude Code session on the app run on it, and it holds the Claude Code Tokens. | "Before the session", step 0, step 4, and "Limited network access" |
-| **Claude Code Tokens** | Claude's own API tokens for Neon, Fly, Cloudflare, Grafana and Linear, each named `<App Handle>-claude-code` and saved on the Agent Environment. | steps 4, 5, 6, 12 |
+| **Claude Code Tokens** | Claude's own API tokens for Neon, Fly, Cloudflare and Grafana, each named `<App Handle>-claude-code` and saved on the Agent Environment. | steps 4, 5, 6, 12 |
 | **CI Tokens** | GitHub Actions' API tokens for the same services, each named `<App Handle>-ci` and saved as GitHub secrets. | step 6 |
 | **Observability** | The app's telemetry (traces, metrics and logs from the backend, real-user data from the frontend) in a **Grafana Stack**: a Grafana Cloud instance, `GRAFANA_STACK_URL`, usually shared by all of the user's apps. Each app's telemetry is labelled with its App Handle. | steps 2, 4, 5, 6, 9, 10 |
-| **Module** | One optional part of an app, with its own files, deploy steps and setup: `backend` (Fly), `auth` (WorkOS), `postgres` (Neon), `observability` (Grafana Cloud), `issue-tracking` (Linear) and `custom-domain`. The user chooses them in step 1. See "Modules" below. | throughout |
+| **Module** | One optional part of an app, with its own files, deploy steps and setup: `backend` (Fly), `auth` (WorkOS), `postgres` (Neon), `observability` (Grafana Cloud) and `custom-domain`. The user chooses them in step 1. See "Modules" below. | throughout |
 | **Baseline** | The permissions the Claude Code Tokens keep between tasks, listed in `SECRETS.md`. | step 12 |
 
 Two words from the services mean something else, so always qualify them:
@@ -101,7 +100,6 @@ Everything beyond that is a **Module**:
 | `auth` | sign-in | WorkOS | `backend` |
 | `postgres` | a database, with live updates in the browser | Neon | `backend`, `auth` |
 | `observability` | traces, logs and metrics, which later sessions read to fix bugs | Grafana Cloud | |
-| `issue-tracking` | the app's work tracked in Linear, which later sessions can read and update (on by default) | Linear (free plan) | |
 | `custom-domain` | Production on the user's own domain | the domain's DNS, ideally on Cloudflare | |
 
 `postgres` requires `auth` so stored data is never reachable without
@@ -114,8 +112,8 @@ step number. At each step:
 
 1. Do the core part.
 2. Then, for each Module the app has, in this order: `backend`, `auth`,
-   `postgres`, `observability`, `issue-tracking`, `custom-domain`, do that
-   Module's section for the step, if it has one.
+   `postgres`, `observability`, `custom-domain`, do that Module's section
+   for the step, if it has one.
 
 Skip every Module the app doesn't have, and don't mention its service to
 the user at all: a static site's setup never brings up Fly, Neon or
@@ -147,8 +145,7 @@ the end of this file covers it, and the steps that need extra work for it
 point there.
 
 Only the rows for services the app uses apply: Cloudflare always, Fly with
-`backend`, Neon with `postgres`, Grafana with `observability`, Linear with
-`issue-tracking`.
+`backend`, Neon with `postgres`, Grafana with `observability`.
 
 | | **Claude Code Tokens** (`<App Handle>-claude-code`) | **CI Tokens** (`<App Handle>-ci`) |
 |---|---|---|
@@ -158,7 +155,6 @@ Only the rows for services the app uses apply: Cloudflare always, Fly with
 | Fly | **org deploy token** for **this app's own org** (personal access tokens no longer work) | a second org deploy token for the same org (Previews create apps) |
 | Cloudflare | Pages Edit + Account Settings Read (+ DNS Edit and Zone Read on the Custom Domain's zone) during setup; narrowed in step 12 to Pages Edit, Account Settings Read and Account Analytics Read (+ DNS Read and Zone Read) | Pages Edit only |
 | Grafana | a service account `<App Handle>-claude-code` on the Grafana Stack: **Viewer** plus **Frontend Observability → Editor** while it creates the Faro app (step 4), narrowed to Viewer in step 5 | `GRAFANA_OTLP_TOKEN`, write-only telemetry ingest |
-| Linear | a personal API key `<App Handle>-claude-code` (Read + Write; one team), saved in step 4 and already at its Baseline | none: Linear needs no CI Token |
 
 **Least privilege as you go.** Ask for each token with the permissions the
 coming steps need, no more, and narrow it as soon as they're done: the
@@ -237,7 +233,6 @@ Track these as you go. Every one for a Module the app has ends up in
 | `GRAFANA_STACK_URL` | `observability` | `https://<stack slug>.grafana.net`, from the user in chat (step 2) |
 | `GRAFANA_OTLP_INSTANCE_ID`, `GRAFANA_OTLP_ENDPOINT` | `observability` | derived from the Grafana Stack (step 5) |
 | `GRAFANA_FARO_URL` | `observability` | the Faro app you create in step 5 |
-| `LINEAR_WORKSPACE_URL`, `LINEAR_TEAM_KEY` | `issue-tracking` | the Linear workspace's address and the team's key, from the user in chat (step 2) |
 
 Also record the **Custom Domain** from step 1, if any. It isn't in
 `deploy.env` until step 11, when it replaces `PROD_FRONTEND_ORIGIN`.
@@ -396,28 +391,18 @@ a time:
    - **Site plus API:** a page and an API of its own, with sign-in if they
      want it. Accounts: Cloudflare and Fly, plus WorkOS for sign-in.
      Modules: `backend`, and `auth` if they want sign-in.
-   - **Static site:** just the page. Account: Cloudflare only. No backend
-     Modules.
+   - **Static site:** just the page. Account: Cloudflare only. No Modules.
 
    Say that it isn't a one-way choice: a Module can be added later, so
    when they're unsure, less is fine. A database needs sign-in (`postgres`
    requires `auth`), so don't offer one without the other.
-
-   Observability and issue tracking are asked separately below and go with
-   any of the three. Issue tracking is on by default, so each starting point
-   also needs a Linear account unless they say no.
 3. **Do you want Observability?** That's the `observability` Module:
    traces, logs and metrics in Grafana Cloud (the free tier is enough),
    which later sessions read to find bugs and check deploys. Recommend it
    for anything beyond a throwaway.
-4. **Do you want issue tracking?** That's the `issue-tracking` Module: the
-   app's work tracked in Linear (the free plan is enough), which later
-   sessions can read and update. It's on by default and applies to any
-   starting point, with or without a backend. Recommend yes, and say it needs
-   a Linear account and one API key. If they say no, the app doesn't get it.
-5. **Do you want a Custom Domain, and if so, which one?** That's the
+4. **Do you want a Custom Domain, and if so, which one?** That's the
    `custom-domain` Module. If yes, do its "Step 1" section now.
-6. **Roughly where are you and your users?** A continent or country is
+5. **Roughly where are you and your users?** A continent or country is
    enough. Ask only if the app has `backend`, or `observability` with a
    new Grafana Stack: it picks where the backend and database run. A
    static site has no region to choose.
@@ -455,7 +440,7 @@ there still get `aws-us-east-1` + `iad`, so say that pages will be a
 little slower for them.
 
 Confirm the App Name, App Handle, the Modules (in plain words: "a page, an
-API and sign-in, with Observability and issue tracking"), the Region Trio if there is one,
+API and sign-in, with Observability"), the Region Trio if there is one,
 and the Custom Domain (or "none") with the user in one line, then
 continue.
 
@@ -472,9 +457,8 @@ account:
 | Cloudflare | frontend hosting (Pages) | https://dash.cloudflare.com/sign-up |
 
 Add the row from each chosen Module's "Step 2" section, and show the user
-one table. Ask which of these they already have, and don't go on until
-every row has an answer: if the reply covers only some, ask about the rest
-first. For the rest, give the sign-up links and wait. Signing in with GitHub is fine wherever it's
+one table. Ask which of these they already have. For the rest, give the
+sign-up links and wait. Signing in with GitHub is fine wherever it's
 offered. Then do the rest of each Module's "Step 2" section.
 
 ## Step 3: The app's repo
@@ -501,8 +485,8 @@ Walk the user through creating the missing or unusable ones, each named
 `<App Handle>-claude-code`. Open the step by saying what's coming, in a
 few lines: that these tokens are for Claude on this app only, for setting
 it up now and for building and debugging it later; which services need
-one (Cloudflare, plus one for each of `backend`, `postgres`,
-`observability` and `issue-tracking` the app has); that they're saved on the Agent
+one (Cloudflare, plus one for each of `backend`, `postgres` and
+`observability` the app has); that they're saved on the Agent
 Environment; and that some get narrowed once setup no longer needs their
 extra permissions. Then show progress as you go ("token 2 of 4: Fly").
 Each token goes **only** into a card, never into GitHub.
@@ -638,9 +622,8 @@ You can't read GitHub secrets. The first deploy in step 9 verifies them.
 
 ## Step 7: Dashboard setup
 
-Only `auth` and `issue-tracking` have a part in this step: `auth`'s
-"Step 7" section sets up sign-in in the WorkOS dashboard, and
-`issue-tracking`'s connects Linear to GitHub. Without them, go to step 8.
+Only `auth` has a part in this step: its "Step 7" section sets up sign-in
+in the WorkOS dashboard. Without `auth`, go to step 8.
 
 ## Step 8: Make the code the user's app
 
@@ -653,10 +636,6 @@ In the cloned repo:
    node able/configure.mjs --name "<App Name>" --handle <App Handle> \
      --modules <the app's Modules> --able-commit <the Able commit from step 0>
    ```
-
-   Run the repo's own `able/configure.mjs`. It deletes the repo's `able/`
-   when it finishes, which is why you kept a copy in your scratch directory
-   for the later steps.
 
    `--modules` takes the chosen Modules separated by commas, e.g.
    `backend,auth`, or `none` for a static site. Leave `--modules` out for
@@ -736,12 +715,6 @@ to its activity.
   GraphQL API, which they block. Use the REST API instead:
   `gh api repos/<owner>/<repo>/pulls -f title=… -f head=<branch> -f base=main -f body=…`.
   Close it later with `gh api -X PATCH repos/<owner>/<repo>/pulls/<n> -f state=closed`.
-- If the session's own instructions name the one branch it may push, as a
-  Claude Code cloud session's do (`claude/...`), use that branch for this PR:
-  bring it up to date with `main` first, and don't create another. Otherwise
-  push a new branch. This PR is a setup check, so `AGENTS.md`'s rule to
-  rename the branch to Linear's name (with `issue-tracking`) doesn't apply
-  to it.
 - The session's clone may be shallow and track only `main`. Push the new
   branch with `git push -u origin <branch>`. If a hook still says the
   branch has no remote, add a fetch refspec for it
@@ -749,17 +722,10 @@ to its activity.
   and fetch it.
 - The PR exists only to prove Previews work: close it at the end of this
   step, without merging.
-- With `issue-tracking`: this PR is exempt from the app's Linear rules
-  (every PR starts from an issue, on its branch name, and the PR template's
-  Linear section). This session has no Linear tools, so say in the
-  description that it's a setup check.
-- Sessions can't delete a pushed branch, so after closing the PR tell the
-  user its branch is still on GitHub and is safe to delete.
 
-`frontend.yml` deploys a Pages preview and comments its URL on the PR. Use
-the URL in that comment, as given: it can be the deployment's own address
-(`https://<hash>.<Pages Subdomain>`) rather than a branch alias. Check it
-serves the app's `<title>`.
+`frontend.yml` deploys a Pages preview at
+`https://<branch-alias>.<Pages Subdomain>` and comments its URL on the PR.
+Check it serves the app's `<title>`.
 
 Then each chosen Module's "Step 10" section: it says what the Preview adds
 for that Module, and you run that Module's step 9 checks against the
@@ -796,8 +762,6 @@ These are the dashboard names from Cloudflare's list at
 https://developers.cloudflare.com/fundamentals/api/reference/permissions/
 (the API calls the Edit ones "Write"). If the dashboard shows a name
 differently, check that page rather than guessing.
-
-Then each chosen Module's "Step 12" section.
 
 ## Done
 
